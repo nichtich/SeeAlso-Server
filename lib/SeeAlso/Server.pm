@@ -168,7 +168,7 @@ sub query {
         unless defined $source and UNIVERSAL::isa($source, 'SeeAlso::Source');
 
     if (not defined $identifier) {
-        $identifier = SeeAlso::Identifier( $cgi->param('id') );
+        $identifier = SeeAlso::Identifier->new( $cgi->param('id') );
     } else {
         croak('Second parameter must be a SeeAlso::Identifier object!')
           unless defined $source and UNIVERSAL::isa($identifier, 'SeeAlso::Identifier');

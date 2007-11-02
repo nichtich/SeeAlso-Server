@@ -1,0 +1,12 @@
+This module is licensed under the same terms and conditions as Perl itself.
+
+This means that you can, at your option, redistribute is and/or modify it under
+either the terms the GNU Public License (GPL) version 1 or later, or under the
+Perl Artistic License.
+
+See http://dev.perl.org/licenses/
+
+Please note that the GNU Public License (GPL) version 3 allows you to license
+works based on this module under the GNU Affero General Public License (AGPL). 
+
+See also the gpl-3.0.txt file included with the distribution.

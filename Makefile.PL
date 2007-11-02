@@ -11,9 +11,9 @@ use ExtUtils::MakeMaker;
     AUTHOR          => 'Jakob Voss <jakob.voss@gbv.de>',
     PREREQ_PM       => {
         'JSON' => 0,
-		'CGI' => 0,
-		'Carp' => 0,
-		'DBI' => 0
+	'CGI' => 0,
+	'Carp' => 0,
+	'DBI' => 0
     },
     dist            => {
         COMPRESS => 'gzip -9f',
