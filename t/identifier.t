@@ -19,8 +19,8 @@ my $s = \*STDOUT;
 $id = SeeAlso::Identifier->new($s);
 ok( $id->normalized() == $s && $id->indexed() == $s && $id->value() == $s && $id->valid(), "non-string identifier" );
 
-$id = SeeAlso::Identifier->new( undef, 'valid' => sub { return 1; } );
-ok( $id->value eq "" , "undefined value" );
+$id = SeeAlso::Identifier->new( 'valid' => sub { return 1; } );
+ok( $id->value eq "" , "undefined value with handler" );
 
 # lowercase alpha only
 sub lcalpha {
@@ -29,13 +29,13 @@ sub lcalpha {
    return lc($v);
 }
 $id = SeeAlso::Identifier->new(
-  "AbC",
   'valid' => sub {
      my $v = shift;
      return $v =~ /^[a-zA-Z]+$/;
   },
   'normalized' => \&lcalpha
 );
+$id->value("AbC");
 
 ok( $id->valid , "extension: valid");
 ok( $id->normalized eq "abc" && $id->indexed eq "abc", "extension: normalized and indexed" );

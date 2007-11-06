@@ -29,8 +29,8 @@ divided by a hyphen into two four-digit numbers. The last digit
 is a check digit which may be 0-9 or an X. In practise the hyphen
 may be missing and the check digit may also be provided lowercase.
 
-When used as an identifier, the different forms of an ISSN as used
-in the model of L<SeeAlso::Identifier> are:
+When used as an identifier, the different forms of an ISSN as
+used in the model of L<SeeAlso::Identifier> are:
 
 =over
 
@@ -67,10 +67,10 @@ must be true.
 
 =head1 METHODS
 
-=head2 new ( $value [, %params ] )
+=head2 new ( [ $value | %params ] )
 
-Creates a new identifier. You must pass the identifier's value
-and optionally a hash of any of the following parameters.
+Creates a new identifier. You can either pass either identifier's 
+value or a hash of methods with the following parameter names:
 
 =over
 
@@ -100,35 +100,32 @@ that contains of letters only and is normalized to lowercase:
     return lc($v);
   }
   $id = SeeAlso::Identifier->new(
-    "AbC",
     'valid' => sub {
       my $v = shift;
       return $v =~ /^[a-zA-Z]+$/;
     },
     'normalized' => \&lcalpha
   );
-
-You should not directly pass the return value of a function
-as value if the function may return undef. This will result
-in setting the value to 'valid' instead of the empty string:
-
-  sub badsub { return; }
-  $id = SeeAlso::Identifier->new( badsum, 'valid' => ... );
-
-This is probably not a bug of Perl but a feature. You can fix
-it this way:
-
-  $id = SeeAlso::Identifier->new( badsum || "", 'valid' => ... );
+  $id->value("AbC");
 
 =cut
 
 sub new {
-    my ($class, $value, %params) = @_;
-    my ($valid, $indexed, $normalized);
+    my ($class) = shift;
+    my $self;
 
-    $normalized = $params{normalized};
-    $indexed = $params{indexed};
-    $valid = $params{valid};
+    if ($#_ <= 0) {
+        $self = bless {
+            value => ""
+        }, $class;
+        $self->value( shift );
+        return $self;
+    }
+
+    my %params = @_;
+    my $normalized = $params{normalized};
+    my $indexed = $params{indexed};
+    my $valid = $params{valid};
 
     croak("normalized must be a method")
         if defined $normalized and ref($normalized) ne "CODE";
@@ -138,7 +135,7 @@ sub new {
         if defined $valid and ref($valid) ne "CODE";
 
     my $self = bless {
-        value => defined $value ? $value : "",
+        value => "",
         mValid => $valid,
         mNormalized => $normalized,
         mIndexed => $indexed,
@@ -147,14 +144,20 @@ sub new {
     return $self;
 }
 
-=head2 value
+=head2 value ( [ $value ] )
 
-Return the value of this identifier.
+Get and/or set the value of this identifier.
 
 =cut
 
 sub value {
     my $self = shift;
+    my $value = shift;
+
+    if (defined $value) {
+        $self->{value} = $value;
+    }
+
     return $self->{value};
 }
 
