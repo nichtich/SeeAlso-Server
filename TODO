@@ -1,8 +1,7 @@
 TODO
 
-- Redesign constructor if SeeAlso::Identifier and add a setValue-method
 - Better error handling if SeeAlso::Source fails
 - Support OpenSearch Description
-- Add SeeAlso::Test
+- Add SeeAlso::Test for testing SeeAlso services
 - ...
 
