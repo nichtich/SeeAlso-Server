@@ -6,8 +6,6 @@ use Carp;
 
 SeeAlso::Identifier - an identifier passed to a SeeAlso-Server
 
-=cut
-
 =head1 DESCRIPTION
 
 The query to a SeeAlso (and other unAPI) server is just an identifier.
@@ -112,10 +110,9 @@ that contains of letters only and is normalized to lowercase:
 
 sub new {
     my ($class) = shift;
-    my $self;
 
     if ($#_ <= 0) {
-        $self = bless {
+        my $self = bless {
             value => ""
         }, $class;
         $self->value( shift );
