@@ -39,14 +39,14 @@ Check for validness.
 
 sub valid() {
     my $self = shift;
-# TODO
-#  /^(1)([0-4])([0-9])([0-9])([0-9])([0-9])([0-9])([0-9])([0-9X])$/
-#$sum =0;
-#  map?
-#  for(i=1; i<9; i++) {
-#  $sum += match[$i] * ($i+1);
-#  }
-#  $sum %= 11;
-#  if ($sum == 10) $sum = 'X';
-#  return $match[0] eq $sum;
+    my $value = $self->{value};
+    # TODO: optimize
+    return unless
+        $value =~ /^(1)([0-4])([0-9])([0-9])([0-9])([0-9])([0-9])([0-9])([0-9X])$/;
+    my $sum = $1*2 + $2*3 + $3*4 + $4*5 + $5*6 + $6*7 + $7*8 + $8*9;
+    $sum %= 11;
+    $sum = 'X' if $sum == 10;
+    return $sum eq $9;
 }
+
+1;

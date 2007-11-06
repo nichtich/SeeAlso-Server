@@ -40,6 +40,9 @@ for usage of a SeeAlso Server.
 
   print $http;
 
+To create a special server, you probably have to create subclasses of
+L<SeeAlso::Source> and L<SeeAlso::Identifier>.
+
 =head1 METHODS
 
 =head2 new ( [%params] )

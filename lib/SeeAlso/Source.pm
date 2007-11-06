@@ -11,6 +11,7 @@ SeeAlso::Source - An source of OpenSearch Suggestions reponses
 =head1 SYNOPSIS
 
   my $source = SeeAlso::Source->new();
+  my $source = SeeAlso::Source->new( sub { ... } );
 
 =cut
 
@@ -18,6 +19,8 @@ SeeAlso::Source - An source of OpenSearch Suggestions reponses
 =head2 new
 
 Create a new source.
+You can provide a query method (mQuery). The query method gets a
+L<SeeAlso::Identifier> object and must return a L<SeeAlso::Response>.
 
 =cut
 
@@ -41,6 +44,7 @@ returns a L<SeeAlso::Response> object or
 undef.
 
 TODO: what about failing query functions?
+what if the result is not SeeAlso::Response?
 Where to catch errors?
 
 =cut
