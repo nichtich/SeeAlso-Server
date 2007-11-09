@@ -25,7 +25,7 @@ sub new {
     my $self = bless {
         dbh => undef,
         sth => undef,
-        new => $attr{new}
+        new => $attr{new},
         errors => ()
     }, $class;
 
