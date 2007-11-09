@@ -2,7 +2,7 @@
 
 use strict;
 
-use Test::More tests => 9;
+use Test::More tests => 12;
 use SeeAlso::Source;
 use SeeAlso::Identifier;
 
@@ -12,6 +12,13 @@ my $source = SeeAlso::Source->new();
 ok ( ! $source->hasErrors(), "no errors" );
 ok ( ! %{ $source->description() }, "no description" );
 ok ( ! defined $source->description("ShortName") , "no description" );
+
+$source->description("ShortName","Foo");
+ok ( $source->description("ShortName") eq "Foo", "set description" );
+$source->description("LongName","Foobar");
+ok ( $source->description("LongName") eq "Foobar", "set description (2)" );
+$source->description("ShortName","doz");
+ok ( $source->description("ShortName") eq "doz", "set description (3)" );
 
 $source = SeeAlso::Source->new( sub { return 99; } );
 my $item = SeeAlso::Identifier->new();

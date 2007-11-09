@@ -98,16 +98,22 @@ Source of the data (dc:source)
 sub description {
     my $self = shift;
     my $key = shift;
+    my $value = shift;
 
-    if ( $self->{description} ) {
+    if (defined $value) {
+        if ($self->{description}) {
+            $self->{description}{$key} = $value;
+        } else {
+            my %description = ($key => $value);
+            $self->{description} = \%description;
+        }
+    } elsif ( $self->{description} ) {
         return $self->{description}{$key} if defined $key;
         return $self->{description};
     } else { # this is needed if no description was defined
         my %hash;
         return \%hash;
     }
-
-
 }
 
 =head2 errors
