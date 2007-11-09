@@ -29,12 +29,9 @@ sub new {
     croak("parameter to SeeAlso::Source->new must be a method")
         if defined $query and ref($query) ne "CODE";
 
-    my %descr = ();
-    %descr = %description if %description;
-
     my $self = bless {
         mQuery => $query,
-        description => \%descr,
+        description => \%description,
         errors => undef
     }, $class;
 
@@ -62,11 +59,11 @@ sub query {
     }
 }
 
-=head2 description ( [ %desription ] )
+=head2 description ( [ $key ] )
 
-Returns additional description about this source in a hash. The elements
-are defined according to elements in an OpenSearch description document.
-Up to now these are:
+Returns additional description about this source in a hash (no key provided)
+or a specific element of the description. The elements are defined according
+to elements in an OpenSearch description document. Up to now they are:
 
 =over
 
@@ -102,13 +99,15 @@ sub description {
     my $self = shift;
     my $key = shift;
 
-    return $self->{description}{$key} if defined $key;
-    #my %description = @_;
+    if ( $self->{description} ) {
+        return $self->{description}{$key} if defined $key;
+        return $self->{description};
+    } else { # this is needed if no description was defined
+        my %hash;
+        return \%hash;
+    }
 
-   # $self->{description} = \%description
-   #     if ( %description );
 
-    return $self->{description} || ();
 }
 
 =head2 errors
