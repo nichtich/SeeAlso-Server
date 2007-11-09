@@ -29,10 +29,13 @@ sub new {
     croak("parameter to SeeAlso::Source->new must be a method")
         if defined $query and ref($query) ne "CODE";
 
+    my %descr = ();
+    %descr = %description if %description;
+
     my $self = bless {
         mQuery => $query,
-        description => %description ? \%description : (),
-        errors => ()
+        description => \%descr,
+        errors => undef
     }, $class;
 
     return $self;
@@ -97,10 +100,13 @@ Source of the data (dc:source)
 
 sub description {
     my $self = shift;
-    my %description = @_;
+    my $key = shift;
 
-    $self->{description} = \%description
-        if ( %description );
+    return $self->{description}{$key} if defined $key;
+    #my %description = @_;
+
+   # $self->{description} = \%description
+   #     if ( %description );
 
     return $self->{description};
 }

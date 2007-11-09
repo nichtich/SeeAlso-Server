@@ -10,6 +10,8 @@ SeeAlso::DBISource - Returns links stored in an SQL database
 
 =cut
 
+use SeeAlso::Source;
+
 use vars qw(@ISA);
 @ISA = qw( SeeAlso::Source );
 
@@ -25,15 +27,18 @@ sub new {
     my $self = bless {
         dbh => undef,
         sth => undef,
-        new => $attr{new},
         errors => ()
     }, $class;
 
+    $self->{new} = $attr{new} if %attr;
     undef $attr{new} if defined $attr{new}; # ?
 
-    # database connection
+    # database connection (TODO: stop message to STDERR)
     $self->{dbh} = DBI->connect($dsi, $username, $auth, %attr);
-    croak("Failed to establish DBI connection") unless $self->{dbh};
+    if (not $self->{dbh}) {
+        $self->errors("Failed to establish DBI connection");
+        return $self;
+    }
 
     # prepared statement
     # TODO: check '$table' and LIMIT $limit
@@ -42,7 +47,10 @@ sub new {
         $query = "SELECT DISTINCT title, description, url FROM $table WHERE identifier = ?";
     }
     $self->{sth} = $self->{dbh}->prepare($query);
-    croak("Failed to create prepared statement") unless $self->{sth};
+    if (not $self->{sth}) {
+        $self->errors("Failed to create prepared statement");
+        return $self;
+    }
 
     return $self;
 }
@@ -59,8 +67,10 @@ sub query {
 
     my $response = SeeAlso::Response->new( $identifier->normalized );
     return $response unless $response->hasQuery;
+    return $response unless $self->connected();
 
     my $sth = $self->{sth};
+
 
     eval {
         $sth->execute( $identifier->indexed );
@@ -79,5 +89,16 @@ sub query {
 
     return $response;
  }
+
+=head2 connected
+
+Return whether the database connection is established.
+
+=cut
+
+sub connected {
+    my $self = shift;
+    return $self->{dbh} && $self->{sth};
+}
 
 1;
