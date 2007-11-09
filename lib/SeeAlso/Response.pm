@@ -13,16 +13,24 @@ my $json = JSON->new(autoconv=>0);
 
 =head2 new ( [ $query ] )
 
-Creates a new L<SeeAlso::Response> object. You may
-provide a query string as parameter.
+Creates a new L<SeeAlso::Response> object. You may provide a query
+variable as parameter. If the query variable is an instance of
+L<SeeAlso::Identifier>, the return of its C<normalized> method is used.
 
 =cut
 
 sub new {
     my ($class, $query) = @_;
 
+    $query = "" unless defined $query;
+    if (UNIVERSAL::isa( $query, 'SeeAlso::Identifier' )) {
+        $query = $query->normalized();
+    } else {
+        $query = "$query"; # convert to string
+    }
+
     my $self = bless {
-        'query' => defined $query ? "$query" : "",
+        'query' => $query,
         'completions' => [],
         'descriptions' => [],
         'urls' => []

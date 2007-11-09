@@ -15,7 +15,7 @@ use SeeAlso::Response;
 use SeeAlso::Source;
 
 use vars qw($VERSION);
-$VERSION = "0.2";
+$VERSION = "0.3";
 
 =head1 DESCRIPTION
 
@@ -182,7 +182,7 @@ sub query {
     undef $callback unless defined $callback && $callback =~ /[a-zA-Z\'\"\[\]\.\(\)]+/;
 
     if ($format eq 'opensearchdescription') {
-        $http = $self->openSearchDescription();
+        $http = $self->openSearchDescription( $source );
         if ($http) {
             $http = $cgi->header( -status => 200, -type => 'application/opensearchdescription+xml; charset: utf-8' ) . $http;
             return $http;
@@ -190,17 +190,26 @@ sub query {
     }
 
     # If everything is ok up to here, there must not be an error thrown
-    my $response;
-    # TODO: better error handling / logging, for instance $source->error or $response->error
+
+    my ($response, $error);
     eval {
         $response = $source->query($identifier);
     };
-    if ($@) {
-        print STDERR "Response failed!";
+    $error = $@;
+    if (not defined $error and $source->hasErrors()) {
+        $error = $source->errors();
     }
-    if (defined $response && !UNIVERSAL::isa($response, 'SeeAlso::Response')) {
-        print STDERR ref($source) . "->query must return a SeeAlso::Response object but it did return '" . ref($response) . "'";
+    if ($error) {
+        undef $response;
+    } else {
+        if (defined $response && !UNIVERSAL::isa($response, 'SeeAlso::Response')) {
+            $error = ref($source) . "->query must return a SeeAlso::Response object but it did return '" . ref($response) . "'";
+            undef $response;
+        }
     }
+
+    # TODO: where to write/log the error to?
+
     $response = SeeAlso::Response->new() unless defined $response;
 
 
@@ -219,14 +228,17 @@ sub query {
     return $http;
 }
 
-=head2 openSearchDescription
+=head2 openSearchDescription ( [$source] )
 
-Returns an OpenSearch Description document. Not fully implemented yet.
+Returns an OpenSearch Description document.
+If you pass a L<SeeAlso::Source> instance,
+additional information will be printed.
 
 =cut
 
 sub openSearchDescription {
     my $self = shift;
+    my $source = shift;
 
     return if defined $self->{description} && $self->{description} eq ""; # switched off
     return $self->{description} if ref($self->{description}) eq "SCALAR"; # fixed string
@@ -240,17 +252,42 @@ sub openSearchDescription {
         return "$xml";     # TODO: if scalar?
     }
 
+    my $cgi = $self->{cgi};
+    my $domain = $cgi->virtual_host() || $cgi->server_name();
+    my $baseURL = "http://" . $domain . $cgi->script_name(); # TODO: what about https?
+
     my @xml = '<?xml version="1.0" encoding="UTF-8"?>';
-    push @xml, '<OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/">';
-    #<ShortName>Web Search</ShortName>
-    #<Description>Use Example.com to search the Web.</Description>
-    #<Tags>example web</Tags>
-    #<Contact>admin@example.com</Contact>
-    #   <Url type="application/rss+xml" template="http://example.com/?q={searchTerms}&amp;pw={startPage?}&amp;format=rss"/>
-    my $template = "";
-    $template .= "?id={searchTerms}&format=seealso";
+    push @xml, '<OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/">';
+
+    if ($source and UNIVERSAL::isa($source, "SeeAlso::Source")) {
+        my %descr = %{ $source->description() };
+
+        my $shortName = $descr{"ShortName"}; # TODO: shorten to 16 chars maximum
+        push @xml, "  <ShortName>" . xmlencode( $shortName ) . "</ShortName>"
+            if defined $shortName;
+
+        my $longName = $descr{"LongName"}; # TODO: shorten to 48 chars maximum
+        push @xml, "  <LongName>" . xmlencode( $longName ) . "</LongName>"
+            if defined $longName;
+
+        my $description = $descr{"Description"}; # TODO: shorten to 1024 chars maximum
+        push @xml, "  <Description>" . xmlencode( $description ) . "</Description>"
+            if defined $description;
+
+        $baseURL = $descr{"BaseURL"}
+            if defined $descr{"BaseURL"};
+
+        my $modified = $descr{"DateModified"};
+        push @xml, "  <dcterms:modified>" . xmlencode( $shortName ) . "</dcterms:modified>"
+            if defined $modified;
+
+        my $source = $descr{"Source"};
+        push @xml, "  <dc:source" . xmlencode( $shortName ) . "</dc:source>"
+            if defined $source;
+    }
+    my $template = "$baseURL?id={searchTerms}&format=seealso";
     push @xml, "  <Url type=\"application/x-suggestions+json\" template=\"$template\"/>";
-    # TODO: what about th callback?
+    # TODO: what about the callback parameter?
     push @xml, "</OpenSearchDescription>";
 
     return join("\n", @xml);

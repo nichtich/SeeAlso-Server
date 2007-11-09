@@ -26,6 +26,7 @@ sub new {
         dbh => undef,
         sth => undef,
         new => $attr{new}
+        errors => ()
     }, $class;
 
     undef $attr{new} if defined $attr{new}; # ?
@@ -51,8 +52,6 @@ sub new {
 Gets a L<SeeAlso::Identifier> object and returns
 a L<SeeAlso::Response> object or undef.
 
-Mayb raise an error!
-
 =cut
 
 sub query {
@@ -63,17 +62,19 @@ sub query {
 
     my $sth = $self->{sth};
 
-    # TODO: try, catch
-    $sth->execute( $identifier->indexed );
+    eval {
+        $sth->execute( $identifier->indexed );
 
-    # TODO: or return $result; # TODO: log $sth->errstr / "RaiseError"
-
-    while ( my @row = $sth->fetchrow_array ) {
-        if ($self->{new}) {
-          $response->add($row[0],$row[1],$row[2]);
-        } else {
-          $response->add($row[0],"",$row[1]);
+        while ( my @row = $sth->fetchrow_array ) {
+            if ($self->{new}) {
+                $response->add($row[0],$row[1],$row[2]);
+            } else {
+                $response->add($row[0],"",$row[1]);
+            }
         }
+    };
+    if ($@) {
+        $self->errors($@);
     }
 
     return $response;

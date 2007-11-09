@@ -1,9 +1,13 @@
 #!/usr/bin/perl
 
 #
-# This script can be used to test whether SeeAlso::Server
-# is installed properly. It implements a simple SeeAlso-Service
-# that always returns ????what????
+# This script can be used to test whether the SeeAlso::Server library
+# has been installed properly. Just put it in your Webserver's cgi-bin
+# or another place and make sure the Webserver can execute it as a
+# perl script.
+#
+# This test server returns the identifier and a half the
+# identifier's length number of links.
 #
 
 use CGI::Carp qw(fatalsToBrowser set_message);
@@ -36,12 +40,20 @@ use CGI;
 my $cgi = CGI->new();
 my $server = SeeAlso::Server->new( cgi => $cgi );
 
-# TODO: set id-query
 my $source = SeeAlso::Source->new(
-    sub { return SeeAlso::Response->new(); }
+    sub {
+        my $identifier = shift;
+        my $response = SeeAlso::Response->new($identifier);
+
+        my $l = int ((length $identifier->value) / 2);
+        for ($i=0; $i<$l; $i++) {
+            $response->add($i,"","http://www.google.com/q=$l+".$identifier->value);
+        }
+
+        return $response;
+    },
+    ( "ShortName" => "test server" )
 );
 
-# $id, $format and $callback will be determined automatically
 my $http = $server->query( $source );
-
 print $http;

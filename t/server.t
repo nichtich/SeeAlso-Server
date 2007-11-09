@@ -53,9 +53,10 @@ $http = $s->query($source, $identifier, 'foo');
 ok ( $http eq $xml200, 'List of formats (because no identifier)');
 
 $source = SeeAlso::Source->new(
-    sub { my $id = shift; return SeeAlso::Response->new( $id->normalized ); }
+    sub { my $id = shift; return SeeAlso::Response->new( $id->normalized() ); }
 );
 $identifier = SeeAlso::Identifier->new("xyz");
+
 $http = $s->query($source, $identifier, 'seealso');
 ok ( $http =~ /^Status: 404[^\[]+\["xyz",\[\],\[\],\[\]\]$/m, 'No results' );
 

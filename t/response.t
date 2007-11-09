@@ -2,7 +2,7 @@
 
 use strict;
 
-use Test::More tests => 7;
+use Test::More tests => 8;
 
 use SeeAlso::Response;
 
@@ -24,3 +24,8 @@ ok( $r->toJSON() eq '["123",["foo","faz"],["baz",""],["bar",""]]', 'simple respo
 
 ok ( $r->size == 2, 'test size' );
 
+use SeeAlso::Identifier;
+my $id = SeeAlso::Identifier->new( 'normalized' => sub { lc shift; } );
+$id->value("Hallo");
+$r = SeeAlso::Response->new( $id );
+ok( $r->toJSON() eq '["hallo",[],[],[]]', 'SeeAlso::Identifier as parameter');
