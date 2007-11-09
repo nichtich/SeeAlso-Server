@@ -108,7 +108,7 @@ sub description {
    # $self->{description} = \%description
    #     if ( %description );
 
-    return $self->{description};
+    return $self->{description} || ();
 }
 
 =head2 errors
