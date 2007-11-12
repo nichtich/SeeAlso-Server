@@ -29,6 +29,7 @@ sub new {
     }, $class;
 
     $self->{mQuery} = \&SeeAlso::Source::DBI::db_query;
+    $self->{mQuerySelf} = 1;
 
     $self->{new} = $attr{new} if %attr;
 
@@ -65,7 +66,8 @@ or may throw an error. Do not directly call this but with the method C<query>!
 =cut
 
 sub db_query {
-    my ($self, $identifier) = @_;
+    my $self = shift;
+    my $identifier = shift;
 
     my $response = SeeAlso::Response->new( $identifier->normalized );
     return $response unless $response->hasQuery;

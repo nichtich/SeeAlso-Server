@@ -54,7 +54,12 @@ sub query {
 
     if (defined $self->{mQuery}) {
         eval {
-            $response = &{$self->{mQuery}}($identifier);
+            if ($self->{mQuerySelf}) {
+                # TODO: this is ugly - better redesign Source::DBI!
+                $response = &{$self->{mQuery}}($self, $identifier);
+            } else {
+                $response = &{$self->{mQuery}}($identifier);
+            }
             if ( ! UNIVERSAL::isa($response, "SeeAlso::Response") ) {
                 $self->errors("Query method did not return SeeAlso::Response!");
                 undef $response;

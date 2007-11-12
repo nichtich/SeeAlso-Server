@@ -222,6 +222,16 @@ sub query {
             $http .= $cgi->header( -status => $status, -type => 'application/x-suggestions+json; charset: utf-8' );
             $http .= $response->toJSON();
         }
+    } elsif ( $format eq "debug") {
+        use Data::Dumper;
+        $http .= $cgi->header( -type => 'text/html; charset: utf-8' );
+        my $status = $response->size ? 200 : 404;
+        $http .= "Status: $status\n";
+        $http .= "Response: " . Dumper($response) . "\n";
+        $http .= "JSON Response: " . $response->toJSON($callback) . "\n";
+        if ($source->hasErrors) {
+            $http .= "Errors:\n* " . join("\n* ", @{ $source->errors() }) . "\n";
+        }
     } else {
         $http = $self->listFormats($response);
     }
