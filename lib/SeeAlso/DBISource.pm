@@ -25,15 +25,17 @@ sub new {
     my ($class, $dsi, $table, $username, $auth, %attr) = @_;
 
     my $self = bless {
-        dbh => undef,
-        sth => undef,
-        errors => ()
+        errors => undef
     }, $class;
 
+    $self->{mQuery} = \&SeeAlso::DBISource::db_query;
+
     $self->{new} = $attr{new} if %attr;
+
+    # TODO: remove this (only for backwards compatibility)
     undef $attr{new} if defined $attr{new}; # ?
 
-    # database connection (TODO: stop message to STDERR)
+    # database connection (TODO: stop messages to STDERR)
     $self->{dbh} = DBI->connect($dsi, $username, $auth, %attr);
     if (not $self->{dbh}) {
         $self->errors("Failed to establish DBI connection");
@@ -41,8 +43,8 @@ sub new {
     }
 
     # prepared statement
-    # TODO: check '$table' and LIMIT $limit
-    my $query = "SELECT DISTINCT title, url FROM $table WHERE identifier = ?";  
+    # TODO: check '$table' and add LIMIT $limit
+    my $query = "SELECT DISTINCT title, url FROM $table WHERE identifier = ?";
     if ($self->{new}) {
         $query = "SELECT DISTINCT title, description, url FROM $table WHERE identifier = ?";
     }
@@ -55,14 +57,14 @@ sub new {
     return $self;
 }
 
-=head2 query ( $identifier )
+=head2 db_query ( $identifier )
 
-Gets a L<SeeAlso::Identifier> object and returns
-a L<SeeAlso::Response> object or undef.
+Gets a L<SeeAlso::Identifier> object and returns a L<SeeAlso::Response> object
+or may throw an error. Do not directly call this but with the method C<query>!
 
 =cut
 
-sub query {
+sub db_query {
     my ($self, $identifier) = @_;
 
     my $response = SeeAlso::Response->new( $identifier->normalized );
@@ -71,20 +73,13 @@ sub query {
 
     my $sth = $self->{sth};
 
-
-    eval {
-        $sth->execute( $identifier->indexed );
-
-        while ( my @row = $sth->fetchrow_array ) {
-            if ($self->{new}) {
-                $response->add($row[0],$row[1],$row[2]);
-            } else {
-                $response->add($row[0],"",$row[1]);
-            }
+    $sth->execute( $identifier->indexed );
+    while ( my @row = $sth->fetchrow_array ) {
+        if ($self->{new}) {
+            $response->add($row[0],$row[1],$row[2]);
+        } else {
+            $response->add($row[0],"",$row[1]);
         }
-    };
-    if ($@) {
-        $self->errors($@);
     }
 
     return $response;

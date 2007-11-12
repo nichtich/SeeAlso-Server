@@ -7,7 +7,7 @@ my $json = JSON->new(autoconv=>0);
 
 =head1 DESCRIPTION
 
-...
+This class models an OpenSearch Suggestions Response.
 
 =head1 METHODS
 
@@ -42,7 +42,7 @@ sub new {
 
 =head2 add ( $completion [, $description [, $url ] ] )
 
-...
+Add an item to the result set.
 
 =cut
 

@@ -14,6 +14,7 @@ my $cgi = CGI->new();
 my $server = SeeAlso::Server->new( cgi => $cgi );
 
 my $source = SeeAlso::DBISource->new("DBI:mysql:database=undefined","","","");
+$source->description("ShortName","Example server");
 
 my $http = $server->query( $source );
 print $http;

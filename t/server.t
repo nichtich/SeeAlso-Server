@@ -41,7 +41,6 @@ ok( $s->listFormats($r) eq $xml200noosd, 'listFormats => 200 without OpenSearch 
 close XML;
 
 
-
 use SeeAlso::Source;
 $s = SeeAlso::Server->new( cgi=>$cgi );
 my $source = SeeAlso::Source->new();
@@ -72,7 +71,7 @@ $source = SeeAlso::Source->new(
     }
 );
 $http = $s->query($source, $identifier, 'seealso');
-ok ( $http =~ /^Status: 200[^\[]+\["xyz",\["test"\],\[""\],\[""\]\]$/m, 'JSON Results' );
+ok ( not $source->hasErrors() and $http =~ /^Status: 200[^\[]+\["xyz",\["test"\],\[""\],\[""\]\]$/m, 'JSON Results' );
 
 $http = $s->query($source, $identifier, 'foo');
 ok ( $http eq $xml300, 'Result but not right format');

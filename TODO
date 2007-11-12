@@ -1,8 +1,25 @@
-TODO
+TODO (first release)
+- clean up the code
+-- look for TODOs
+-- look for missing documentation 
+- Full english documentation
 
-- Better error handling if SeeAlso::Source fails
-- Support OpenSearch Description
-- Add SeeAlso::Test for testing SeeAlso services
-- ...
+almost done
 
+- Add SeeAlso::DBIServer->import
+- Reinstall existing servers (and remove "new" from DBISource then!)
+- Add Wikipedia extractor as example (ISBN2Wikipedia should be enough)
+- Somehow point to the JavaScript clients
+- add test of SeeAlso::DBISource with SQLite
+- DBISource => SeeAlso::Source::DBI
+
+TODO (later releases)
+- Add SeeAlso::Test for testing SeeAlso services 
+-- Create a management object (needed for testing and quality of service)
+- Add logging and better error handling
+-- Statistics/Logging-Source-Pipe
+- Better support of OpenSearch Description (more fields)
+- Add SeeAlso::Discovery to discover servers via OpenSearch Description 
 - Support more of the OpenSearch Description fields
+- Run as a real server (on a port of your choice) : better performance?
+

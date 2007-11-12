@@ -9,7 +9,7 @@ use SeeAlso::Response;
 my $r = SeeAlso::Response->new();
 ok( $r->toJSON() eq '["",[],[],[]]', 'empty response');
 
-ok ( !$r->size, 'test empty' );
+ok ( $r->size == 0, 'test empty' );
 
 ok( $r->toJSON('call-me') eq 'call-me(["",[],[],[]]);', 'callback');
 

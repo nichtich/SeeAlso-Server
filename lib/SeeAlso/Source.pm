@@ -18,13 +18,13 @@ SeeAlso::Source - An source of OpenSearch Suggestions reponses
 
 =head2 new ( $query_method [, %description ] )
 
-Create a new source. You can provide a query method (mQuery). The query method gets a
-L<SeeAlso::Identifier> object and must return a L<SeeAlso::Response>.
+Create a new source. You can provide a query method (mQuery). The query method
+gets a L<SeeAlso::Identifier> object and must return a L<SeeAlso::Response>.
 
 =cut
 
 sub new {
-    my ($class, $query, %description) = @_; #shift;
+    my ($class, $query, %description) = @_;
 
     croak("parameter to SeeAlso::Source->new must be a method")
         if defined $query and ref($query) ne "CODE";
@@ -40,23 +40,33 @@ sub new {
 
 =head2 query ( $identifier )
 
-Gets a L<SeeAlso::Identifier> object and
-returns a L<SeeAlso::Response> object or
-undef.
+Gets a L<SeeAlso::Identifier> object and returns a L<SeeAlso::Response> object.
+If you override this method, make sure that errors get catched!
 
-TODO: what about failing query functions?
-what if the result is not SeeAlso::Response?
-Where to catch errors?
+By default an empty result always contains the normalized form of the identifier.
 
 =cut
 
 sub query {
     my $self = shift;
-     if (defined $self->{mQuery}) {
-        return &{$self->{mQuery}}(@_);
-    } else {
-        return SeeAlso::Response->new();
+    my $identifier = shift;
+    my $response;
+
+    if (defined $self->{mQuery}) {
+        eval {
+            $response = &{$self->{mQuery}}($identifier);
+            if ( ! UNIVERSAL::isa($response, "SeeAlso::Response") ) {
+                $self->errors("Query method did not return SeeAlso::Response!");
+                undef $response;
+            }
+        };
+        if ($@) {
+            $self->errors($@);
+        }
     }
+    return $response = SeeAlso::Response->new( $identifier->normalized )
+        unless defined $response;
+    return $response;
 }
 
 =head2 description ( [ $key ] )
@@ -138,5 +148,13 @@ sub hasErrors {
     my $self = shift;
     return defined $self->{errors} and scalar @{ $self->{errors} };
 }
+
+=head1 TODO
+
+The description method should support more fields and add a check for
+known field values (maybe a special OpenSearchDescription class should
+be created).
+
+=cut
 
 1;
