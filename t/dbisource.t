@@ -3,12 +3,14 @@
 use strict;
 
 use Test::More tests => 1;
-use SeeAlso::DBISource;
+use SeeAlso::Source::DBI;
 use SeeAlso::Identifier;
 
 my $source;
 
 
-$source = SeeAlso::DBISource->new("DBI:mysql:database=foo","","","");
+$source = SeeAlso::Source::DBI->new("DBI:mysql:database=foo","","","");
 
-ok( ref($source) eq "SeeAlso::DBISource", "constructor" );
+ok( ref($source) eq "SeeAlso::Source::DBI", "constructor" );
+
+# TODO: create a SQLite database and access it for testing

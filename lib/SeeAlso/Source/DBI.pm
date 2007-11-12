@@ -1,4 +1,4 @@
-package SeeAlso::DBISource;
+package SeeAlso::Source::DBI;
 
 use strict;
 use Carp qw(croak);
@@ -6,7 +6,7 @@ use DBI;
 
 =head1 NAME
 
-SeeAlso::DBISource - Returns links stored in an SQL database
+SeeAlso::Source::DBI - Returns links stored in an SQL database
 
 =cut
 
@@ -28,7 +28,7 @@ sub new {
         errors => undef
     }, $class;
 
-    $self->{mQuery} = \&SeeAlso::DBISource::db_query;
+    $self->{mQuery} = \&SeeAlso::Source::DBI::db_query;
 
     $self->{new} = $attr{new} if %attr;
 
