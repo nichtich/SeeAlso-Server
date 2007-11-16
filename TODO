@@ -18,4 +18,6 @@ TODO (later releases)
 - Add SeeAlso::Discovery to discover servers via OpenSearch Description 
 - Support more of the OpenSearch Description fields
 - Run as a real server (on a port of your choice) : better performance?
-
+- Add SeeAlso::Source::Union
+- Add SeeAlso::Source::Cache
+- Add XSLT to OpenSearch Description
