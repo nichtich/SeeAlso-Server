@@ -24,8 +24,12 @@ Create a new SeeAlso server with a given database connection.
 sub new {
     my ($class, $dsi, $table, $username, $auth, %attr) = @_;
 
+    croak("database table must only contain letters, digitas and/or underscore")
+        unless $table =~ /[a-z0-9_]+/;
+
     my $self = bless {
-        errors => undef
+        errors => undef,
+        table => $table
     }, $class;
 
     $self->{mQuery} = \&SeeAlso::Source::DBI::db_query;
@@ -36,7 +40,7 @@ sub new {
     # TODO: remove this (only for backwards compatibility)
     undef $attr{new} if defined $attr{new}; # ?
 
-    # database connection (TODO: stop messages to STDERR)
+    # database connection (TODO: stop messages to STDERR (by {'RaiseError' => 1}?))
     $self->{dbh} = DBI->connect($dsi, $username, $auth, %attr);
     if (not $self->{dbh}) {
         $self->errors("Failed to establish DBI connection");
@@ -96,6 +100,37 @@ Return whether the database connection is established.
 sub connected {
     my $self = shift;
     return $self->{dbh} && $self->{sth};
+}
+
+=head2 load_file ( $filename )
+
+Load a local file into the database.
+
+=cut
+
+sub load_file {
+    my $self = shift;
+    my $filename = shift;
+
+    croak("Not connected") unless $self->connected;
+    croak("Cannot read input file $filename!")
+        unless defined $filename and (-r $filename);
+
+    my $dbh = $self->{dbh};
+    my $table = $self->{table};
+
+    $dbh->do( "DROP TABLE IF EXISTS $table" );
+
+    $dbh->do( "CREATE TABLE $table (
+        identifier  varchar(255) not null default '',
+        title       varchar(255) not null default '',
+        description varchar(255) not null default '',
+        url         varchar(255) not null default ''
+      ) engine=InnoDB");
+
+    $dbh->do( "LOAD DATA LOCAL INFILE " . $dbh->quote($filename) . " INTO TABLE $table" );
+
+    return 1;
 }
 
 1;

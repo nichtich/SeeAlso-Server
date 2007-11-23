@@ -21,3 +21,4 @@ TODO (later releases)
 - Add SeeAlso::Source::Union
 - Add SeeAlso::Source::Cache
 - Add XSLT to OpenSearch Description
+- Add an example of a multilangual source with equal identifiers: LibraryThing
