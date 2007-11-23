@@ -7,7 +7,7 @@ TODO (first release)
 - Reinstall existing servers (and remove "new" from Source::DBI then!)
 - Add Wikipedia extractor as example (ISBN2Wikipedia should be enough)
 - Somehow point to the JavaScript clients
-- add test of SeeAlso::DBISource with SQLite
+- add test of SeeAlso::Source::DBI with SQLite
 
 TODO (later releases)
 - Add SeeAlso::Test for testing SeeAlso services 
@@ -22,3 +22,13 @@ TODO (later releases)
 - Add SeeAlso::Source::Cache
 - Add XSLT to OpenSearch Description
 - Add an example of a multilangual source with equal identifiers: LibraryThing
+- Test support of the description field in a response
+- Add date of last DBI-update in the description (from database?)
+- More Unicode (UTF-8) testing and hints
+- Increase performance (SQL-database index?)
+- Better/more loading mechanism for SeeAlso::Source::DBI
+-- detect/remove full duplicates
+- Better debug-format (and document it)
+- support of XSLT for OpenSearch Descriptions and unAPI formats
+- restrict access of cgi server by referrer, IP, etc. (better in .htaccess ?)
+
