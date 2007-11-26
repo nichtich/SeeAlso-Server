@@ -38,29 +38,22 @@ my ($infile, $database) = @ARGV;
 (-r $infile) || pod2usage("Cannot read input file $infile");
 
 ($database =~ /^([^:@]+)(:[^@]+)?@([^:]+):([^:]+)(:.*)?$/)
-#($database =~ /^([^:@]+)()@([^:]+):([^:]+)(:.*)?$/)
     || pod2usage("Second argument must specify a full database connection");
 
-print "1: " . ($1||"") . "\n";
-print "2: " . ($2||"") . "\n";
-print "3: " . ($3||"") . "\n";
-print "4: " . ($4||"") . "\n";
-print "5: " . ($5||"") . "\n";
-
-#exit;
 my $mysql_user = $1;
-my $mysql_pw = $2 || ""; $mysql_pw =~ s/^://;
+my $mysql_pw   = $2 || "";
+my $mysql_host = "localhost";
+my $mysql_db = $3;
+my $mysql_table = $4;
+if (defined $5) {
+  $mysql_host = $3;
+  $mysql_db = $4;
+  $mysql_table = $5;
+}
+$mysql_pw =~ s/^://;
 
-my ($mysql_host, $mysql_db, $mysql_table) = ("localhost", $3, $4);
-#if (defined $5) {
-#($mysql_host, $mysql_db, $mysql_table)  = ($3, $4, $5) ;
-#}
-
-print "$mysql_user $mysql_pw $mysql_host $mysql_db $mysql_table\n";
-
-exit;
-
-($mysql_table && $mysql_table =~ /^[a-z0-9_]+$/) || pod2usage("Please specify a valid table name!");
+($mysql_table && $mysql_table =~ /^[a-z0-9_]+$/) 
+    || pod2usage("Please specify a valid table name!");
 
 $logfile = "-" if (not defined $logfile) and not $quietmode;
 
@@ -72,44 +65,22 @@ if (defined $logfile) {
     }
 }
 
-# TODO: parse mysql connection parameter
-# TODO: mysql-conf aus versch. quellen lesen
-
-# TODO: get from command line
-
-# TODO: mysql injection!
-# for testing only
-$mysql_host = "localhost";
-$mysql_user = "seealso";
-$mysql_db = "seealso";
-$mysql_pw = "";
-
 use DBI;
-
-#my($dsi, $username, $auth, %attr)
 
 my $db = SeeAlso::Source::DBI->new( "DBI:mysql:database=$mysql_db;host=$mysql_host", $mysql_user, $mysql_pw );
 if ($db->connected) {
-# TODO: validate mode (elements, length, URL-regexp...);
-print LOG "loading data from $infile\n" if $logfile;
-
-$db->load_file($infile);
+    print LOG "loading data from $infile\n" if $logfile;
+    $db->load_file($infile);
 } else {
     print STDERR "Failed to connect to database\n";
 }
-
-exit;
-
-#print LOG "loading link data\n" if $logfile;
-
-# TODO: print number of loaded links
 
 
 __END__
 
 =head1 SYNOPSIS
 
-load [options] inputfile user[:password]@[host:]database
+load [options] inputfile user[:password]@[host:]database:table
 
 =head1 OPTIONS
 
@@ -139,5 +110,8 @@ the following 2 to 4 fields:
 
 =back
 
+=head1 TODO
 
+Get DBI data from a configuration file. Add a validation mode/rum
+(elements, length, URL-regexp...). Log the number of loaded links.
 

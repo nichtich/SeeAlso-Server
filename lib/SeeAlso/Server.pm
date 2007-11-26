@@ -40,8 +40,34 @@ for usage of a SeeAlso Server.
 
   print $http;
 
-To create a special server, you probably have to create subclasses of
-L<SeeAlso::Source> and L<SeeAlso::Identifier>.
+To create a special server, you probably have to create subclasses
+of L<SeeAlso::Source> and L<SeeAlso::Identifier>.
+
+=head1 EXAMPLE
+
+The following script implements a minimal SeeAlso service:
+
+  use SeeAlso::Server;
+  use SeeAlso::Source;
+
+  sub query_method {
+      my $identifier = shift;
+      my $response = SeeAlso::Response->new($identifier);
+
+      # depending on $identifier->value do zero or more:
+      $response->add("..title..","..description..","..url..");
+
+      return $response;
+  }
+
+  my $server = SeeAlso::Server->new();
+  my @about = ( "ShortName" => "My simple SeeAlso service" );
+  my $source = SeeAlso::Source->new( \&query_method, @about );
+
+  print $server->query( $source );
+
+The Service will also fullfill the SeeAlso specification if the query 
+method breaks or does not return a L<SeeAlso::Response> object.
 
 =head1 METHODS
 

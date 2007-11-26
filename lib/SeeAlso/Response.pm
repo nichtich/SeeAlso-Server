@@ -11,16 +11,17 @@ This class models an OpenSearch Suggestions Response.
 
 =head1 METHODS
 
-=head2 new ( [ $query ] )
+=head2 new ( [ $query [, $completions, $descriptions, $urls ] )
 
-Creates a new L<SeeAlso::Response> object. You may provide a query
-variable as parameter. If the query variable is an instance of
-L<SeeAlso::Identifier>, the return of its C<normalized> method is used.
+Creates a new L<SeeAlso::Response> object (this is the same as an 
+OpenSearch Suggestions Response object). If the passed query parameter
+is an instance of L<SeeAlso::Identifier>, the return of its C<normalized> 
+method is used.
 
 =cut
 
 sub new {
-    my ($class, $query) = @_;
+    my ($class, $query, $completions, $descriptions, $urls) = @_;
 
     $query = "" unless defined $query;
     if (UNIVERSAL::isa( $query, 'SeeAlso::Identifier' )) {
@@ -36,13 +37,24 @@ sub new {
         'urls' => []
     }, $class;
 
+    if (defined $completions) {
+        croak ("bad arguments to SeeAlso::Response->new")
+            unless ref($completions) eq "ARRAY"
+                and defined $descriptions and ref($descriptions) eq "ARRAY"
+                and defined $urls and ref($urls) eq "ARRAY";
+        # TODO: check length and content of $completions, $descriptions, $urls
+        for (my $i=0; $i < @{$completions}; $i++) {
+            $self->add($$completions[$i], $$descriptions[$i], $$urls[$i]);
+        }
+    }
+
     return $self;
 }
 
 
 =head2 add ( $completion [, $description [, $url ] ] )
 
-Add an item to the result set.
+Add an item to the result set. All parameters must be strings.
 
 =cut
 

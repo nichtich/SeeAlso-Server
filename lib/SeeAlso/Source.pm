@@ -74,7 +74,7 @@ sub query {
     return $response;
 }
 
-=head2 description ( [ $key ] )
+=head2 description ( [ $key [, $value] ] )
 
 Returns additional description about this source in a hash (no key provided)
 or a specific element of the description. The elements are defined according

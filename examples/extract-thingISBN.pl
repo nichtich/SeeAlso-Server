@@ -6,11 +6,19 @@ use strict;
 
 extract-thingISBN.pl  - extract ISBN to LibraryThing mappings from thingISBN
 
+=head1 DESCRIPTION
+
+This script reads a thingISBN XML file (provided by LibraryThing) 
+and extracts a tabulator seperated data that can be loaded into
+a SeeAlso::Source::DBI database. You must set the preferred language 
+in the source code (default is German). Extracted data is written to
+standard output so you probably want to pipe it to a file. 
+
 =cut
 
 # pleasy select the language of your choice (by default it is German)
 my $base_url = "http://www.librarything.de";
-my $description_string = "Dieses Werk bei LibraryThing";
+my $title_string = "Dieses Werk bei LibraryThing";
 
 
 my $file = shift @ARGV;
@@ -47,9 +55,9 @@ sub end_element {
     if ($el->{Name} eq "isbn") {
         my @seealso = (
             $self->{text},
+            $title_string,
+            "",
             $base_url . "/work/" . $self->{work},
-            $description_string,
-            ""
         );
         print join("\t", @seealso). "\n";
     } else {

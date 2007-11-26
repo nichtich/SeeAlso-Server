@@ -1,34 +1,38 @@
 TODO (first release)
+- Reinstall existing servers (and remove "new" from Source::DBI then!)
+-- tar file
+- Somehow point to the JavaScript clients
+- => test and document ETL cycle at toolserver and esx-49/dl380...
+- add version number
+
+TODO (later releases)
+- convert bash scripts in the example directory to perl 
+- change load-mysql.pl to general load-dbi.pl
+- Add SeeAlso::Test for testing SeeAlso services 
+-- Add test of SeeAlso::Source::DBI with SQLite
 - clean up the code
 -- look for TODOs
 -- look for missing documentation 
-- Full english documentation
-- Add SeeAlso::DBIServer->import
-- Reinstall existing servers (and remove "new" from Source::DBI then!)
-- Add Wikipedia extractor as example (ISBN2Wikipedia should be enough)
-- Somehow point to the JavaScript clients
-- add test of SeeAlso::Source::DBI with SQLite
-
-TODO (later releases)
-- Add SeeAlso::Test for testing SeeAlso services 
+- Full english documentation and HOWTO
 -- Create a management object (needed for testing and quality of service)
 - Add logging and better error handling
 -- Statistics/Logging-Source-Pipe
 - Better support of OpenSearch Description (more fields)
+-- allow SeeAlso::Source->description( %properties )
+-- add date of last DBI-update in the description (from database?)
 - Add SeeAlso::Discovery to discover servers via OpenSearch Description 
 - Support more of the OpenSearch Description fields
 - Run as a real server (on a port of your choice) : better performance?
-- Add SeeAlso::Source::Union
-- Add SeeAlso::Source::Cache
-- Add XSLT to OpenSearch Description
-- Add an example of a multilangual source with equal identifiers: LibraryThing
+- Add SeeAlso::Source::Union and example
+- Add SeeAlso::Source::Cache and example
+- Add an example of a multilangual source with equal identifiers: LibraryThing?
 - Test support of the description field in a response
-- Add date of last DBI-update in the description (from database?)
 - More Unicode (UTF-8) testing and hints
 - Increase performance (SQL-database index?)
 - Better/more loading mechanism for SeeAlso::Source::DBI
 -- detect/remove full duplicates
 - Better debug-format (and document it)
 - support of XSLT for OpenSearch Descriptions and unAPI formats
+-- add XSLT to OpenSearch Description
 - restrict access of cgi server by referrer, IP, etc. (better in .htaccess ?)
-
+- simplify ETL-examples (thingISBN and Wikipedia)
