@@ -20,6 +20,7 @@ TODO (later releases)
 - Better support of OpenSearch Description (more fields)
 -- allow SeeAlso::Source->description( %properties )
 -- add date of last DBI-update in the description (from database?)
+-- Support WADL and WSDL?
 - Add SeeAlso::Discovery to discover servers via OpenSearch Description 
 - Support more of the OpenSearch Description fields
 - Run as a real server (on a port of your choice) : better performance?
