@@ -36,3 +36,7 @@ TODO (later releases)
 -- add XSLT to OpenSearch Description
 - restrict access of cgi server by referrer, IP, etc. (better in .htaccess ?)
 - simplify ETL-examples (thingISBN and Wikipedia)
+- add a REST-server that eats SeeAlso response format via 
+  HTTP POST (new), HTTP PUT (add) and HTTP DELETE (delete).
+  Response formats and status codes need to be defined for this
+
