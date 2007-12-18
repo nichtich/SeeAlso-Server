@@ -4,6 +4,7 @@ TODO (first release)
 - Somehow point to the JavaScript clients
 - => test and document ETL cycle at toolserver and esx-49/dl380...
 - add version number
+- download-wikipedia does not work (use RSS->URL->wget!)
 
 TODO (later releases)
 - convert bash scripts in the example directory to perl 

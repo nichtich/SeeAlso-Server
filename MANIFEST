@@ -7,6 +7,7 @@ Changes
 lib/SeeAlso/Server.pm
 lib/SeeAlso/Identifier.pm
 lib/SeeAlso/Identifier/PND.pm
+lib/SeeAlso/Identifier/ISBN.pm
 lib/SeeAlso/Response.pm
 lib/SeeAlso/Source.pm
 lib/SeeAlso/Source/DBI.pm
@@ -21,5 +22,7 @@ t/listFormats404.xml
 t/listFormats300.xml
 t/identifier.t
 t/pnd.t
+t/isbn.t
 t/source.t
 
+META.yml                                 Module meta-data (added by MakeMaker)

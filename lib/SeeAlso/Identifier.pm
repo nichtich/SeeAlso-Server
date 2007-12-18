@@ -161,7 +161,7 @@ sub value {
 =head2 normalized
 
 Return a normalized representation of this identifier.
-By default this is the identifier itself.
+By default this is what the value method returns.
 
 =cut
 
@@ -170,7 +170,7 @@ sub normalized {
     if (defined $self->{mNormalized}) {
         return &{$self->{mNormalized}}($self->{value});
     } else {
-        return $self->{value};
+        return $self->value();
     }
 }
 
