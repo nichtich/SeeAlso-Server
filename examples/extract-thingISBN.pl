@@ -55,7 +55,7 @@ sub start_element {
 
 sub end_element {
     my ($self, $el) = @_;
-    next unless $el->{Name} eq "isbn";
+    return unless $el->{Name} eq "isbn";
 
     my $data = $self->{text};
 
