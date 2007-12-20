@@ -2,7 +2,7 @@
 
 use strict;
 
-use Test::More tests => 4;
+use Test::More tests => 5;
 
 use SeeAlso::Identifier::ISBN;
 
@@ -16,3 +16,6 @@ $isbn->value('0-8044-2957-x');
 ok ( $isbn->value eq '978-0-8044-2957-3', "value" );
 ok ( $isbn->uri eq 'urn:isbn:9780804429573', "URI" );
 
+# invalid ISBN-13
+$isbn = SeeAlso::Identifier::ISBN->new('978-1-84545-309-3');
+ok ( !$isbn->valid, "invalid ISBN-13" );

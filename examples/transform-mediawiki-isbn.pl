@@ -11,7 +11,10 @@ use strict;
 
 use Getopt::Long;
 use Pod::Usage;
-use Business::ISBN;
+
+use lib "../lib";
+use SeeAlso::Identifier::ISBN;
+use SeeAlso::Identifier::PND;
 use utf8;
 
 my ($man, $help, $wikibase, $idtype, $logfile);
@@ -84,25 +87,6 @@ if ($invalidfile) {
 # init statistics
 my ($c_valid, $c_invalid, $c_ean) = (0,0,0);
 
-# parse a single ISBN
-sub parse_isbn {
-    my $input = shift;
-    return unless $input;
-
-    $input =~ s/[-]//g;
-    my $isbn;
-
-    if (length $input == 13) { # TODO: checksum?
-        return unless substr($input, 0, 3) =~ /97[98]/; 
-        $isbn = new Business::ISBN( substr($input, 3, 9) . '1' );
-        $isbn->fix_checksum;
-        $c_ean++;
-    } else {
-        $isbn = new Business::ISBN( $input );
-    }
-    return $isbn;
-}
-
 # parse a single PND
 sub parse_pnd {
     my $input = shift;
@@ -111,8 +95,6 @@ sub parse_pnd {
     return unless $input =~ /[0-9]+[0-9X]/;
     return $input;
 }
-
-# TODO: Use SeeAlso::Identifier
 
 print LOG "transforming identifiers ...\n" if defined $logfile;
 while(<IN>) {
@@ -123,11 +105,13 @@ while(<IN>) {
       # TODO: plugin different handlers here / transform framework
       next unless $template eq 'ISBN';
 
-      my $isbn = parse_isbn($data);
+      $c_ean++ if $data =~ /^97[89]/;
 
-      if (defined $isbn and $isbn->is_valid) {
+      my $isbn = SeeAlso::Identifier::ISBN->new( $data );
+
+      if (defined $isbn and $isbn->valid) {
           $c_valid++;
-          print OUT $isbn->isbn . "\t$page\t\t$wikibase$page\n";
+          print OUT $isbn->indexed . "\t$page\t\t$wikibase$page\n";
       } else {
           $c_invalid++;
           print INVALID "$data\n" if $invalidfile;
@@ -160,7 +144,7 @@ __END__
 
 transform [options] [infile [outfile]]
 
-This script is working but needs refactoring. Just don't look at the code.
+This script is working but needs refactoring. Just don't look at the code :-(
 
 =head1 OPTIONS
 

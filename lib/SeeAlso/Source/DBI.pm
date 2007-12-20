@@ -35,11 +35,6 @@ sub new {
     $self->{mQuery} = \&SeeAlso::Source::DBI::db_query;
     $self->{mQuerySelf} = 1;
 
-    $self->{new} = $attr{new} if %attr;
-
-    # TODO: remove this (only for backwards compatibility)
-    undef $attr{new} if defined $attr{new}; # ?
-
     # database connection (TODO: stop messages to STDERR (by {'RaiseError' => 1}?))
     $self->{dbh} = DBI->connect($dsi, $username, $auth, %attr);
     if (not $self->{dbh}) {
@@ -49,10 +44,7 @@ sub new {
 
     # prepared statement
     # TODO: check '$table' and add LIMIT $limit
-    my $query = "SELECT DISTINCT title, url FROM $table WHERE identifier = ?";
-    if ($self->{new}) {
-        $query = "SELECT DISTINCT title, description, url FROM $table WHERE identifier = ?";
-    }
+    my $query = "SELECT DISTINCT label, description, uri FROM $table WHERE identifier = ?";
     $self->{sth} = $self->{dbh}->prepare($query);
     if (not $self->{sth}) {
         $self->errors("Failed to create prepared statement");
@@ -104,7 +96,11 @@ sub connected {
 
 =head2 load_file ( $filename )
 
-Load a local file into the database.
+Load a local file into the database. The database must support 
+a LOAD DATA LOCAL INFILE statement to do so. The local file must
+contain on each line identifier, label, description, and uri
+seperated by tabulator. The local file is not tested to conform
+to this requirement, you can use the check_load_file method for this.
 
 =cut
 
@@ -123,14 +119,50 @@ sub load_file {
 
     $dbh->do( "CREATE TABLE $table (
         identifier  varchar(255) not null default '',
-        title       varchar(255) not null default '',
+        label       varchar(255) not null default '',
         description varchar(255) not null default '',
-        url         varchar(255) not null default ''
+        uri         varchar(255) not null default ''
       ) engine=InnoDB");
 
     $dbh->do( "LOAD DATA LOCAL INFILE " . $dbh->quote($filename) . " INTO TABLE $table" );
 
     return 1;
+}
+
+=head2 check_load_file ( $filename )
+
+Test a local file whether it can be load into the database. Does not test 
+whether the database connection is available but the integrity of the file
+to be load with the load_file method. Each line must consists of identifier, 
+label, description, and uri seperated by tabulator. 
+
+Up to now this method is experimental. Only the existence of four values 
+is checked, empty strings are allowed as well as malformed uris and 
+duplicates.
+
+This metod returns the number of malformed lines, so it returns 0 if 
+the file is valid.
+
+=cut
+
+sub check_load_file {
+    my $self = shift;
+    my $filename = shift;
+
+    croak("Cannot read input file $filename!")
+        unless defined $filename and (-r $filename);
+
+    my $errors = 0;
+
+    open FILE, $filename or croak("Error openig $filename");
+    while (<FILE>) {
+        chomp;
+        my @values = split "\t";
+        $errors++ unless scalar(@values) == 4;
+    }
+    close FILE; 
+
+    return $errors;
 }
 
 1;

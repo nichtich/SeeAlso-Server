@@ -16,10 +16,11 @@ standard output so you probably want to pipe it to a file.
 
 =cut
 
+use lib "../lib";
+use SeeAlso::Identifier::ISBN;
+
 # pleasy select the language of your choice (by default it is German)
 my $base_url = "http://www.librarything.de";
-my $title_string = "Dieses Werk bei LibraryThing";
-
 
 my $file = shift @ARGV;
 if (not defined $file) {
@@ -35,6 +36,8 @@ my $parser = XML::SAX::ParserFactory->parser( Handler => MySAXHandler->new );
 $parser->parse_file(\*FILE);
 close(FILE);
 
+
+# TODO: Same as extract-mediawiki-ISBN: directly use Result-sets or sources that get a line/data and deliver a result!
 
 package MySAXHandler;
 use base qw(XML::SAX::Base);
@@ -52,16 +55,25 @@ sub start_element {
 
 sub end_element {
     my ($self, $el) = @_;
-    if ($el->{Name} eq "isbn") {
+    next unless $el->{Name} eq "isbn";
+
+    my $data = $self->{text};
+
+    #$c_ean++ if $data =~ /^97[89]/;
+    my $isbn = SeeAlso::Identifier::ISBN->new( $data );
+
+    if (defined $isbn and $isbn->valid) {
+        #$c_valid++;
         my @seealso = (
-            $self->{text},
-            $title_string,
+            $isbn->indexed,
+            "LibraryThing",
             "",
             $base_url . "/work/" . $self->{work},
         );
         print join("\t", @seealso). "\n";
     } else {
-
+        #$c_invalid++;
+        # print INVALID "$data\n" if $invalidfile;
     }
 }
 

@@ -36,8 +36,8 @@ sub new {
 
 =head2 value ( [ $value ] )
 
-Get and/or set the value of this identifier. Returns undef
-or the valid value ISBN-13 with hyphens. and uppercase 'X'.
+Get and/or set the value of this identifier.
+Returns undef or the valid value ISBN-13 with hyphens.
 
 =cut
 
@@ -46,11 +46,14 @@ sub value {
     my $value = shift;
 
     if (defined $value) {
-        $self->{value} = Business::ISBN13->new($value);
-        $self->{value} = $self->{value}->as_isbn13;
+        $self->{value} = Business::ISBN->new( $value );
+        return unless defined $self->{value};
+
+        $self->{value} = $self->{value}->as_isbn13
+            unless ref($self->{value}) eq "Business::ISBN13";
     }
 
-    return $self->{value}->as_string() if defined $self->valid();
+    return $self->{value}->as_string if $self->valid();
 }
 
 =head2 indexed

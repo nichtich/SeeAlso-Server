@@ -11,32 +11,3 @@ cgi-test.pl
 yahoo.pl
     simple wrapper for Yahoo Search Suggest
 
-
-The following examples provide scripts to extract, transform, and load (ETL)
-link data into a SeeAlso::Source::DBI database. The ETL-complex may make it
-look more complex than it actually is.
-
-
-download-thingISBN.sh
-    bash script to download thingISBN data
-
-extract-thingISBN.pl
-    extract ISBN to LibraryThing mappings from thingISBN data
-
-
-download-wikipedia.sh
-    bash script to download a Wikipedia database dump
-
-extract-mediawiki-templates.pl
-    extract templates, ISBN, RFC from MediaWiki article dumps
-
-transform-mediawiki-isbn.sh
-    filter out ISBN to Wikipedia mappings from extract-mediawiki-templates.pl
-
-extract-mediawiki-isbn.sh
-    extract ISBN to Wikipedia article mappings from a Wikipedia dump
-
-
-load-mysql.pl
-    load extracted SeeAlso mapping data into a MySQL database
-

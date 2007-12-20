@@ -27,7 +27,7 @@ use Carp;
 
 use vars qw( $VERSION @ISA );
 @ISA = qw( SeeAlso::Identifier );
-$VERSION = "0.8";
+$VERSION = "0.5";
 
 =head1 METHODS
 
@@ -53,8 +53,10 @@ Check for validness.
 sub valid() {
     my $self = shift;
     my $value = $self->{value};
+
     # The current PND-numbers all start with '10' to '14'
-    # You can surely optimize this test (TODO)
+    # You can surely optimize this test
+
     return unless
         $value =~ /^(1)([0-4])([0-9])([0-9])([0-9])([0-9])([0-9])([0-9])([0-9X])$/;
     my $sum = $1*2 + $2*3 + $3*4 + $4*5 + $5*6 + $6*7 + $7*8 + $8*9;
