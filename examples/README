@@ -11,3 +11,6 @@ cgi-test.pl
 yahoo.pl
     simple wrapper for Yahoo Search Suggest
 
+dbi-example.pl
+    usage pattern form a SeeAlso service based on a database
+
