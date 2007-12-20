@@ -15,7 +15,7 @@ use SeeAlso::Response;
 use SeeAlso::Source;
 
 use vars qw($VERSION);
-$VERSION = "0.3";
+$VERSION = "0.31";
 
 =head1 DESCRIPTION
 

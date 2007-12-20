@@ -51,6 +51,10 @@ sub new {
         return $self;
     }
 
+    # add insert into statement for single inserts (TODO: check this)
+    $query = "INSERT INTO $table VALUES (?,?,?,?)";
+    $self->{insert_sth} = $self->{dbh}->prepare($query);
+
     return $self;
 }
 
@@ -115,18 +119,34 @@ sub load_file {
     my $dbh = $self->{dbh};
     my $table = $self->{table};
 
-    $dbh->do( "DROP TABLE IF EXISTS $table" );
+    $self->create_table();
 
+    $dbh->do( "LOAD DATA LOCAL INFILE " . $dbh->quote($filename) . " INTO TABLE $table" );
+
+    return 1;
+}
+
+=head2 create_table
+
+purge and create table.
+
+=cut
+
+sub create_table {
+    my $self = shift;
+
+    croak("Not connected") unless $self->connected;
+
+    my $dbh = $self->{dbh};
+    my $table = $self->{table};
+
+    $dbh->do( "DROP TABLE IF EXISTS $table" );
     $dbh->do( "CREATE TABLE $table (
         identifier  varchar(255) not null default '',
         label       varchar(255) not null default '',
         description varchar(255) not null default '',
         uri         varchar(255) not null default ''
       ) engine=InnoDB");
-
-    $dbh->do( "LOAD DATA LOCAL INFILE " . $dbh->quote($filename) . " INTO TABLE $table" );
-
-    return 1;
 }
 
 =head2 check_load_file ( $filename )
@@ -163,6 +183,24 @@ sub check_load_file {
     close FILE; 
 
     return $errors;
+}
+
+=head2 insert ( identifier, label, description, uri )
+
+Experimental only!
+
+=cut
+
+sub insert {
+    my $self = shift;
+
+    # TODO: get response object
+    my ($identifier, $label, $description, $uri) = @_;
+
+    return unless $self->connected();
+    my $insert_sth = $self->{insert_sth};
+
+    return $insert_sth->execute( $identifier, $label, $description, $uri );
 }
 
 1;

@@ -23,5 +23,5 @@ use ExtUtils::MakeMaker;
     depend          => {
         Makefile => '$(VERSION_FROM)'
     },
-#    clean           => { FILES => 'PICA-Record-*' },
+#    clean           => { FILES => 'xyz-*' },
 );
