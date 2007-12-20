@@ -77,11 +77,7 @@ sub db_query {
 
     $sth->execute( $identifier->indexed );
     while ( my @row = $sth->fetchrow_array ) {
-        if ($self->{new}) {
-            $response->add($row[0],$row[1],$row[2]);
-        } else {
-            $response->add($row[0],"",$row[1]);
-        }
+        $response->add($row[0],$row[1],$row[2]);
     }
 
     return $response;

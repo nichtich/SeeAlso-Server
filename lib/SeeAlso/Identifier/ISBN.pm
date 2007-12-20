@@ -46,6 +46,7 @@ sub value {
     my $value = shift;
 
     if (defined $value) {
+        $value =~ s/^[uU][rR][nN]:[iI][sS][Bb][Nn]//;
         $self->{value} = Business::ISBN->new( $value );
         return unless defined $self->{value};
 
@@ -85,6 +86,17 @@ sub uri {
     my $self = shift;
     return unless $self->valid();
     return "urn:isbn:" . $self->{value}->isbn;
+}
+
+=head2 normalized
+
+Normalize to the URI.
+
+=cut
+
+sub normalized {
+    my $self = shift;
+    return $self->uri;
 }
 
 =head2 valid

@@ -1,12 +1,10 @@
 TODO (first release)
-- Reinstall existing servers (and remove "new" from Source::DBI then!)
--- tar file
 - Somehow point to the JavaScript clients, remove PreText/PreIcon
-- => test and document ETL cycle at toolserver and esx-49/dl380...
 - add version number
-- move Wikipedia service to services (not part of this distribution)
 
 TODO (later releases)
+- add Wikipedia example
+- => rewrite, test and document ETL cycle
 - convert bash scripts in the example directory to perl 
 - change load-mysql.pl to general load-dbi.pl
 - Add SeeAlso::Test for testing SeeAlso services 
