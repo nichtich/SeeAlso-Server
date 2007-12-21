@@ -11,6 +11,7 @@ lib/SeeAlso/Identifier/ISBN.pm
 lib/SeeAlso/Response.pm
 lib/SeeAlso/Source.pm
 lib/SeeAlso/Source/DBI.pm
+lib/SeeAlso/Logger.pm
 
 examples/README
 examples/cgi-test.pl

@@ -14,11 +14,7 @@ TODO (later releases)
 -- look for missing documentation 
 - Full english documentation and HOWTO
 -- Create a management object (needed for testing and quality of service)
-- Add logging and better error handling
--- Statistics/Logging-Source-Pipe
--- logging format: 
---- SeeAlso::ServiceLogEntry:
---- [IP,referer,service,timestamp,query-id,query-format,result-size]
+- Better logging and error handling
 --- Apache Logfile => logformat, direct log writer ...
 - Better support of OpenSearch Description (more fields)
 -- allow SeeAlso::Source->description( %properties )
@@ -36,6 +32,7 @@ TODO (later releases)
 - Better/more loading mechanism for SeeAlso::Source::DBI
 -- detect/remove full duplicates
 - Better debug-format (and document it)
+-- debug mode that prints all error messages
 - support of XSLT for OpenSearch Descriptions and unAPI formats
 -- add XSLT to OpenSearch Description
 - restrict access of cgi server by referrer, IP, etc. (better in .htaccess ?)
