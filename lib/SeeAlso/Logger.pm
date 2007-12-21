@@ -93,6 +93,7 @@ sub log {
     my @values = (
         $datetime,
         $host, # IP
+	$referer,
         $service,
         $id,
         $valid,
