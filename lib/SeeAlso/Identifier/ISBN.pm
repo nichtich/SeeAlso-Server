@@ -75,7 +75,7 @@ Returns a Uniform Resource Identifier (URI) for this ISBN if possible.
 Unfortunately RFC 3187 broken, because it does not oblige normalization.
 But this method does: first only valid ISBN (with valid checkdigit)
 are allowed, second all ISBN are converted to ISBN-13 notation without
-hyphens. An URI without normalization and valitidy check is crap!
+hyphens. URIs without defined normalization and valitidy check are pointless.
 
 Up to now the "urn:isbn"-flavor of URI for ISBN is used but you could
 also use "http://purl.org/isbn/" instead.
