@@ -32,6 +32,7 @@ sub new {
         table => $table
     }, $class;
 
+    # TODO: remove this ugly code
     $self->{mQuery} = \&SeeAlso::Source::DBI::db_query;
     $self->{mQuerySelf} = 1;
 
@@ -101,6 +102,7 @@ a LOAD DATA LOCAL INFILE statement to do so. The local file must
 contain on each line identifier, label, description, and uri
 seperated by tabulator. The local file is not tested to conform
 to this requirement, you can use the check_load_file method for this.
+Returns the number of loaded records.
 
 =cut
 
@@ -117,9 +119,9 @@ sub load_file {
 
     $self->create_table();
 
-    $dbh->do( "LOAD DATA LOCAL INFILE " . $dbh->quote($filename) . " INTO TABLE $table" );
+    my $rows = $dbh->do( "LOAD DATA LOCAL INFILE " . $dbh->quote($filename) . " INTO TABLE $table" );
 
-    return 1;
+    return $rows;
 }
 
 =head2 create_table
