@@ -109,7 +109,7 @@ sub toJSON {
         $self->{urls}
     ];
 
-    my $jsonstring = $json->objToJson( $response );
+    my $jsonstring = $json->encode( $response );
     return $callback ? "$callback($jsonstring);" : $jsonstring;
 }
 

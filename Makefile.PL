@@ -10,7 +10,7 @@ use ExtUtils::MakeMaker;
     PMLIBDIRS       => [ qw( lib/ ) ],
     AUTHOR          => 'Jakob Voss <jakob.voss@gbv.de>',
     PREREQ_PM       => {
-        'JSON' => 0,
+        'JSON' => '2.0',
         'CGI' => 0,
         'Carp' => 0,
         'DBI' => 0,
