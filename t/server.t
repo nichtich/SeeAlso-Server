@@ -46,7 +46,7 @@ $s = SeeAlso::Server->new( cgi=>$cgi );
 my $source = SeeAlso::Source->new();
 my $identifier = SeeAlso::Identifier->new();
 my $http = $s->query($source, $identifier, 'seealso');
-ok ( $http =~ /^Status: 404[^\[]+\["",\[\],\[\],\[\]\]$/m, 'Empty response' );
+ok ( $http =~ /^Status: 200[^\[]+\["",\[\],\[\],\[\]\]$/m, 'Empty response' );
 
 $http = $s->query($source, $identifier, 'foo');
 ok ( $http eq $xml200, 'List of formats (because no identifier)');
@@ -57,7 +57,7 @@ $source = SeeAlso::Source->new(
 $identifier = SeeAlso::Identifier->new("xyz");
 
 $http = $s->query($source, $identifier, 'seealso');
-ok ( $http =~ /^Status: 404[^\[]+\["xyz",\[\],\[\],\[\]\]$/m, 'No results' );
+ok ( $http =~ /^Status: 200[^\[]+\["xyz",\[\],\[\],\[\]\]$/m, 'No results' );
 
 $http = $s->query($source, $identifier, 'foo');
 ok ( $http eq $xml404, 'Result but not right format');

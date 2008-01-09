@@ -240,7 +240,7 @@ sub query {
 
 
     if ( $format eq "seealso" ) {
-        my $status = $response->size ? 200 : 404;
+        my $status = 200; # $response->size ? 200 : 404;
         if ($callback) {
             $http .= $cgi->header( -status => $status, -type => 'text/html; charset: utf-8' ); # TODO: what type?
             $http .= $response->toJSON($callback);
@@ -251,7 +251,7 @@ sub query {
     } elsif ( $format eq "debug") {
         use Data::Dumper;
         $http .= $cgi->header( -type => 'text/html; charset: utf-8' );
-        my $status = $response->size ? 200 : 404;
+        my $status = 200; #$response->size ? 200 : 404;
         $http .= "Status: $status\n";
         $http .= "Response: " . Dumper($response) . "\n";
         $http .= "JSON Response: " . $response->toJSON($callback) . "\n";
