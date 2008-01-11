@@ -318,9 +318,8 @@ sub openSearchDescription {
         push @xml, "  <dc:source" . xmlencode( $shortName ) . "</dc:source>"
             if defined $source;
     }
-    my $template = $baseURL . (($baseURL =~ /\?/) ? '&' : '?');
-    #//if ($baseURL =~ /\?/) { $template .= '&' } else { $template .= '?'; }
-    $template .= "id={searchTerms}&format=seealso&callback={callback}";
+    my $template = $baseURL . (($baseURL =~ /\?/) ? '&' : '?')
+                 . "id={searchTerms}&format=seealso&callback={callback}";
     push @xml, "  <Url type=\"text/javascript\" template=\"$template\"/>";
     push @xml, "</OpenSearchDescription>";
 
