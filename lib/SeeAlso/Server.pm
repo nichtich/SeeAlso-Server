@@ -15,7 +15,7 @@ use SeeAlso::Response;
 use SeeAlso::Source;
 
 use vars qw($VERSION);
-$VERSION = "0.31";
+$VERSION = "0.4";
 
 =head1 DESCRIPTION
 
@@ -145,7 +145,7 @@ sub listFormats {
         push @xml, "<formats>";
     }
 
-    push @formats, { name=>"seealso", type=>"application/x-suggestions+json"};
+    push @formats, { name=>"seealso", type=>"text/javascript"};
 
     if ( (not defined $self->{description}) || $self->{description} ne "" ) {
         push @formats, { name=>"opensearchdescription",
@@ -205,7 +205,6 @@ sub query {
 
     $format = $cgi->param('format') unless defined $format;
     $callback = $cgi->param('callback') unless defined $callback;
-    undef $callback unless defined $callback && $callback =~ /[a-zA-Z\'\"\[\]\.\(\)]+/;
 
     if ($format eq 'opensearchdescription') {
         $http = $self->openSearchDescription( $source );
@@ -238,20 +237,18 @@ sub query {
 
     $response = SeeAlso::Response->new() unless defined $response;
 
+    my $status = 200;
+    if ($callback && !$callback =~ /^[a-zA-Z0-9\._\[\]]+$/) {
+        undef $callback;
+        $status = 400;
+    }
 
     if ( $format eq "seealso" ) {
-        my $status = 200; # $response->size ? 200 : 404;
-        if ($callback) {
-            $http .= $cgi->header( -status => $status, -type => 'text/html; charset: utf-8' ); # TODO: what type?
-            $http .= $response->toJSON($callback);
-        } else {
-            $http .= $cgi->header( -status => $status, -type => 'application/x-suggestions+json; charset: utf-8' );
-            $http .= $response->toJSON();
-        }
+        $http .= $cgi->header( -status => $status, -type => 'text/javascript; charset: utf-8' );
+        $http .= $response->toJSON($callback);
     } elsif ( $format eq "debug") {
         use Data::Dumper;
-        $http .= $cgi->header( -type => 'text/html; charset: utf-8' );
-        my $status = 200; #$response->size ? 200 : 404;
+        $http .= $cgi->header( -type => 'text/javascript; charset: utf-8' );
         $http .= "Status: $status\n";
         $http .= "Response: " . Dumper($response) . "\n";
         $http .= "JSON Response: " . $response->toJSON($callback) . "\n";
@@ -321,9 +318,10 @@ sub openSearchDescription {
         push @xml, "  <dc:source" . xmlencode( $shortName ) . "</dc:source>"
             if defined $source;
     }
-    my $template = "$baseURL?id={searchTerms}&format=seealso";
-    push @xml, "  <Url type=\"application/x-suggestions+json\" template=\"$template\"/>";
-    # TODO: what about the callback parameter?
+    my $template = $baseURL . (($baseURL =~ /\?/) ? '&' : '?');
+    #//if ($baseURL =~ /\?/) { $template .= '&' } else { $template .= '?'; }
+    $template .= "id={searchTerms}&format=seealso&callback={callback}";
+    push @xml, "  <Url type=\"text/javascript\" template=\"$template\"/>";
     push @xml, "</OpenSearchDescription>";
 
     return join("\n", @xml);
@@ -349,62 +347,3 @@ sub xmlencode {
 }
 
 1;
-
-__END__
-
-## Print Extended Common Log Format
-exit;
-
-=head2 log
-
-...
-
-=cut
-
-#sub log {
-    # Timestamp
-    # query_id
-    # return_id (may be different due to normalization)
-    # number of returned hits
-
-    # referer
-    # IP?
-#}
-
-
-my $host = $cgi->remote_host();
-my $ident = $cgi->remote_ident() || "-";
-my $user =  $cgi->remote_user() || "-";
-
-my(@MON) = ('Dummy', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul','Aug', 'Sep', 'Oct', 'Nov', 'Dec');
-my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime;
-my ($gsec,$gmin,$ghour,$gmday,$gmon,$gyear,$gwday,$gyday,$gisdst) = gmtime;
-my $offset = $hour - $ghour;
-$year += 1900;
-my $datestr = sprintf("%02d/%s/%4d:%02d:%02d:%02d %s%02d00",
-         $mday, $MON[$mon + 1], $year, $hour, $min, $sec, $offset >= 0 ? '+' : '-', $offset);
-my $request = $cgi->request_method . " " . $cgi->url('-absolute'=>1, '-query'=>1, '-path_info'=>1,) . " " . $cgi->server_protocol();
-
-my $code = "200";
-my $count = 0;
-my $referer = $cgi->referer();
-my $user_agent = $cgi->user_agent(); 
-
-
-open LOG, ">> /home/voj/public_html/seealso/access.log";
-printf LOG "%s %s %s [%s] \"%s\" %d %d \"%s\" \"%s\"\n",
-    $host, $ident, $user, $datestr, $request, $code, $count, $referer, $user_agent;
-close LOG;
-
-
-# TODO: print number of hits/links in log file
-# TODO: more logging, see Apache Error Log format
-# z.B. "Failed to establish DBI connection"
-#
-# See also
-# http://developer.mozilla.org/en/docs/Supporting_search_suggestions_in_search_plugins
-#
-# Über $cgi->referer() liesse sich auch noch festgelegen, über wen der zugriff möglich ist.
-# Bei direktem Aufruf im browser ist der referer leer. Bei *.gbv.de sollte auch frei sein
-#
-
