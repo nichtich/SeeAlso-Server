@@ -2,7 +2,7 @@ package SeeAlso::Server;
 
 =head1 NAME
 
-SeeAlso::Server - SeeAlso-API Webservice Implementation
+SeeAlso::Server - SeeAlso Linkserver Protocol Server
 
 =cut
 
@@ -15,59 +15,44 @@ use SeeAlso::Response;
 use SeeAlso::Source;
 
 use vars qw($VERSION);
-$VERSION = "0.40";
+$VERSION = "0.41";
 
 =head1 DESCRIPTION
 
 Basic module for a Webservice that implements the SeeAlso link server
-Protocol. SeeAlso is a combination of unAPI and OpenSearch Suggestions
-so this module implements the unAPI protocol version 1.
+Protocol. SeeAlso is a combination of unAPI and OpenSearch Suggestions,
+so this module also implements the unAPI protocol version 1.
 
 =head1 SYNOPSIS
 
-You need instances of L<SeeAlso::Source> and L<SeeAlso::Identifier>
-for usage of a SeeAlso Server.
+To implement a SeeAlso linkserver, you need instances of L<SeeAlso::Server>,
+and L<SeeAlso::Source>. The Source object must return a L<SeeAlso::Response> 
+object:
 
   use SeeAlso::Server;
-
   my $server = SeeAlso::Server->new( cgi => $cgi );
 
-  # ... set $identifier based on $cgi->param('id') and:
-  my $http = $server->query( $source, $identifier );
-
-  # ... or also set $format and $callback and:
-  my $http = $server->query( $source, $identifier, $format, $callback );
-
-  print $http;
-
-To create a special server, you probably have to create subclasses
-of L<SeeAlso::Source> and L<SeeAlso::Identifier>.
-
-=head1 EXAMPLE
-
-The following script implements a minimal SeeAlso service:
-
-  use SeeAlso::Server;
   use SeeAlso::Source;
-
-  sub query_method {
+  use SeeAlso::Response;
+  my $source = SeeAlso::Source->new( sub {
       my $identifier = shift;
-      my $response = SeeAlso::Response->new($identifier);
+      return unless $identifier->valid;
 
-      # depending on $identifier->value do zero or more:
-      $response->add("..title..","..description..","..url..");
+      my $response = SeeAlso::Response->new( $identifier );
+
+      # add response content depending on $identifier->value
+      $response->add( $label, $description, $uri );
+      # ...
 
       return $response;
-  }
+  } );
+  $source->description( "ShortName" => "My SeeAlso server" );
 
-  my $server = SeeAlso::Server->new();
-  my @about = ( "ShortName" => "My simple SeeAlso service" );
-  my $source = SeeAlso::Source->new( \&query_method, @about );
+  my $http = $server->query( $source );
+  print $http;
 
-  print $server->query( $source );
-
-The Service will also fullfill the SeeAlso specification if the query 
-method breaks or does not return a L<SeeAlso::Response> object.
+The examples directory contains a full example. For more specialised servers 
+you may also need to use L<SeeAlso::Identifier> or one of its subclasses.
 
 =head1 METHODS
 
@@ -80,16 +65,15 @@ parameters:
 
 =item cgi
 
-a L<CGI> object to print HTTP headers. If not specified,
-a new L<CGI> object is created.
+a L<CGI> object. If not specified, a new L<CGI> object is created.
 
 =item description
 
-a string or function that contains or returns an
-OpenSearch Description document. By default (osdec set to undef)
-the method openSearchDescription is used. You can switch off support
-of OpenSearch Description by setting opensearchdescription to the empty
-string.
+a string (or function) that contains (or returns) an
+OpenSearch Description document as XML string. By default the
+openSearchDescription method of this class is used. You can switch off 
+support of OpenSearch Description by setting opensearchdescription to 
+the empty string.
 
 =back
 
@@ -103,7 +87,7 @@ sub new {
 
     croak('Parameter cgi must be a CGI object!')
         if defined $cgi and not UNIVERSAL::isa($cgi, 'CGI');
-    croak('Parameter osd must either be a string, function or undef!')
+    croak('Parameter description must either be a string, function or undef!')
         if defined $description and not ($description eq "" or ref($description) eq 'SCALAR' or ref($description) eq 'CODE');
 
     my $self = bless {
@@ -124,7 +108,8 @@ on whether the response is empty (HTTP code 404) or not (HTTP code 300).
 
 The optional second parameter may contain an array of additional formats,
 each beeing a hash with 'name', 'type' and optional 'docs' field as
-defined in the unAPI standard version 1.
+defined in the unAPI standard version 1. You can use this parameter to 
+provide more formats then 'seealso' and 'opensearchdescription' via unAPI.
 
 =cut
 
@@ -145,12 +130,13 @@ sub listFormats {
         push @xml, "<formats>";
     }
 
-    push @formats, { name=>"seealso", type=>"text/javascript"};
+    push @formats, { name=>"seealso", type=>"text/javascript" };
 
     if ( (not defined $self->{description}) || $self->{description} ne "" ) {
-        push @formats, { name=>"opensearchdescription",
-             type=>"application/opensearchdescription+xml",
-             docs=>"http://www.opensearch.org/Specifications/OpenSearch/1.1/Draft_3#OpenSearch_description_document" }
+        push @formats, { 
+            name=>"opensearchdescription",
+            type=>"application/opensearchdescription+xml",
+            docs=>"http://www.opensearch.org/Specifications/OpenSearch/1.1/Draft_3#OpenSearch_description_document" }
     }
 
     foreach my $format (@formats) {
@@ -167,14 +153,11 @@ sub listFormats {
     return $http . join("\n", @xml);
 }
 
-=head2 query ($source [, $identifier [, $format [, $callback ] ] ] )
+=head2 query ( $source [, $identifier [, $format [, $callback ] ] ] )
 
 Perform a query by a given source, identifier, format and (optional)
 callback parameter. Returns a full HTTP message with HTTP headers.
-
-If you do not provide one or more of the parameters C<$identifer>,
-C<$format>, and C<$callback>, it is tried to get the parameters from
-the server's L<CGI> object.
+Missing parameters are tried to get from the server's L<CGI> object.
 
 This is what the method actually does:
 The source (of type L<SeeAlso::Source>) is queried for the

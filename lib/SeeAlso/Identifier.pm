@@ -6,6 +6,11 @@ use Carp;
 
 SeeAlso::Identifier - an identifier passed to a SeeAlso-Server
 
+=cut
+
+use vars qw($VERSION);
+$VERSION = "0.40";
+
 =head1 DESCRIPTION
 
 The query to a SeeAlso (and other unAPI) server is just an identifier.

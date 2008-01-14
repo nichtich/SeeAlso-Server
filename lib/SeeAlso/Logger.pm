@@ -2,7 +2,7 @@ package SeeAlso::Logger;
 
 =head1 NAME
 
-SeeAlso::Logger - Log requests to a SeeAlso service
+SeeAlso::Logger - log SeeAlso service requests
 
 =cut
 
@@ -11,7 +11,14 @@ use Carp qw(croak);
 use POSIX qw(strftime);
 
 use vars qw($VERSION);
-$VERSION = "0.1";
+$VERSION = "0.2";
+
+=head1 DESCRIPTION
+
+This class provides the log method to log requests of a SeeAlso service.
+Each line in the log is a is tabulator seperated list of timestamp,
+host, referer, service, search term (id), validity check, and the 
+number of responses.
 
 =head1 METHODS
 
@@ -64,7 +71,7 @@ sub set_file {
 
 =head2 log ( $cgi, $response, $service )
 
-Log a request and response. The response must be a SeeAlso::Response object.
+Log a request and response. The response must be a L<SeeAlso::Response> object, the service is string.
 
 =cut
 

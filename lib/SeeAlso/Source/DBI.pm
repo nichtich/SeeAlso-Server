@@ -6,14 +6,15 @@ use DBI;
 
 =head1 NAME
 
-SeeAlso::Source::DBI - Returns links stored in an SQL database
+SeeAlso::Source::DBI - returns links stored in an SQL database
 
 =cut
 
 use SeeAlso::Source;
 
-use vars qw(@ISA);
+use vars qw( @ISA $VERSION );
 @ISA = qw( SeeAlso::Source );
+$VERSION = "0.40";
 
 =head2 new ($dsi, $username, $auth, %attr)
 
@@ -97,10 +98,9 @@ sub connected {
 
 =head2 load_file ( $filename )
 
-Load a local file into the database. The database must support 
-a LOAD DATA LOCAL INFILE statement to do so. The local file must
-contain on each line identifier, label, description, and uri
-seperated by tabulator. The local file is not tested to conform
+Load a local file into the database. Currently only MySQL is supported.
+The local file must contain on each line identifier, label, description, 
+and uri seperated by tabulator. The local file is not tested to conform
 to this requirement, you can use the check_load_file method for this.
 Returns the number of loaded records.
 
@@ -185,14 +185,14 @@ sub check_load_file {
 
 =head2 insert ( identifier, label, description, uri )
 
-Experimental only!
+Inserts a single response content (experimental).
 
 =cut
 
 sub insert {
     my $self = shift;
 
-    # TODO: get response object
+    # TODO: use a SeeAlso::Response object instead
     my ($identifier, $label, $description, $uri) = @_;
 
     return unless $self->connected();

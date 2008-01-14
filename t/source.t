@@ -2,7 +2,7 @@
 
 use strict;
 
-use Test::More tests => 13;
+use Test::More tests => 15;
 use SeeAlso::Source;
 use SeeAlso::Identifier;
 
@@ -11,14 +11,22 @@ use Data::Dumper;
 my $source = SeeAlso::Source->new();
 ok ( ! $source->hasErrors(), "no errors" );
 ok ( ! %{ $source->description() }, "no description" );
-ok ( ! defined $source->description("ShortName") , "no description" );
+ok ( ! defined $source->description("ShortName") , "no description (2)" );
+
+#print STDERR "DDDDDD:" . $source->description("ShortName") . "\n";
 
 $source->description("ShortName","Foo");
 ok ( $source->description("ShortName") eq "Foo", "set description" );
+ok ( ! defined $source->description("XXX") , "not a description value" );
 $source->description("LongName","Foobar");
 ok ( $source->description("LongName") eq "Foobar", "set description (2)" );
 $source->description("ShortName","doz");
 ok ( $source->description("ShortName") eq "doz", "set description (3)" );
+
+$source = SeeAlso::Source->new();
+$source->description( "ShortName" => "X", "LongName" => "Y" );
+ok ( $source->description("ShortName") eq "X" &&
+     $source->description("LongName") eq "Y", "set description (4)" );
 
 $source = SeeAlso::Source->new(
     sub {

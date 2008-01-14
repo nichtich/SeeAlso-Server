@@ -3,11 +3,14 @@ package SeeAlso::Response;
 use JSON;
 my $json = JSON->new(autoconv=>0);
 
-=head1 NAME SeeAlso::Response - Open Search Suggestion Response
+=head1 NAME
+
+SeeAlso::Response - SeeAlso Simple Response
 
 =head1 DESCRIPTION
 
-This class models an OpenSearch Suggestions Response.
+This class models a SeeAlso Simple Response which is practically the
+same as am OpenSearch Suggestions Response.
 
 =head1 METHODS
 
@@ -52,22 +55,24 @@ sub new {
 }
 
 
-=head2 add ( $completion [, $description [, $url ] ] )
+=head2 add ( $label [, $description [, $uri ] ] )
 
 Add an item to the result set. All parameters must be strings.
 
 =cut
 
 sub add {
-    my ($self, $completion, $description, $url) = @_;
+    my ($self, $label, $description, $uri) = @_;
 
-    $completion = "" unless defined $completion;
+    $label = "" unless defined $label;
     $description = "" unless defined $description;
-    $url = "" unless defined $url;
+    $uri = "" unless defined $uri;
 
-    push @{ $self->{completions} }, $completion;
+    # TODO: check URI
+
+    push @{ $self->{completions} }, $label;
     push @{ $self->{descriptions} }, $description;
-    push @{ $self->{urls} }, $url;
+    push @{ $self->{urls} }, $uri;
 }
 
 =head2 size
@@ -94,13 +99,16 @@ sub hasQuery {
 
 =head2 toJSON ( [ $callback ] )
 
-Return the response in JSON format and a non-mandatory callback
-wrapped around.
+Return the response in JSON format and a non-mandatory 
+callback wrapped around. There is no test whether the 
+callback name is valid so far.
 
 =cut
 
 sub toJSON {
     my ($self, $callback) = @_;
+
+    # TODO: check callback name
 
     my $response = [
         $self->{query},
