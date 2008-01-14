@@ -3,6 +3,9 @@ package SeeAlso::Response;
 use JSON;
 my $json = JSON->new(autoconv=>0);
 
+use vars qw($VERSION);
+$VERSION = "0.40";
+
 =head1 NAME
 
 SeeAlso::Response - SeeAlso Simple Response
