@@ -65,7 +65,6 @@ sub set_file {
 =head2 log ( $cgi, $response, $service )
 
 Log a request and response. The response must be a SeeAlso::Response object.
-The service must be a string or a function that mapps URL request to a string (TODO)
 
 =cut
 
@@ -77,23 +76,22 @@ sub log {
     return unless $self->{filehandle};
 
     my $host = $cgi->remote_host();
+    my $referer = $cgi->referer();
     # my $ident = $cgi->remote_ident() || "-";
     # my $user =  $cgi->remote_user() || "-";
-    # my $request = $cgi->request_method . " " . $cgi->url('-absolute'=>1, '-query'=>1, '-path_info'=>1,) . " " . $cgi->server_protocol();
-    my $referer = $cgi->referer();
     # my $user_agent = $cgi->user_agent();
 
     my $datetime = strftime("%Y-%m-%dT%H:%M:%S", localtime);
 
     my $id = $cgi->param('id') || '';
 
-    my $size = $response->size();
     my $valid = $response->hasQuery() ? '1' : '0';
+    my $size = $response->size();
 
     my @values = (
         $datetime,
-        $host, # IP
-	$referer,
+        $host,
+        $referer,
         $service,
         $id,
         $valid,
