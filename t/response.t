@@ -16,11 +16,11 @@ ok( $r->toJSON('call-me') eq 'call-me(["",[],[],[]]);', 'callback');
 $r = SeeAlso::Response->new("123");
 ok( $r->toJSON() eq '["123",[],[],[]]', 'empty response with query');
 
-$r->add("foo","baz","bar");
-ok( $r->toJSON() eq '["123",["foo"],["baz"],["bar"]]', 'simple response');
+$r->add("foo","baz","uri:bar");
+ok( $r->toJSON() eq '["123",["foo"],["baz"],["uri:bar"]]', 'simple response');
 
 $r->add("faz");
-ok( $r->toJSON() eq '["123",["foo","faz"],["baz",""],["bar",""]]', 'simple response');
+ok( $r->toJSON() eq '["123",["foo","faz"],["baz",""],["uri:bar",""]]', 'simple response');
 
 ok ( $r->size == 2, 'test size' );
 

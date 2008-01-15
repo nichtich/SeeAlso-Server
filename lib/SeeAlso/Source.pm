@@ -5,7 +5,7 @@ use Carp qw(croak);
 use SeeAlso::Response;
 
 use vars qw($VERSION);
-$VERSION = "0.40";
+$VERSION = "0.42";
 
 =head1 NAME
 
@@ -87,6 +87,7 @@ sub description {
         my %param = @_;
         foreach my $key (keys %param) {
             my $value = $param{$key};
+            $value =~ s/\s+/ /g;
             if ($self->{description}) {
                 $self->{description}{$key} = $value;
             } else {

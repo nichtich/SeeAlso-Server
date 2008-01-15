@@ -15,7 +15,7 @@ use SeeAlso::Response;
 use SeeAlso::Source;
 
 use vars qw($VERSION);
-$VERSION = "0.41";
+$VERSION = "0.42";
 
 =head1 DESCRIPTION
 
@@ -46,7 +46,7 @@ object:
 
       return $response;
   } );
-  $source->description( "ShortName" => "My SeeAlso server" );
+  $source->description( "ShortName" => "MySimpleServer" );
 
   my $http = $server->query( $source );
   print $http;
@@ -67,6 +67,10 @@ parameters:
 
 a L<CGI> object. If not specified, a new L<CGI> object is created.
 
+=item logger
+
+a <SeeAlso::Logger> object for logging.
+
 =item description
 
 a string (or function) that contains (or returns) an
@@ -84,18 +88,36 @@ sub new {
 
     my $cgi = $params{cgi};
     my $description = $params{description};
+    my $logger = $params{logger};
 
     croak('Parameter cgi must be a CGI object!')
         if defined $cgi and not UNIVERSAL::isa($cgi, 'CGI');
     croak('Parameter description must either be a string, function or undef!')
-        if defined $description and not ($description eq "" or ref($description) eq 'SCALAR' or ref($description) eq 'CODE');
+        if defined $description and not ($description eq "" or 
+           ref($description) eq 'SCALAR' or ref($description) eq 'CODE');
 
     my $self = bless {
         cgi => $cgi || new CGI,
-        description => $description
+        description => $description,
+        logger => $logger
     }, $class;
 
     return $self;
+}
+
+=head2 logger ( [ $logger ] )
+
+Get/set a logger for this server. The logger must be of class L<SeeAlso::Logger>.
+
+=cut
+
+sub logger {
+    my $self = shift;
+    my $logger = shift;
+    return $self->{logger} unless defined $logger;
+    croak('Parameter cgi must be a SeeAlso::Logger object!')
+        unless UNIVERSAL::isa($logger, 'SeeAlso::Logger');
+    $self->{logger} = $logger;
 }
 
 =head2 listFormats ( $response [, @formats] )
@@ -187,7 +209,9 @@ sub query {
     }
 
     $format = $cgi->param('format') unless defined $format;
+    $format = "" unless defined $format;
     $callback = $cgi->param('callback') unless defined $callback;
+    $callback = "" unless defined $callback;
 
     if ($format eq 'opensearchdescription') {
         $http = $self->openSearchDescription( $source );
@@ -216,7 +240,7 @@ sub query {
         }
     }
 
-    # TODO: where to write/log the error to?
+    # TODO: write/log errors
 
     $response = SeeAlso::Response->new() unless defined $response;
 
@@ -227,6 +251,10 @@ sub query {
     }
 
     if ( $format eq "seealso" ) {
+        if ( $self->{logger} ) {
+            my $service = $source->description( "ShortName" );
+            $self->{logger}->log( $cgi, $response, $service );
+        }
         $http .= $cgi->header( -status => $status, -type => 'text/javascript; charset: utf-8' );
         $http .= $response->toJSON($callback);
     } elsif ( $format eq "debug") {

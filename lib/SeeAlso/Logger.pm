@@ -11,7 +11,7 @@ use Carp qw(croak);
 use POSIX qw(strftime);
 
 use vars qw($VERSION);
-$VERSION = "0.2";
+$VERSION = "0.30";
 
 =head1 DESCRIPTION
 
@@ -82,12 +82,12 @@ sub log {
 
     return unless $self->{filehandle};
 
-    my $host = $cgi->remote_host();
-    my $referer = $cgi->referer();
+    my $host = $cgi->remote_host() || "";
+    my $referer = $cgi->referer() || "";
     # my $ident = $cgi->remote_ident() || "-";
     # my $user =  $cgi->remote_user() || "-";
     # my $user_agent = $cgi->user_agent();
-
+    $service ||= "";
     my $datetime = strftime("%Y-%m-%dT%H:%M:%S", localtime);
 
     my $id = $cgi->param('id') || '';
@@ -104,8 +104,9 @@ sub log {
         $valid,
         $size
     );
+    my $msg = join("\t", @values) . "\n";
 
-    print { $self->{filehandle} } join('\t', @values);
+    print { $self->{filehandle} } $msg;
 }
 
 1;
