@@ -50,11 +50,16 @@ sub value {
         $self->{value} = Business::ISBN->new( $value );
         return unless defined $self->{value};
 
+        if (! $self->{value}->is_valid ) {
+            undef $self->{value};
+            return;
+        }
+
         $self->{value} = $self->{value}->as_isbn13
             unless ref($self->{value}) eq "Business::ISBN13";
     }
 
-    return $self->{value}->as_string if $self->valid();
+    return $self->{value}->as_string if $self->valid;
 }
 
 =head2 indexed
@@ -65,7 +70,7 @@ Return undef or the valid ISBN-13 without hyphens.
 
 sub indexed {
     my $self = shift;
-    return $self->{value}->isbn if $self->valid(); 
+    return $self->{value}->isbn if $self->valid; 
 }
 
 =head2 uri
@@ -84,8 +89,7 @@ also use "http://purl.org/isbn/" instead.
 
 sub uri {
     my $self = shift;
-    return unless $self->valid();
-    return "urn:isbn:" . $self->{value}->isbn;
+    return "urn:isbn:" . $self->{value}->isbn if $self->valid;
 }
 
 =head2 normalized
@@ -107,7 +111,7 @@ Returns whether the ISBN is valid.
 
 sub valid {
     my $self = shift;
-    return defined $self->{value} && $self->{value}->is_valid;
+    return defined $self->{value};
 }
 
 1;
