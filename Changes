@@ -1,3 +1,4 @@
-0.4?  2008-??-??  -  Fixed ISBN bug (ISBN-10 with invalid checksum)
+0.42  2008-??-??  -  Fixed ISBN bugs (ISBN-10 with invalid checksum)
                   -  Fixed Logger, now called in SeeAlso::Server->query
+
 0.41  2008-01-14  -  Initial public release.

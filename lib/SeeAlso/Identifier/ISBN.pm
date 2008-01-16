@@ -50,7 +50,10 @@ sub value {
         $self->{value} = Business::ISBN->new( $value );
         return unless defined $self->{value};
 
-        if (! $self->{value}->is_valid ) {
+        my $error = $self->{value}->error;
+        if ( $error != Business::ISBN::GOOD_ISBN && 
+             $error != Business::ISBN::INVALID_GROUP_CODE &&
+             $error != Business::ISBN::INVALID_PUBLISHER_CODE ) {
             undef $self->{value};
             return;
         }
