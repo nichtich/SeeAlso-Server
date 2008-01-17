@@ -1,36 +1,34 @@
-TODO (first release)
-- Somehow point to the JavaScript clients
-- add version number
+Features, that are planned to be implemented before 1.0 release include:
 
-TODO (later releases)
-- add Wikipedia example
-- => rewrite, test and document ETL cycle
-- convert bash scripts in the example directory to perl 
-- change load-mysql.pl to general load-dbi.pl
 - Add SeeAlso::Test for testing SeeAlso services 
 -- Add test of SeeAlso::Source::DBI with SQLite
 - clean up the code
 -- look for TODOs
 -- look for missing documentation 
-- Full english documentation and HOWTO
+- Add a tutorial
 -- Create a management object (needed for testing and quality of service)
-- Better logging and error handling
---- Apache Logfile => logformat, direct log writer ...
+- Change SeeAlso::Source::DBI and add Wikipedia/LibraryThing example
+-- rewrite, test and document ETL cycle
+-- convert bash scripts in the example directory to perl 
+-- change load-mysql.pl to general load-dbi.pl
+- Better error handling (also log errors)
 - Better support of OpenSearch Description (more fields)
+-- use OpenSearch::Description
 -- allow SeeAlso::Source->description( %properties )
 -- add date of last DBI-update in the description (from database?)
 -- Support WADL and WSDL?
+- Point to the JavaScript clients
 - Add SeeAlso::Discovery to discover servers via OpenSearch Description 
-- Support more of the OpenSearch Description fields
 - Run as a real server (on a port of your choice) : better performance?
 - Add SeeAlso::Source::Union and example
 - Add SeeAlso::Source::Cache and example
 - Add an example of a multilangual source with equal identifiers: LibraryThing?
+- Add caching HTTP header
 - Test support of the description field in a response
 - More Unicode (UTF-8) testing and hints
 - Increase performance (SQL-database index?)
 - Better/more loading mechanism for SeeAlso::Source::DBI
--- detect/remove full duplicates
+-- detect/remove full duplicates (better database index?)
 - Better debug-format (and document it)
 -- debug mode that prints all error messages
 - support of XSLT for OpenSearch Descriptions and unAPI formats
