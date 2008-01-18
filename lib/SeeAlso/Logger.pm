@@ -40,11 +40,11 @@ configuration file where logrotate can find in (/etc/logrotate.d/seealso).
 
   # example logrotate configuration for SeeAlso
   /var/log/seealso/*.log {
-      compress    # Old versions of log files are compressed with gzip
-      daily       # Log files are rotated every day
-      ifempty     # Rotate the log file even if it is empty
-      missingok   # Silently ignore missung log files
-      rotate 365  # keep 365 days worth of backlogs
+      compress
+      daily
+      ifempty
+      missingok
+      rotate 365
   }
 
 =head1 METHODS
