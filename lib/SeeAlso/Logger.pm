@@ -42,6 +42,7 @@ configuration file where logrotate can find in (/etc/logrotate.d/seealso).
   /var/log/seealso/*.log {
       compress
       daily
+      dateext
       ifempty
       missingok
       rotate 365

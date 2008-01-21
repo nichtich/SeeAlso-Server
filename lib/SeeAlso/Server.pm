@@ -240,12 +240,11 @@ sub query {
         }
     }
 
-    # TODO: write/log errors
-
     $response = SeeAlso::Response->new() unless defined $response;
 
     my $status = 200;
-    if ($callback && !$callback =~ /^[a-zA-Z0-9\._\[\]]+$/) {
+    if ($callback && !($callback =~ /^[a-zA-Z0-9\._\[\]]+$/)) {
+        # TODO: write/log error
         undef $callback;
         $status = 400;
     }

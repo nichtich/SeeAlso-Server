@@ -12,6 +12,7 @@ Features, that are planned to be implemented before 1.0 release include:
 -- convert bash scripts in the example directory to perl 
 -- change load-mysql.pl to general load-dbi.pl
 - Better error handling (also log errors)
+-- push errors from SeeAlso::Source to SeeAlso::Server
 - Better support of OpenSearch Description (more fields)
 -- use OpenSearch::Description
 -- allow SeeAlso::Source->description( %properties )

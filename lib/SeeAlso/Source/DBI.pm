@@ -8,6 +8,11 @@ use DBI;
 
 SeeAlso::Source::DBI - returns links stored in an SQL database
 
+=head1 DESCRIPTION
+
+This class wraps an SQL database that can deliver links for a given identifiers.
+The current layout is subject to changes so better not build upon it yet!
+
 =cut
 
 use SeeAlso::Source;

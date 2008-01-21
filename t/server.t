@@ -2,7 +2,7 @@
 
 use strict;
 
-use Test::More tests => 10;
+use Test::More tests => 12;
 
 use CGI;
 my $cgi = CGI->new();
@@ -76,4 +76,8 @@ ok ( not $source->hasErrors() and $http =~ /^Status: 200[^\[]+\["xyz",\["test"\]
 $http = $s->query($source, $identifier, 'foo');
 ok ( $http eq $xml300, 'Result but not right format');
 
+$http = $s->query($source, $identifier, 'seealso', 'a[1].b');
+ok ( not $source->hasErrors() and $http =~ /^Status: 200[^\[]+a\[1\]\.b\(\["xyz",\["test"\],\[""\],\[""\]\]\);$/m, 'JSON Result with callback' );
 
+$http = $s->query($source, $identifier, 'seealso', '{');
+ok ( $http =~ /^Status: 400/, 'invalid callback' );
