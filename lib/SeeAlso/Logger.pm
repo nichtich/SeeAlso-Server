@@ -11,7 +11,7 @@ use Carp qw(croak);
 use POSIX qw(strftime);
 
 use vars qw($VERSION);
-$VERSION = "0.40";
+$VERSION = "0.45";
 
 =head1 DESCRIPTION
 
@@ -47,6 +47,10 @@ configuration file where logrotate can find in (/etc/logrotate.d/seealso).
       missingok
       rotate 365
   }
+
+The constructor of this class does not throw an error if the file you
+specified for logging could not be opened. Instead test the 'handle'
+property whether it is defined.
 
 =head1 METHODS
 
@@ -120,7 +124,8 @@ sub new {
 =head2 set_file ( $file-or-handle )
 
 Set the file handler or file name or function to log to.
-May throw an error if opening the file failed.
+If you specify a filename, the filename property of this
+object is set. Returns the file handle on success.
 
 =cut
 
@@ -135,10 +140,9 @@ sub set_file {
     } else {
         $self->{filename} = $file;
         $self->{handle} = eval { local *FH; open( FH, ">>$file" ) or die; binmode FH, ":utf8"; *FH{IO}; };
-        if ( $@ ) {
-            croak("Failed to open file for writing: $file");
-        }
+        undef $self->{handle} if ( $@ ); # failed to open file
     }
+    return $self->{handle};
 }
 
 
@@ -146,7 +150,7 @@ sub set_file {
 
 Log a request and response. The response must be a L<SeeAlso::Response> object,
 the service is string. Each logging event is a line of tabulator seperated
-values
+values. Returns true if something was logged.
 
 =over 4
 
@@ -217,8 +221,10 @@ sub log {
         @values = $self->{filter}(@values);
     }
     if ( @values and defined $self->{handle} ) {
-        print { $self->{handle} } join("\t", @values) . "\n";;
+        print { $self->{handle} } join("\t", @values) . "\n";
     }
+
+    return 1;
 }
 
 1;

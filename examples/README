@@ -11,6 +11,8 @@ cgi-test.pl
 yahoo.pl
     simple wrapper for Yahoo Search Suggest
 
-dbi-example.pl
-    usage pattern form a SeeAlso service based on a database
+i2lt.pl
+    ISBN to LibraryThing service
 
+i2ltconf.pl
+    Database management tool for ISBN to LibraryThing service (see source)

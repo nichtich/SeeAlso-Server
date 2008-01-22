@@ -1,5 +1,8 @@
-0.42  2008-??-?? - Fixed ISBN bugs (ISBN-10 with invalid checksum)
-                 - Extended and fixed usage of SeeAlso::Logger
-		 - Callback is now safe
-0.41  2008-01-14 - Fixed initial public release ;-)
-0.40  2008-01-14 - Initial public release.
+0.48  2008-01-22 - rewrote SeeAlso::Source::DBI
+                 - extended and fixed usage of SeeAlso::Logger
+                 - the callback is now safely tested
+                 - fixed ISBN bugs (ISBN-10 with invalid checksum)
+                 - better error handling
+                 - added thingISBN examples with SeeAlso::Source::ThingISBN
+0.41  2008-01-14 - fixed initial public release ;-)
+0.40  2008-01-14 - initial public release.

@@ -15,7 +15,7 @@ use SeeAlso::Response;
 use SeeAlso::Source;
 
 use vars qw($VERSION);
-$VERSION = "0.42";
+$VERSION = "0.48";
 
 =head1 DESCRIPTION
 
@@ -221,21 +221,19 @@ sub query {
         }
     }
 
-    # If everything is ok up to here, there must not be an error thrown
+    # If everything is ok up to here, we should definitely return some valid stuff
 
-    my ($response, $error);
+    my ($response, @errors);
     eval {
         $response = $source->query($identifier);
     };
-    $error = $@;
-    if (not defined $error and $source->hasErrors()) {
-        $error = $source->errors();
-    }
-    if ($error) {
+    push @errors, $@ if $@;
+    push @errors, @{ $source->errors() } if $source->hasErrors();
+    if (@errors) {
         undef $response;
     } else {
         if (defined $response && !UNIVERSAL::isa($response, 'SeeAlso::Response')) {
-            $error = ref($source) . "->query must return a SeeAlso::Response object but it did return '" . ref($response) . "'";
+            push @errors, ref($source) . "->query must return a SeeAlso::Response object but it did return '" . ref($response) . "'";
             undef $response;
         }
     }
@@ -244,27 +242,40 @@ sub query {
 
     my $status = 200;
     if ($callback && !($callback =~ /^[a-zA-Z0-9\._\[\]]+$/)) {
-        # TODO: write/log error
+        push @errors, "Invalid callback name specified";
         undef $callback;
         $status = 400;
     }
 
+    if ( $self->{logger} ) {
+        my $service = $source->description( "ShortName" );
+        eval {
+            $self->{logger}->log( $cgi, $response, $service )
+            || push @errors, "Logging failed";
+        };
+        push @errors, $@ if $@;
+    }
     if ( $format eq "seealso" ) {
-        if ( $self->{logger} ) {
-            my $service = $source->description( "ShortName" );
-            $self->{logger}->log( $cgi, $response, $service );
-        }
         $http .= $cgi->header( -status => $status, -type => 'text/javascript; charset: utf-8' );
         $http .= $response->toJSON($callback);
     } elsif ( $format eq "debug") {
-        use Data::Dumper;
-        $http .= $cgi->header( -type => 'text/javascript; charset: utf-8' );
-        $http .= "Status: $status\n";
-        $http .= "Response: " . Dumper($response) . "\n";
-        $http .= "JSON Response: " . $response->toJSON($callback) . "\n";
-        if ($source->hasErrors) {
-            $http .= "Errors:\n* " . join("\n* ", @{ $source->errors() }) . "\n";
+        $http .= $cgi->header( -status => $status, -type => 'text/javascript; charset: utf-8' );
+        $http .= "/*\n";
+
+        use Class::ISA;
+        no strict 'refs'; # not clean but cool
+        my %vars = ( Server => $self, Source => $source, Identifier => $identifier, Response => $response );
+        foreach my $var (keys %vars) {
+            $http .= "$var is a " .
+                join(", ", map { $_." ".${"$_\::VERSION"}; }
+                Class::ISA::self_and_super_path(ref($vars{$var})))
+            . "\n";
         }
+        $http .= "\n";
+        $http .= "HTTP response status code is $status\n";
+        $http .= "\nInternally the following errors occured:\n- " . join("\n- ", map {chomp; $_;} @errors) . "\n" if @errors;
+        $http .= "*/\n";
+        $http .= $response->toJSON($callback);
     } else {
         $http = $self->listFormats($response);
     }

@@ -11,18 +11,20 @@ lib/SeeAlso/Identifier/ISBN.pm
 lib/SeeAlso/Response.pm
 lib/SeeAlso/Source.pm
 lib/SeeAlso/Source/DBI.pm
+lib/SeeAlso/Source/ThingISBN.pm
 lib/SeeAlso/Logger.pm
 
 examples/README
 examples/cgi-test.pl
 examples/yahoo.pl
-examples/load-mysql.pl
+examples/i2lt.pl
+examples/i2ltconf.pl
 
-t/listFormats200.xml
 t/pod-coverage.t
 t/response.t
 t/pod.t
 t/server.t
+t/listFormats200.xml
 t/listFormats200noosd.xml
 t/listFormats404.xml
 t/listFormats300.xml
@@ -30,5 +32,7 @@ t/identifier.t
 t/pnd.t
 t/isbn.t
 t/source.t
+t/thingisbn.t
+t/dbisource.t
 
 META.yml                                 Module meta-data (added by MakeMaker)

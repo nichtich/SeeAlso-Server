@@ -4,206 +4,227 @@ use strict;
 use Carp qw(croak);
 use DBI;
 
-=head1 NAME
-
-SeeAlso::Source::DBI - returns links stored in an SQL database
-
-=head1 DESCRIPTION
-
-This class wraps an SQL database that can deliver links for a given identifiers.
-The current layout is subject to changes so better not build upon it yet!
-
-=cut
-
 use SeeAlso::Source;
 
 use vars qw( @ISA $VERSION );
 @ISA = qw( SeeAlso::Source );
-$VERSION = "0.40";
+$VERSION = "0.44";
 
-=head2 new ($dsi, $username, $auth, %attr)
+=head1 NAME
+
+SeeAlso::Source::DBI - returns links stored in an SQL database (abstract class)
+
+=head1 DESCRIPTION
+
+This class wraps a SQL database that can deliver links for a given identifiers.
+It is an abstract subclass of L<SeeAlso::Source> and should not used directly.
+Instead you should define a subclass that implements the following methods:
+
+=over 4
+
+=item mQuery
+
+The query method as required by L<SeeAlso::Source>. The method gets a
+L<SeeAlso::Identifier> object and returns a L<SeeAlso::Response> object.
+The method should croak on errors.
+
+=item createTable
+
+Purges and (re)create the database table(s). Usually this is done via a
+<tt>DROP TABLE IF EXISTS ...</tt> followed by a <tt>CREATE TABLE ...</tt>.
+
+=item insertQuery
+
+Returns a prepared statement to insert a row into the database. You
+should either implement this method or set the property insertQuery.
+
+=item loadTable
+
+Returns the name of the standard table to load data into.
+By default returns the propery loadTable.
+
+=back
+
+=head1 METHODS
+
+=head2 new ( %options )
 
 Create a new SeeAlso server with a given database connection.
+Subclasses should set the property dbh with L<DBI> connect.
+It is recommended to support the following options:
+
+=over 4
+
+=item dsi
+
+First parameter for L<DBI> connect method
+
+=item user
+
+Database user
+
+=item password
+
+Database Password
+
+=item limit
+
+A numerical limit for queries
+
+=back
 
 =cut
 
 sub new {
-    my ($class, $dsi, $table, $username, $auth, %attr) = @_;
-
-    croak("database table must only contain letters, digitas and/or underscore")
-        unless $table =~ /[a-z0-9_]+/;
+    my ($class, %options) = @_;
 
     my $self = bless {
-        errors => undef,
-        table => $table
     }, $class;
-
-    # TODO: remove this ugly code
-    $self->{mQuery} = \&SeeAlso::Source::DBI::db_query;
-    $self->{mQuerySelf} = 1;
-
-    # database connection (TODO: stop messages to STDERR (by {'RaiseError' => 1}?))
-    $self->{dbh} = DBI->connect($dsi, $username, $auth, %attr);
-    if (not $self->{dbh}) {
-        $self->errors("Failed to establish DBI connection");
-        return $self;
-    }
-
-    # prepared statement
-    # TODO: check '$table' and add LIMIT $limit
-    my $query = "SELECT DISTINCT label, description, uri FROM $table WHERE identifier = ?";
-    $self->{sth} = $self->{dbh}->prepare($query);
-    if (not $self->{sth}) {
-        $self->errors("Failed to create prepared statement");
-        return $self;
-    }
-
-    # add insert into statement for single inserts (TODO: check this)
-    $query = "INSERT INTO $table VALUES (?,?,?,?)";
-    $self->{insert_sth} = $self->{dbh}->prepare($query);
 
     return $self;
 }
 
-=head2 db_query ( $identifier )
-
-Gets a L<SeeAlso::Identifier> object and returns a L<SeeAlso::Response> object
-or may throw an error. Do not directly call this but with the method C<query>!
-
-=cut
-
-sub db_query {
-    my $self = shift;
-    my $identifier = shift;
-
-    my $response = SeeAlso::Response->new( $identifier->normalized );
-    return $response unless $response->hasQuery;
-    return $response unless $self->connected();
-
-    my $sth = $self->{sth};
-
-    $sth->execute( $identifier->indexed );
-    while ( my @row = $sth->fetchrow_array ) {
-        $response->add($row[0],$row[1],$row[2]);
-    }
-
-    return $response;
- }
-
 =head2 connected
 
-Return whether the database connection is established.
+Return whether a database connection has been established.
+By default returns the propery dbh.
 
 =cut
 
 sub connected {
     my $self = shift;
-    return $self->{dbh} && $self->{sth};
+    return $self->{dbh};
 }
 
-=head2 load_file ( $filename )
+=head2 insertQuery
 
-Load a local file into the database. Currently only MySQL is supported.
-The local file must contain on each line identifier, label, description, 
-and uri seperated by tabulator. The local file is not tested to conform
-to this requirement, you can use the check_load_file method for this.
-Returns the number of loaded records.
+Returns a prepared statement to insert a row into the database.
+By default returns the  property insertQuery.
 
 =cut
 
-sub load_file {
+sub insertQuery {
     my $self = shift;
-    my $filename = shift;
+    return $self->{insertQuery};
+}
+
+=head2 loadTable
+
+Returns the name of the standard table to load data into.
+By default returns the propery loadTable.
+
+=cut
+
+sub loadTable {
+    my $self = shift;
+    return $self->{loadTable};
+}
+
+=head2 loadFile ( %options )
+
+Load data from a local file 'file' into the database. By default
+the prepared statement returned by insertQuery will be used for
+each line of the file. If the 'bulk' option is set, a much
+faster bulk import is tried and data is loaded into the table
+specified by loadTable.
+Usage example:
+
+  $db->loadFile( file => "links.tab", bulk => 1 );
+
+The file must contain tabular seperated data.
+
+Up to now bulk import is only implemented for MySQL.
+
+=cut
+
+sub loadFile {
+    my ($self, %options) = @_;
+    my $filename = $options{file} || "";
+    my $bulk = $options{bulk} || 0;
 
     croak("Not connected") unless $self->connected;
     croak("Cannot read input file $filename!")
         unless defined $filename and (-r $filename);
 
     my $dbh = $self->{dbh};
-    my $table = $self->{table};
+    my $table = $self->{loadTable} || "seealso"; # TODO: check valid table name
 
-    $self->create_table();
-
-    my $rows = $dbh->do( "LOAD DATA LOCAL INFILE " . $dbh->quote($filename) . " INTO TABLE $table" );
-
-    return $rows;
-}
-
-=head2 create_table
-
-purge and create table.
-
-=cut
-
-sub create_table {
-    my $self = shift;
-
-    croak("Not connected") unless $self->connected;
-
-    my $dbh = $self->{dbh};
-    my $table = $self->{table};
-
-    $dbh->do( "DROP TABLE IF EXISTS $table" );
-    $dbh->do( "CREATE TABLE $table (
-        identifier  varchar(255) not null default '',
-        label       varchar(255) not null default '',
-        description varchar(255) not null default '',
-        uri         varchar(255) not null default ''
-      ) engine=InnoDB");
-}
-
-=head2 check_load_file ( $filename )
-
-Test a local file whether it can be load into the database. Does not test 
-whether the database connection is available but the integrity of the file
-to be load with the load_file method. Each line must consists of identifier, 
-label, description, and uri seperated by tabulator. 
-
-Up to now this method is experimental. Only the existence of four values 
-is checked, empty strings are allowed as well as malformed uris and 
-duplicates.
-
-This metod returns the number of malformed lines, so it returns 0 if 
-the file is valid.
-
-=cut
-
-sub check_load_file {
-    my $self = shift;
-    my $filename = shift;
-
-    croak("Cannot read input file $filename!")
-        unless defined $filename and (-r $filename);
-
-    my $errors = 0;
-
-    open FILE, $filename or croak("Error openig $filename");
-    while (<FILE>) {
-        chomp;
-        my @values = split "\t";
-        $errors++ unless scalar(@values) == 4;
+    $bulk = 0 if not defined $self->{driver};
+    if ($bulk) {
+        $bulk = 0 if $self->{driver} ne "mysql";
     }
-    close FILE; 
-
-    return $errors;
+    if ($bulk) {
+        if ($self->{driver} eq "mysql") { # MySQL
+            my $rows = $dbh->do(
+                "LOAD DATA LOCAL INFILE " 
+                . $dbh->quote($filename) . " INTO TABLE $table"
+            );
+            # TODO: bulk import via STDIN instead of local file
+            return $rows;
+        } elsif ($self->{driver} eq "pg") { # PostgreSQL
+            # TODO:  COPY $table FROM STDIN
+            # See http://www.postgresql.org/docs/current/interactive/sql-copy.html
+        }
+    } else {
+        open (FH, $filename) or croak("Failed to open $filename");
+        my $query = $self->insertQuery;
+        croak ("insertQuery not available in loadFile") unless $query;
+        my $rows = 0;
+        my $invalidRows = 0;
+        while (<FH>) {
+            if ( my @data = $self->parseInsertString($_) ) {
+                $query->execute( @data ) && $rows++;
+            } else {
+                $invalidRows++;
+            }
+        }
+        close FH;
+        $self->errors("loadFile skipped $invalidRows invalid rows") if $invalidRows;
+        return $rows;
+    }
 }
 
-=head2 insert ( identifier, label, description, uri )
+=head2 parseInsertString ( $string )
 
-Inserts a single response content (experimental).
+Parse a string to be inserted into the loadTable with insertQuery.
+Implementations of this method must return undef (on error) or an
+array that can directly be passed to insertQuery. By default
+the method just removes a trailing newline and splits the line by
+tabulators. Other implementations should also validate the data
+for not to fill the database with junk.
 
 =cut
 
-sub insert {
+sub parseInsertString {
     my $self = shift;
+    my $line = shift;
+    chomp $line;
+    return split("\t",$line);
+}
 
-    # TODO: use a SeeAlso::Response object instead
-    my ($identifier, $label, $description, $uri) = @_;
+=head2 createTable
 
-    return unless $self->connected();
-    my $insert_sth = $self->{insert_sth};
+Purge and (re)create the table table(s). Usually this is done via a
+<tt>DROP TABLE IF EXISTS ...</tt> followed by a <tt>CREATE TABLE ...</tt>.
+This method is abstract and will always croak. Any implementation of
+a subclass should return true on success.
 
-    return $insert_sth->execute( $identifier, $label, $description, $uri );
+=cut
+
+sub createTable {
+    my $self = shift;
+    croak("createTable is not implemented");
+}
+
+=head2 insertResponse ( $response )
+
+Insert links from a L<SeeAlso::Response> object. Not implemented by default.
+
+=cut
+
+sub insertResponse {
+    my $self = shift;
+    croak("insertResponse is not implemented");
 }
 
 1;

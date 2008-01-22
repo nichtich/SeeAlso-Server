@@ -5,7 +5,7 @@ use Carp qw(croak);
 use SeeAlso::Response;
 
 use vars qw($VERSION);
-$VERSION = "0.42";
+$VERSION = "0.45";
 
 =head1 NAME
 
@@ -20,11 +20,13 @@ SeeAlso::Source - a source of OpenSearch Suggestions reponses
  ...
   $source->
 
-=head2 new ( $query_method [, @description ] )
+=head2 new ( [ $query_method [, @description ] ] )
 
 Create a new source. You can provide a query method (mQuery). The query method
 gets a L<SeeAlso::Identifier> object and must return a L<SeeAlso::Response>.
-The optional @description parameter is passed to the description method.
+The optional @description parameter is passed to the description method. Instead
+of providing a query method by parameter you can also derive a subclass and define
+the mQuery method.
 
 =cut
 
@@ -35,7 +37,7 @@ sub new {
         if defined $query and ref($query) ne "CODE";
 
     my $self = bless {
-        mQuery => $query,
+        mQuery => $query || undef,
         errors => undef
     }, $class;
     $self->description( @description ) if @description;
@@ -110,8 +112,6 @@ sub description {
 Gets a L<SeeAlso::Identifier> object and returns a L<SeeAlso::Response> object.
 If you override this method, make sure that errors get catched!
 
-By default an empty result always contains the normalized form of the identifier.
-
 =cut
 
 sub query {
@@ -119,21 +119,21 @@ sub query {
     my $identifier = shift;
     my $response;
 
-    if (defined $self->{mQuery}) {
-        eval {
-            if ($self->{mQuerySelf}) {
-                # TODO: this is ugly - better redesign Source::DBI!
-                $response = &{$self->{mQuery}}($self, $identifier);
-            } else {
-                $response = &{$self->{mQuery}}($identifier);
-            }
-            if ( ! UNIVERSAL::isa($response, "SeeAlso::Response") ) {
-                $self->errors("Query method did not return SeeAlso::Response!");
-                undef $response;
-            }
-        };
-        if ($@) {
-            $self->errors($@);
+    if ( $self->{mQuery} ) {
+        #eval {
+            $response = &{$self->{mQuery}}($identifier);
+        #};
+    } else {
+        #eval {
+            $response = $self->mQuery($identifier);
+        #}
+    }
+    if ($@) {
+        $self->errors($@);
+    } else {
+        if ( ! UNIVERSAL::isa($response, "SeeAlso::Response") ) {
+            $self->errors("Query method did not return SeeAlso::Response!");
+            undef $response;
         }
     }
     return $response = SeeAlso::Response->new( $identifier->normalized )

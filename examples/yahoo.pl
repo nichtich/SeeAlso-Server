@@ -22,7 +22,7 @@ use JSON;
 use utf8;
 
 use FindBin;
-use lib "$FindBin::RealBin/../lib";
+use lib "$FindBin::RealBin/lib";
 
 use SeeAlso::Server;
 use SeeAlso::Source;
