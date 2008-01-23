@@ -16,6 +16,7 @@ Features, that are planned to be implemented before 1.0 release include:
 - Better support of OpenSearch Description (more fields)
 -- use OpenSearch::Description
 -- allow SeeAlso::Source->description( %properties )
+-- title, description, url, date, example, example response, normalize, source
 -- add date of last DBI-update in the description (from database?)
 -- Support WADL and WSDL?
 - Point to the JavaScript clients
