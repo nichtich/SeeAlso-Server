@@ -2,7 +2,7 @@
 
 use strict;
 
-use Test::More tests => 7;
+use Test::More tests => 9;
 
 use SeeAlso::Identifier::ISBN;
 
@@ -28,3 +28,11 @@ ok ( !$isbn->valid, "invalid ISBN-13" );
 my $i = "9991372539";
 $isbn = SeeAlso::Identifier::ISBN->new("9991372539");
 ok ( $isbn->valid, "valid ISBN: $i" );
+
+# additional spaces
+$isbn->value('  0596527241 ');
+ok( $isbn->valid, 'additional spaces' );
+
+# uri
+$isbn->value('urn:isbn:9780596527242');
+ok( $isbn->valid , 'urn:isbn' );

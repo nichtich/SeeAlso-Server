@@ -27,7 +27,7 @@ use Carp;
 
 use vars qw( $VERSION @ISA );
 @ISA = qw( SeeAlso::Identifier );
-$VERSION = "0.5";
+$VERSION = "0.51";
 
 =head1 METHODS
 
@@ -39,9 +39,26 @@ Create a new PND identifier.
 
 sub new {
     my $class = shift;
-    return bless {
-        value => uc(shift || "")
-    }, $class;
+    my $self = bless { }, $class;
+    $self->value( shift || "" );
+    return $self;
+}
+
+=head2 value ( [ $value ] )
+
+Get and/or set the value of this identifier.
+
+=cut
+
+sub value {
+    my $self = shift;
+    my $value = shift;
+
+    if (defined $value) {
+        $self->{value} = uc($value);
+    }
+
+    return $self->{value};
 }
 
 =head2 valid
@@ -66,3 +83,17 @@ sub valid() {
 }
 
 1;
+
+__END__
+
+=head1 AUTHOR
+
+Jakob Voss C<< <jakob.voss@gbv.de> >>
+
+=head1 LICENSE
+
+Copyright (C) 2007 by Verbundzentrale Goettingen (VZG) and Jakob Voss
+
+This library is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself, either Perl version 5.8.8 or, at
+your option, any later version of Perl 5 you may have available.

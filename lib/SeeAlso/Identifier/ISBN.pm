@@ -36,7 +36,7 @@ sub new {
 
 =head2 value ( [ $value ] )
 
-Get and/or set the value of this identifier.
+Get and/or set the value of the ISBN.
 Returns undef or the valid value ISBN-13 with hyphens.
 
 =cut
@@ -46,7 +46,7 @@ sub value {
     my $value = shift;
 
     if (defined $value) {
-        $value =~ s/^[uU][rR][nN]:[iI][sS][Bb][Nn]//;
+        $value =~ s/^[uU][rR][nN]:[iI][sS][Bb][Nn]://;
         $self->{value} = Business::ISBN->new( $value );
         return unless defined $self->{value};
 
@@ -106,15 +106,16 @@ sub normalized {
     return $self->uri;
 }
 
-=head2 valid
-
-Returns whether the ISBN is valid.
-
-=cut
-
-sub valid {
-    my $self = shift;
-    return defined $self->{value};
-}
-
 1;
+
+=head1 AUTHOR
+
+Jakob Voss C<< <jakob.voss@gbv.de> >>
+
+=head1 LICENSE
+
+Copyright (C) 2007 by Verbundzentrale Goettingen (VZG) and Jakob Voss
+
+This library is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself, either Perl version 5.8.8 or, at
+your option, any later version of Perl 5 you may have available.
