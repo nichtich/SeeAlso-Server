@@ -227,4 +227,25 @@ sub log {
     return 1;
 }
 
+=head1 ADDITIONAL FUNCTIONS
+
+=head2 parse ( $line )
+
+Parses a line of of seven tabulator seperated values. The first value must be a
+ISO 8601 timestamp.
+as
+
+=cut
+
+use Date::Parse;
+
+sub parse {
+    chomp;
+    my @values = split /\t/;
+    return unless $#values == 6;
+    eval { $values[0] = str2time($values[0]); };
+    return if $@;
+    return @values;
+}
+
 1;

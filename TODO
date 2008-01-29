@@ -5,6 +5,7 @@ Features, that are planned to be implemented before 1.0 release include:
 - clean up the code
 -- look for TODOs
 -- look for missing documentation 
+- remove missing zeroes in ISBN
 - Add a tutorial
 -- Create a management object (needed for testing and quality of service)
 - Change SeeAlso::Source::DBI and add Wikipedia/LibraryThing example
