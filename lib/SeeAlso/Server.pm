@@ -8,7 +8,7 @@ SeeAlso::Server - SeeAlso Linkserver Protocol Server
 
 use strict;
 use Carp qw(croak);
-use CGI;
+use CGI qw(-oldstyle_urls);
 
 use SeeAlso::Identifier;
 use SeeAlso::Response;
@@ -154,7 +154,7 @@ sub listFormats {
 
     if ($self->{xslt}) {
         push @xml, "<?xml-stylesheet type=\"text/xsl\" href=\"" . xmlencode($self->{xslt}) . "\"?>";
-        eval { push @xml, "<?seealso-query-base " . xmlencode($self->{cgi}->self_url()) . "?>"; };
+        eval { push @xml, "<?seealso-query-base " . xmlencode($self->baseURL) . "?>"; };
     }
 
     if ($response->hasQuery) {
@@ -318,11 +318,11 @@ sub openSearchDescription {
     }
 
     my $cgi = $self->{cgi};
-    my $domain = $cgi->virtual_host() || $cgi->server_name();
-    my $baseURL = "http://" . $domain . $cgi->script_name(); # TODO: what about https?
+    my $baseURL = $self->baseURL;
 
     my @xml = '<?xml version="1.0" encoding="UTF-8"?>';
     push @xml, '<OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/">';
+
 
     if ($source and UNIVERSAL::isa($source, "SeeAlso::Source")) {
         my %descr = %{ $source->description() };
@@ -339,7 +339,7 @@ sub openSearchDescription {
         push @xml, "  <Description>" . xmlencode( $description ) . "</Description>"
             if defined $description;
 
-        $baseURL = $descr{"BaseURL"}
+        $baseURL = $descr{"BaseURL"}  # overwrites standard
             if defined $descr{"BaseURL"};
 
         my $modified = $descr{"DateModified"};
@@ -356,6 +356,25 @@ sub openSearchDescription {
     push @xml, "</OpenSearchDescription>";
 
     return join("\n", @xml);
+}
+
+=head2 baseURL
+
+Return the full SeeAlso base URL of this server. Append the <tt>format=seealso</tt> parameter
+to get a SeeAlso simple base URL.
+
+=cut
+
+sub baseURL {
+    my $self = shift;
+    my $cgi = $self->{cgi};
+
+    # remove id, format, and callback parameter
+    my $q = "&" . $cgi->query_string();
+    $q =~ s/&(id|format|callback)=[^&]*//g;
+    $q =~ s/^&//;
+    return $cgi->url . "?$q" if $q;
+    return $cgi->url;
 }
 
 =head1 ADDITIONAL FUNCTIONS
