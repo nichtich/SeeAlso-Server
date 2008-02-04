@@ -15,7 +15,7 @@ use SeeAlso::Response;
 use SeeAlso::Source;
 
 use vars qw($VERSION);
-$VERSION = "0.48";
+$VERSION = "0.49";
 
 =head1 DESCRIPTION
 
@@ -71,6 +71,11 @@ a L<CGI> object. If not specified, a new L<CGI> object is created.
 
 a <SeeAlso::Logger> object for logging.
 
+=item xslt
+
+the URL (relative or absolute) of an XSLT script to display the unAPI
+format list.
+
 =item description
 
 a string (or function) that contains (or returns) an
@@ -99,7 +104,8 @@ sub new {
     my $self = bless {
         cgi => $cgi || new CGI,
         description => $description,
-        logger => $logger
+        logger => $logger,
+        xslt => $params{xslt} || undef
     }, $class;
 
     return $self;
@@ -145,6 +151,11 @@ sub listFormats {
 
     my $http = $self->{cgi}->header( -status => $status, -type => 'application/xml; charset: utf-8' );
     my @xml = ("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+
+    if ($self->{xslt}) {
+        push @xml, "<?xml-stylesheet type=\"text/xsl\" href=\"" . xmlencode($self->{xslt}) . "\"?>";
+        eval { push @xml, "<?seealso-query-base " . xmlencode($self->{cgi}->self_url()) . "?>"; };
+    }
 
     if ($response->hasQuery) {
         push @xml, "<formats id=\"" . xmlencode($response->{query}) . "\">";
@@ -341,7 +352,7 @@ sub openSearchDescription {
     }
     my $template = $baseURL . (($baseURL =~ /\?/) ? '&' : '?')
                  . "id={searchTerms}&format=seealso&callback={callback}";
-    push @xml, "  <Url type=\"text/javascript\" template=\"$template\"/>";
+    push @xml, "  <Url type=\"text/javascript\" template=\"" . xmlencode($template) . "\"/>";
     push @xml, "</OpenSearchDescription>";
 
     return join("\n", @xml);
