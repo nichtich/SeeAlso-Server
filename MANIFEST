@@ -35,4 +35,8 @@ t/source.t
 t/thingisbn.t
 t/dbisource.t
 
+client/showservice.xsl
+client/xmlverbatim.xsl
+client/xmlverbatim.css 
+
 META.yml                                 Module meta-data (added by MakeMaker)

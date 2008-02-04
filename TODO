@@ -34,8 +34,7 @@ Features, that are planned to be implemented before 1.0 release include:
 -- detect/remove full duplicates (better database index?)
 - Better debug-format (and document it)
 -- debug mode that prints all error messages
-- support of XSLT for OpenSearch Descriptions and unAPI formats
--- add XSLT to OpenSearch Description
+- more flexible setting of xslt client
 - restrict access of cgi server by referrer, IP, etc. (better in .htaccess ?)
 - simplify ETL-examples (thingISBN and Wikipedia)
 - add a REST-server that eats SeeAlso response format via 

@@ -14,7 +14,8 @@ use ExtUtils::MakeMaker;
         'CGI' => '3.0',
         'Carp' => '1.01',
         'DBI' => '1.54',
-        'Business::ISBN' => '2.02'
+        'Business::ISBN' => '2.02',
+        'Date::Parse' => '2.27'
     },
     dist            => {
         COMPRESS => 'gzip -9f',
