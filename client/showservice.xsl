@@ -39,10 +39,7 @@
     <xsl:text>format=opensearchdescription</xsl:text>
   </xsl:param>
   
-  <!-- 
-  You probably have to change this according to your server settings
-  TODO: make it simpler!
-  -->
+  <!-- You probably have to change this according to your server settings -->
   <xsl:param name="jscssbase">
     <xsl:choose>
       <xsl:when test="$seealso-query-base and substring($seealso-query-base,string-length($seealso-query-base)) = '/'">../</xsl:when>
@@ -60,7 +57,6 @@
   <so:MetadataFields>
     <osd:ShortName/>
     <osd:Description/>
-    <!-- TODO: more fields -->
   </so:MetadataFields>
   
   <!-- root -->
@@ -138,7 +134,7 @@
           }  
          </script> 
       </head>
-      <body>
+      <body onload="lookup();">
         <xsl:choose>
           <xsl:when test="namespace-uri($osd/*[1]) = 'http://a9.com/-/spec/opensearch/1.1/'">          
             <h1><xsl:value-of select="$name"/></h1>
@@ -225,7 +221,7 @@
     <table id='demo'>
       <tr>
         <th>query</th>            
-        <td><input type="value" id="identifier" onkeyup="lookup();" size="40"/>
+        <td><input type="text" id="identifier" onkeyup="lookup();" size="40" value="{/formats/@id}"/>
           <xsl:if test="$examples">
             <xsl:text> (for instance </xsl:text>
             <xsl:for-each select="$examples">
