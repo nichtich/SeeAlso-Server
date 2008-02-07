@@ -1,43 +1,41 @@
 Features, that are planned to be implemented before 1.0 release include:
 
 - Add SeeAlso::Test for testing SeeAlso services 
--- Add test of SeeAlso::Source::DBI with SQLite
+- Add SeeAlso::Discovery to discover servers via OpenSearch Description 
+- Add test of SeeAlso::Source::DBI with SQLite
 - clean up the code
 -- look for TODOs
 -- look for missing documentation 
-- remove missing zeroes in ISBN
+- remove/add missing zeroes in ISBN?
 - Add a tutorial
--- Create a management object (needed for testing and quality of service)
-- Change SeeAlso::Source::DBI and add Wikipedia/LibraryThing example
+-- Create a management object (needed for testing and quality of service)?
+- Add/improve Wikipedia/LibraryThing examples
 -- rewrite, test and document ETL cycle
 -- convert bash scripts in the example directory to perl 
--- change load-mysql.pl to general load-dbi.pl
 - Better error handling (also log errors)
 -- push errors from SeeAlso::Source to SeeAlso::Server
 - Better support of OpenSearch Description (more fields)
 -- use OpenSearch::Description
 -- allow SeeAlso::Source->description( %properties )
 -- title, description, url, date, example, example response, normalize, source
--- add date of last DBI-update in the description (from database?)
+-- add date of last DBI-update in the description (from database?) on load!
 -- Support WADL and WSDL?
 - Point to the JavaScript clients
-- Add SeeAlso::Discovery to discover servers via OpenSearch Description 
 - Run as a real server (on a port of your choice) : better performance?
-- Add SeeAlso::Source::Union and example
-- Add SeeAlso::Source::Cache and example
+- Add client (a SeeAlso::Source)
+-- Add SeeAlso::Source::Union and example
+-- Add SeeAlso::Source::Cache and example
 - Add an example of a multilangual source with equal identifiers: LibraryThing?
 - Add caching HTTP header
-- Test support of the description field in a response
+- Test/improve support of the description field in a response
 - More Unicode (UTF-8) testing and hints
-- Increase performance (SQL-database index?)
 - Better/more loading mechanism for SeeAlso::Source::DBI
 -- detect/remove full duplicates (better database index?)
-- Better debug-format (and document it)
--- debug mode that prints all error messages
-- more flexible setting of xslt client
+- add/test support of client-base in XSLT
 - restrict access of cgi server by referrer, IP, etc. (better in .htaccess ?)
 - simplify ETL-examples (thingISBN and Wikipedia)
 - add a REST-server that eats SeeAlso response format via 
   HTTP POST (new), HTTP PUT (add) and HTTP DELETE (delete).
   Response formats and status codes need to be defined for this
+- remove Date::Parse prequisite
 

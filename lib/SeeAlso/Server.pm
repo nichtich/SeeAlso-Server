@@ -15,7 +15,7 @@ use SeeAlso::Response;
 use SeeAlso::Source;
 
 use vars qw($VERSION);
-$VERSION = "0.49";
+$VERSION = "0.50";
 
 =head1 DESCRIPTION
 
@@ -52,7 +52,8 @@ object:
   print $http;
 
 The examples directory contains a full example. For more specialised servers 
-you may also need to use L<SeeAlso::Identifier> or one of its subclasses.
+you may also need to use L<SeeAlso::Identifier> or one of its subclasses and
+another subclass of L<SeeAlso::Source>.
 
 =head1 METHODS
 
@@ -74,7 +75,13 @@ a <SeeAlso::Logger> object for logging.
 =item xslt
 
 the URL (relative or absolute) of an XSLT script to display the unAPI
-format list.
+format list. An XSLT to display a full demo client is available.
+
+=item clientbase
+
+the base URL (relative or absolute) of a directory that contains
+client software to access the service. Only needed for the XSLT 
+script so far.
 
 =item description
 
@@ -83,6 +90,16 @@ OpenSearch Description document as XML string. By default the
 openSearchDescription method of this class is used. You can switch off 
 support of OpenSearch Description by setting opensearchdescription to 
 the empty string.
+
+=item debug
+
+set debug level. By default (0) format=debug adds debugging information
+as JavaScript comment in the JSON response. You can force this with
+debug=1 and prohibit with debug=-1.
+
+=item logger
+
+set a logger for this server. See the method C<logger> below.
 
 =back
 
@@ -105,8 +122,12 @@ sub new {
         cgi => $cgi || new CGI,
         description => $description,
         logger => $logger,
-        xslt => $params{xslt} || undef
+        xslt => $params{xslt} || undef,
+        clientbase => $params{clientbase} || undef,
+        debug => $params{debug} || 0
     }, $class;
+
+    $self->logger($params{logger}) if defined $params{logger};
 
     return $self;
 }
@@ -154,7 +175,10 @@ sub listFormats {
 
     if ($self->{xslt}) {
         push @xml, "<?xml-stylesheet type=\"text/xsl\" href=\"" . xmlencode($self->{xslt}) . "\"?>";
-        eval { push @xml, "<?seealso-query-base " . xmlencode($self->baseURL) . "?>"; };
+        push @xml, "<?seealso-query-base " . xmlencode($self->baseURL) . "?>";
+    }
+    if ($self->{clientbase}) {
+        push @xml, "<?seealso-client-base " . xmlencode($self->{clientbase}) . "?>";
     }
 
     if ($response->hasQuery) {
@@ -266,6 +290,10 @@ sub query {
         };
         push @errors, $@ if $@;
     }
+
+    $format = "seealso" if ( $format eq "debug" && $self->{debug} == -1 ); 
+    $format = "debug" if ( $format eq "seealso" && $self->{debug} == 1 ); 
+
     if ( $format eq "seealso" ) {
         $http .= $cgi->header( -status => $status, -type => 'text/javascript; charset: utf-8' );
         $http .= $response->toJSON($callback);

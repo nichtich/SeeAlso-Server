@@ -1,6 +1,6 @@
-0.??             - added xslt to unAPI format list and showservice XSLT client
-                 - added ISIL identifier (TODO: example needed!)
-                 - added SeeAlso::baseURL (dynamic)
+0.??  2008-02-?? - added xslt to unAPI format list and self-describe XSLT
+                 - added SeeAlso::Identifier::ISIL identifier (preliminary)
+                 - better detection of base URL
 0.48  2008-01-22 - rewrote SeeAlso::Source::DBI
                  - extended and fixed usage of SeeAlso::Logger
                  - the callback is now safely tested
