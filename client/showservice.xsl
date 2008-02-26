@@ -47,8 +47,6 @@
     </xsl:choose>  
   </xsl:param>
   <xsl:param name="xmlverbatim.css"><xsl:value-of select="$jscssbase"/>client/xmlverbatim.css</xsl:param>
-  <xsl:param name="jquery.js"><xsl:value-of select="$jscssbase"/>javascript-client/jquery.js</xsl:param>
-  <xsl:param name="json.js"><xsl:value-of select="$jscssbase"/>javascript-client/json.js</xsl:param>
   <xsl:param name="seealso.js"><xsl:value-of select="$jscssbase"/>javascript-client/seealso.js</xsl:param>
   
   <xsl:variable name="osd" select="document($osdurl)"/>
@@ -83,10 +81,6 @@
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
         <title>SeeAlso service : <xsl:value-of select="$name"/></title>
         <link rel="stylesheet" type="text/css" href="{$xmlverbatim.css}" />
-        <script src="{$jquery.js}" type="text/javascript" ></script>
-        <xsl:if test="$json.js">
-          <script src="{$json.js}" type="text/javascript" ></script>
-        </xsl:if>
         <script src="{$seealso.js}" type="text/javascript" ></script>
         <style type="text/css">
           body, h1, h2, th, td { font-family: sans-serif; }
@@ -116,20 +110,19 @@
         </style>
         <script type="text/javascript">        
           function lookup() {
-            var identifier = $('#identifier').val();
+            var identifier = document.getElementById('identifier').value;
             var service = new SeeAlsoService("<xsl:value-of select="$baseurl"/>");
             var view = new SeeAlsoUL();
             var url = service.url + "?format=seealso&amp;id=" + identifier;
             var a = document.getElementById('query-url');
             a.setAttribute("href",url);
-            $(a).text(url);
+            a.innerHTML = url; // TODO: escape HTML!
             url += "&amp;callback=?";
-            var element = $('#display');
-            <!-- TODO: if xsl:if test="$json.js" -->
-            $.getJSON(url, function(data) {
-            var json = $.toJSON(data);
-              $('#response').text(json);
-              view.display(element,data);
+            var displayElement = document.getElementById('display');
+            service.query(identifier, function(response) {
+              var json = response.toJSON();
+              document.getElementById('response').innerHTML = json; // TODO: escape HTML
+              view.display(displayElement,response);
             });           
           }  
          </script> 
@@ -150,7 +143,6 @@
             </xsl:call-template>
             <xsl:call-template name="demo">
               <xsl:with-param name="osd" select="$osd/osd:OpenSearchDescription"/>
-              <xsl:with-param name="json.js" select="$json.js"/>
             </xsl:call-template>
             <h2>OpenSearch description document</h2>
             <div class="code">
@@ -238,13 +230,11 @@
         <th>query URL</th>
         <td><a id='query-url' href=''></a></td>
       </tr>
-      <xsl:if test="$json.js">
-        <tr>
-          <th>response</th>
-          <td><pre id='response'></pre></td>
-          <!-- TODO: test whether it was an example query and test the result -->
-        </tr>
-      </xsl:if>
+      <tr>
+        <th>response</th>
+        <td><pre id='response'></pre></td>
+        <!-- TODO: test whether it was an example query and test the result -->
+      </tr>
       <tr>
         <th>display</th>
         <td><div id='display'></div></td>
