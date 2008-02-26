@@ -1,6 +1,5 @@
 Features, that are planned to be implemented before 1.0 release include:
 
-- in the xslt add client-base and [x] debug checkbox. json.js can be removed?
 - Add SeeAlso::Test for testing SeeAlso services 
 - Add SeeAlso::Discovery to discover servers via OpenSearch Description 
 - Add test of SeeAlso::Source::DBI with SQLite
@@ -21,7 +20,8 @@ Features, that are planned to be implemented before 1.0 release include:
 -- title, description, url, date, example, example response, normalize, source
 -- add date of last DBI-update in the description (from database?) on load!
 -- Support WADL and WSDL?
-- Point to the JavaScript clients
+- Document how to add XSLT and JavaScript client
+-- in the XSLT add [x] debug checkbox and show versions
 - Run as a real server (on a port of your choice) : better performance?
 - Add client (a SeeAlso::Source)
 -- Add SeeAlso::Source::Union and example

@@ -46,6 +46,7 @@
       <xsl:otherwise></xsl:otherwise>
     </xsl:choose>  
   </xsl:param>
+  <!-- TODO: two different directories is ugly -->
   <xsl:param name="xmlverbatim.css"><xsl:value-of select="$jscssbase"/>client/xmlverbatim.css</xsl:param>
   <xsl:param name="seealso.js"><xsl:value-of select="$jscssbase"/>javascript-client/seealso.js</xsl:param>
   
