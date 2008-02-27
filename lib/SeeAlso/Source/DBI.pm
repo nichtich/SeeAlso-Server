@@ -73,6 +73,9 @@ A numerical limit for queries
 
 =back
 
+Putting passwords into scripts is not recommended, so you should better
+use places like pg_service.conf (Postgres) or my.cfg (MySQL).
+
 =cut
 
 sub new {
