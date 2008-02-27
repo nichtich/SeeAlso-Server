@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
   SeeAlso service display and test page
-  Version 0.5
+  Version 0.52
   
   Copyright 2008 Jakob Voss
   
@@ -40,15 +40,16 @@
   </xsl:param>
   
   <!-- You probably have to change this according to your server settings -->
+  <!-- TODO: cleanup -->
   <xsl:param name="jscssbase">
     <xsl:choose>
       <xsl:when test="$seealso-query-base and substring($seealso-query-base,string-length($seealso-query-base)) = '/'">../</xsl:when>
       <xsl:otherwise></xsl:otherwise>
     </xsl:choose>  
   </xsl:param>
-  <!-- TODO: two different directories is ugly -->
   <xsl:param name="xmlverbatim.css"><xsl:value-of select="$jscssbase"/>client/xmlverbatim.css</xsl:param>
   <xsl:param name="seealso.js"><xsl:value-of select="$jscssbase"/>javascript-client/seealso.js</xsl:param>
+  <xsl:param name="favicon"><xsl:value-of select="$jscssbase"/>favicon.ico</xsl:param>
   
   <xsl:variable name="osd" select="document($osdurl)"/>
   
@@ -82,6 +83,9 @@
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
         <title>SeeAlso service : <xsl:value-of select="$name"/></title>
         <link rel="stylesheet" type="text/css" href="{$xmlverbatim.css}" />
+        <xsl:if test="$favicon">
+          <link rel="shortcut icon" type="image/x-icon" href="{$favicon}" />
+        </xsl:if>
         <script src="{$seealso.js}" type="text/javascript" ></script>
         <style type="text/css">
           body, h1, h2, th, td { font-family: sans-serif; }
@@ -161,8 +165,8 @@
           <xsl:apply-templates select="/" mode="xmlverb" />
         </div>
         </xsl:if>
-        <div class="footer">This document has automatically been generated based on the services' <a href="{$osdurl}">OpenSearch Description Document</a>.</div>
-        <!-- TODO: show version of this XSLT script -->
+        <div class="footer">This document has automatically been generated based on the services' <a href="{$osdurl}">OpenSearch description document</a>.</div>
+        <!-- TODO: show version of the XSLT script and SeeAlso JavaScript library -->
       </body>
     </html>
   </xsl:template>
@@ -184,14 +188,7 @@
   <xsl:param name="fields"/>
   <h2>About</h2>
   <table>
-    <tr>
-      <th>URL template</th>            
-      <td><tt><xsl:value-of select="$osd/osd:Url[@type='text/javascript'][1]/@template"/></tt></td>
-    </tr>
-    <tr>
-      <th>BaseURL</th><td><tt><xsl:value-of select="$baseurl"/></tt></td>
-    </tr>
-    <xsl:for-each select="$fields">
+     <xsl:for-each select="$fields">
       <xsl:variable name="localname" select="local-name(.)"/>
       <xsl:variable name="fullname" select="name(.)"/>
       <xsl:variable name="namespace" select="namespace-uri(.)"/>
@@ -202,6 +199,13 @@
       </tr>
       </xsl:for-each>
     </xsl:for-each>
+    <tr>
+      <th>BaseURL</th><td><tt><xsl:value-of select="$baseurl"/></tt></td>
+    </tr>
+    <tr>
+      <th>URL template</th>            
+      <td><tt><xsl:value-of select="$osd/osd:Url[@type='text/javascript'][1]/@template"/></tt></td>
+    </tr>
   </table>  
 </xsl:template>
 
