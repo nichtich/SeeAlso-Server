@@ -1,10 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  SeeAlso service display and test page
-  Version 0.52
-  
+  SeeAlso service display and test page.
+  Version 0.8
+
+  Usage: Put this file (showservice.xsl) in a directory together with 
+  seealso.js, xmlverbatim.xsl, xmlverbatim.css, and favicon.ico (optional)
+  and let your SeeAlso service point to it in the unAPI format list file.
+
   Copyright 2008 Jakob Voss
-  
+
   Licensed under the Apache License, Version 2.0 (the "License"); 
   you may not use this file except in compliance with the License.
   You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -12,7 +16,7 @@
   under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR 
   CONDITIONS OF ANY KIND, either express or implied. See the License for the
   specific language governing permissions and limitations under the License.
-  
+
   Alternatively, this software may be used under the terms of the 
   GNU Lesser General Public License (LGPL).
 -->
@@ -23,9 +27,10 @@
   xmlns:dcterms="http://purl.org/dc/terms/"
   xmlns:so="http://ws.gbv.de/seealso/schema/"
 >
-  <xsl:import href="xmlverbatim.xsl" />
+  <xsl:import href="xmlverbatim.xsl"/>
   <xsl:output method="html" encoding="UTF-8" indent="yes"/>
-  
+
+  <!-- explicit query base -->
   <xsl:param name="seealso-query-base" select="/processing-instruction('seealso-query-base')"/>
 
   <!-- try to get the Open Search description document -->
@@ -38,55 +43,44 @@
     </xsl:choose>
     <xsl:text>format=opensearchdescription</xsl:text>
   </xsl:param>
-  
-  <!-- You probably have to change this according to your server settings -->
-  <!-- TODO: cleanup -->
-  <xsl:param name="jscssbase">
-    <xsl:choose>
-      <xsl:when test="$seealso-query-base and substring($seealso-query-base,string-length($seealso-query-base)) = '/'">../</xsl:when>
-      <xsl:otherwise></xsl:otherwise>
-    </xsl:choose>  
-  </xsl:param>
-  <xsl:param name="xmlverbatim.css"><xsl:value-of select="$jscssbase"/>client/xmlverbatim.css</xsl:param>
-  <xsl:param name="seealso.js"><xsl:value-of select="$jscssbase"/>javascript-client/seealso.js</xsl:param>
-  <xsl:param name="favicon"><xsl:value-of select="$jscssbase"/>favicon.ico</xsl:param>
-  
+
   <xsl:variable name="osd" select="document($osdurl)"/>
-  
-  <!-- metadata elements to display in the about-section -->
+
+  <!-- locate the other files -->
+  <xsl:variable name="xsltpi" select="/processing-instruction('xml-stylesheet')"/>
+  <xsl:variable name="clientbase">
+    <xsl:call-template name="basepath">
+      <xsl:with-param name="string" select="substring-before(substring-after($xsltpi,'href=&quot;'),'&quot;')"/>
+    </xsl:call-template>
+  </xsl:variable >
+
+  <!-- favicon in the client directory (comment out to skip) -->
+  <xsl:param name="favicon"><xsl:value-of select="$clientbase"/>favicon.ico</xsl:param>
+
+  <!-- metadata elements to display in the about-section (TODO: more) -->
   <so:MetadataFields>
     <osd:ShortName/>
     <osd:Description/>
   </so:MetadataFields>
-  
+
   <!-- root -->
-  <xsl:template match="/">   
+  <xsl:template match="/">
     <xsl:apply-templates select="formats"/>
   </xsl:template>
   <xsl:template match="/formats">
+    <xsl:variable name="fullservice" select="namespace-uri($osd/*[1]) = 'http://a9.com/-/spec/opensearch/1.1/'"/>
     <xsl:variable name="name">
-      <xsl:apply-templates select="$osd/osd:OpenSearchDescription" mode="name"/>
+       <xsl:apply-templates select="$osd/osd:OpenSearchDescription" mode="name"/>
     </xsl:variable>
-    <xsl:variable name="url" select="$osd/osd:OpenSearchDescription/osd:Url[@type='text/javascript'][1]/@template"/>
-    
-    <!-- this will only work in controlled cases because search and replace in XSLT sucks -->    
-    <xsl:variable name="baseurl">
-      <xsl:call-template name="replace-string">
-        <xsl:with-param name="text" select="$url"/>
-        <xsl:with-param name="from" select="'?id=&#x7B;searchTerms&#x7D;&amp;format=seealso&amp;callback=&#x7B;callback&#x7D;'"/>
-        <xsl:with-param name="to" select="''"/>
-      </xsl:call-template>
-    </xsl:variable>
-    
     <html>
       <head>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
         <title>SeeAlso service : <xsl:value-of select="$name"/></title>
-        <link rel="stylesheet" type="text/css" href="{$xmlverbatim.css}" />
+        <link rel="stylesheet" type="text/css" href="{$clientbase}xmlverbatim.css" />
         <xsl:if test="$favicon">
           <link rel="shortcut icon" type="image/x-icon" href="{$favicon}" />
         </xsl:if>
-        <script src="{$seealso.js}" type="text/javascript" ></script>
+        <script src="{$clientbase}seealso.js" type="text/javascript" ></script>
         <style type="text/css">
           body, h1, h2, th, td { font-family: sans-serif; }
           table { border-collapse:collapse; }
@@ -95,6 +89,7 @@
           h2 { color: #96c458; margin: 1em 0em 0.5em 0em; } 
           h1 { color: #96c458; border-bottom: 1px solid #96c458; }
           td { background: #c3ff72; }
+          p { padding-bottom: 0.5em; }
           pre, .code { 
           background: #ddd; 
           border: 1px solid #666;
@@ -113,36 +108,51 @@
             padding: 0.5em;
           }
         </style>
-        <script type="text/javascript">        
+        <script type="text/javascript">
           function lookup() {
             var identifier = document.getElementById('identifier').value;
-            var service = new SeeAlsoService("<xsl:value-of select="$baseurl"/>");
+            var service = new SeeAlsoService("<xsl:value-of select="$seealso-query-base"/>");
             var view = new SeeAlsoUL();
             var url = service.url + "?format=seealso&amp;id=" + identifier;
             var a = document.getElementById('query-url');
             a.setAttribute("href",url);
-            a.innerHTML = url; // TODO: escape HTML!
+            a.innerHTML = "";
+            a.appendChild(document.createTextNode(url));
             url += "&amp;callback=?";
             var displayElement = document.getElementById('display');
             service.query(identifier, function(response) {
               var json = response.toJSON();
-              document.getElementById('response').innerHTML = json; // TODO: escape HTML
+              var r = document.getElementById('response');
+              r.innerHTML = "";
+              r.appendChild(document.createTextNode(json));
               view.display(displayElement,response);
-            });           
+            });
           }  
          </script> 
       </head>
       <body onload="lookup();">
+        <h1>
+          <xsl:choose>
+            <xsl:when test="string-length($name) &gt; 0"><xsl:value-of select="$name"/></xsl:when>
+            <xsl:otherwise>SeeAlso service</xsl:otherwise>
+          </xsl:choose>
+        </h1>
+        <p>
+          This is the base URL of a 
+          <b>
+            <xsl:choose>
+              <xsl:when test="$fullservice">SeeAlso Full</xsl:when>
+              <xsl:otherwise>SeeAlso Simple</xsl:otherwise>
+            </xsl:choose>
+          </b>
+          web service. It delivers an <a href="http://unapi.info">unAPI</a> format list that 
+          includes the 'seealso' response format 
+          (<a href="http://www.gbv.de/wikis/cls/SeeAlso_Simple_Specification">SeeAlso Simple</a>). 
+        </p>
         <xsl:choose>
-          <xsl:when test="namespace-uri($osd/*[1]) = 'http://a9.com/-/spec/opensearch/1.1/'">          
-            <h1><xsl:value-of select="$name"/></h1>
-            <p>
-              This is the base URL of a <a href="http://ws.gbv.de/seealso/">SeeAlso Full</a> web service.
-              It delivers an <a href="http://unapi.info">unAPI</a> format list that points to a 
-              <a href="http://www.gbv.de/wikis/cls/SeeAlso_Simple_Specification">SeeAlso Simple</a> service. 
-            </p>
+          <xsl:when test="$fullservice">
             <xsl:call-template name="about">
-              <xsl:with-param name="baseurl" select="$baseurl"/>
+              <xsl:with-param name="baseurl" select="$seealso-query-base"/>
               <xsl:with-param name="osd" select="$osd/osd:OpenSearchDescription"/>
               <xsl:with-param name="fields" select="document('')/*/so:MetadataFields/*"/>
             </xsl:call-template>
@@ -153,20 +163,20 @@
             <div class="code">
               <xsl:apply-templates select="$osd" mode="xmlverb" />
             </div>
-            
           </xsl:when>
           <xsl:otherwise>
-            <p style='color:#ff0000;'><b>The OpenSearch Description document for this SeeAlso service could not be found!</b></p>
+            <xsl:call-template name="demo"/>
           </xsl:otherwise>
         </xsl:choose>
         <xsl:if test="name(/*[1]) = 'formats'">
-        <h2>unAPI format list</h2>        
+        <h2>unAPI format list</h2>
         <div class="code">
           <xsl:apply-templates select="/" mode="xmlverb" />
         </div>
         </xsl:if>
-        <div class="footer">This document has automatically been generated based on the services' <a href="{$osdurl}">OpenSearch description document</a>.</div>
-        <!-- TODO: show version of the XSLT script and SeeAlso JavaScript library -->
+        <div class="footer">This document has automatically been generated based 
+        on the services' <a href="{$osdurl}">OpenSearch description document</a>.</div>
+        <!-- TODO: Show version number of the SeeAlso JavaScript library -->
       </body>
     </html>
   </xsl:template>
@@ -203,7 +213,7 @@
       <th>BaseURL</th><td><tt><xsl:value-of select="$baseurl"/></tt></td>
     </tr>
     <tr>
-      <th>URL template</th>            
+      <th>URL template</th>
       <td><tt><xsl:value-of select="$osd/osd:Url[@type='text/javascript'][1]/@template"/></tt></td>
     </tr>
   </table>  
@@ -212,16 +222,18 @@
 <xsl:template name="demo">
   <xsl:param name="osd"/>
   <xsl:param name="json.js"/>
-  <xsl:variable name="examples" select="$osd/so:example"/>
+  <!--xsl:variable name="examples" select="$osd/so:example"/-->
   <h2>Live demo</h2>
   <form>
     <table id='demo'>
       <tr>
-        <th>query</th>            
-        <td><input type="text" id="identifier" onkeyup="lookup();" size="40" value="{/formats/@id}"/>
-          <xsl:if test="$examples">
+        <th>query</th>
+        <td>
+          <input type="text" id="identifier" onkeyup="lookup();" size="40" value="{/formats/@id}"/>
+          <!-- show the first 3 examples -->
+          <xsl:if test="$osd and $osd/so:example">
             <xsl:text> (for instance </xsl:text>
-            <xsl:for-each select="$examples">
+            <xsl:for-each select="$osd/so:example">
               <xsl:if test="position() &gt; 1 and position() &lt; 4">, </xsl:if>
               <xsl:if test="position() &lt; 4"><tt><xsl:value-of select="so:query"/></tt></xsl:if>
               <xsl:if test="position() = 4"> ...</xsl:if>
@@ -238,7 +250,7 @@
       <tr>
         <th>response</th>
         <td><pre id='response'></pre></td>
-        <!-- TODO: test whether it was an example query and test the result -->
+        <!-- TODO: check the result if it was one of the examples -->
       </tr>
       <tr>
         <th>display</th>
@@ -247,28 +259,46 @@
     </table>
   </form>
 </xsl:template>
-  
-  <!-- reusable replace-string function -->
-  <xsl:template name="replace-string">
-    <xsl:param name="text"/>
-    <xsl:param name="from"/>
-    <xsl:param name="to"/>  
-    <xsl:choose>
-      <xsl:when test="contains($text, $from)">
-        <xsl:variable name="before" select="substring-before($text, $from)"/>
-        <xsl:variable name="after" select="substring-after($text, $from)"/>
-        <xsl:variable name="prefix" select="concat($before, $to)"/>
-        <xsl:value-of select="$before"/>
-        <xsl:value-of select="$to"/>
-        <xsl:call-template name="replace-string">
-          <xsl:with-param name="text" select="$after"/>
-          <xsl:with-param name="from" select="$from"/>
-          <xsl:with-param name="to" select="$to"/>
-        </xsl:call-template>
-      </xsl:when> 
-      <xsl:otherwise>
-        <xsl:value-of select="$text"/>  
-      </xsl:otherwise>
-    </xsl:choose>            
-  </xsl:template>
+
+<!-- reusable replace-string function -->
+<xsl:template name="replace-string">
+  <xsl:param name="text"/>
+  <xsl:param name="from"/>
+  <xsl:param name="to"/>  
+  <xsl:choose>
+    <xsl:when test="contains($text, $from)">
+      <xsl:variable name="before" select="substring-before($text, $from)"/>
+      <xsl:variable name="after" select="substring-after($text, $from)"/>
+      <xsl:variable name="prefix" select="concat($before, $to)"/>
+      <xsl:value-of select="$before"/>
+      <xsl:value-of select="$to"/>
+      <xsl:call-template name="replace-string">
+        <xsl:with-param name="text" select="$after"/>
+        <xsl:with-param name="from" select="$from"/>
+        <xsl:with-param name="to" select="$to"/>
+      </xsl:call-template>
+    </xsl:when> 
+    <xsl:otherwise>
+      <xsl:value-of select="$text"/>  
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+
+<!-- will work as long as this script is not served via an URL with '/' in the query part -->
+<xsl:template name="basepath">
+  <xsl:param name="string"/>
+  <xsl:param name="pos" select="1"/>
+  <xsl:choose>
+    <xsl:when test="contains(substring($string,$pos),'/')">
+      <xsl:call-template name="basepath">
+        <xsl:with-param name="string" select="$string"/>
+        <xsl:with-param name="pos" select="$pos + 1"/>
+      </xsl:call-template>
+    </xsl:when>
+    <xsl:when test="$pos &gt; 1">
+      <xsl:value-of select="substring($string,1,$pos - 1)"/>
+    </xsl:when>
+  </xsl:choose>
+</xsl:template>
+
 </xsl:stylesheet>
