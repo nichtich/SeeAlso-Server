@@ -1,5 +1,6 @@
 Makefile.PL
 MANIFEST
+TODO
 LICENSE
 gpl-3.0.txt
 Changes
@@ -36,6 +37,7 @@ t/thingisbn.t
 t/dbisource.t
 
 client/showservice.xsl
+client/seealso.js 
 client/xmlverbatim.xsl
 client/xmlverbatim.css 
 

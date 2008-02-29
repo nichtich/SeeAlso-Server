@@ -11,11 +11,11 @@ Features, that are planned to be implemented before 1.0 release include:
 -- Create a management object (needed for testing and quality of service)?
 - Add/improve Wikipedia/LibraryThing examples
 -- rewrite, test and document ETL cycle
--- convert bash scripts in the example directory to perl 
+-- more examples!
 - Better error handling (also log errors)
 -- push errors from SeeAlso::Source to SeeAlso::Server
 - Better support of OpenSearch Description (more fields)
--- use OpenSearch::Description
+-- use OpenSearch::Description?
 -- allow SeeAlso::Source->description( %properties )
 -- title, description, url, date, example, example response, normalize, source
 -- add date of last DBI-update in the description (from database?) on load!
