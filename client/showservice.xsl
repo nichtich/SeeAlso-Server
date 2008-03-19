@@ -35,14 +35,13 @@
 
   <!-- try to get the Open Search description document -->
   <xsl:param name="osdurl">
-    <!--xsl:value-of select="$seealso-query-base"/>
+    <xsl:value-of select="$seealso-query-base"/>
     <xsl:choose>
       <xsl:when test="not($seealso-query-base)">?</xsl:when>
       <xsl:when test="contains($seealso-query-base,'?')">&amp;</xsl:when>
       <xsl:otherwise>?</xsl:otherwise>
     </xsl:choose>
-    <xsl:text>format=opensearchdescription</xsl:text-->
-    <xsl:text>osdexample.xml</xsl:text>
+    <xsl:text>format=opensearchdescription</xsl:text>
   </xsl:param>
 
   <xsl:variable name="osd" select="document($osdurl)"/>
@@ -252,7 +251,7 @@
 <xsl:template name="demo">
   <xsl:param name="osd"/>
   <xsl:param name="json.js"/>
-  <!--xsl:variable name="examples" select="$osd/so:example"/-->
+  <xsl:variable name="examples" select="$osd/osd:Query[@role='example'][@searchTerms]"/>
   <h2>Live demo</h2>
   <form>
     <table id='demo'>
@@ -260,12 +259,12 @@
         <th>query</th>
         <td>
           <input type="text" id="identifier" onkeyup="lookup();" size="40" value="{/formats/@id}"/>
-          <!-- show the first 3 examples -->
-          <xsl:if test="$osd and $osd/so:example">
+          <!-- Show the first 3 examples -->
+          <xsl:if test="$osd and $examples">
             <xsl:text> (for instance </xsl:text>
-            <xsl:for-each select="$osd/so:example">
+            <xsl:for-each select="$examples">
               <xsl:if test="position() &gt; 1 and position() &lt; 4">, </xsl:if>
-              <xsl:if test="position() &lt; 4"><tt><xsl:value-of select="so:query"/></tt></xsl:if>
+              <xsl:if test="position() &lt; 4"><tt><xsl:value-of select="@searchTerms"/></tt></xsl:if>
               <xsl:if test="position() = 4"> ...</xsl:if>
             </xsl:for-each>
             <xsl:text>)</xsl:text>
@@ -280,7 +279,7 @@
       <tr>
         <th>response</th>
         <td><pre id='response'></pre></td>
-        <!-- TODO: check the result if it was one of the examples -->
+        <!-- TODO: check the result (query/@so:response) if it was one of the examples -->
       </tr>
       <tr>
         <th>display</th>
