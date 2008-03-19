@@ -77,6 +77,10 @@ Qualified Dublin Core element Date.Modified.
 
 Source of the data (dc:source)
 
+=item Example
+
+An example query (a hash of 'id' and optional 'response').
+
 =back
 
 =cut
@@ -89,7 +93,13 @@ sub description {
         my %param = @_;
         foreach my $key (keys %param) {
             my $value = $param{$key};
-            $value =~ s/\s+/ /g;
+            if ($key =~ /^Examples?$/) {
+                $value = [ $value ] unless ref($value) eq "ARRAY";
+                # TODO: check examples (must be an array of a hash)
+                $key = "Examples";
+            } else {
+                $value =~ s/\s+/ /g; # to string
+            }
             if ($self->{description}) {
                 $self->{description}{$key} = $value;
             } else {

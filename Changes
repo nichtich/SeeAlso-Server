@@ -1,5 +1,7 @@
-0.51  2008-03-?? - added function query_seealso_server
+0.51  2008-03-19 - sources can now have examples
+                 - added function query_seealso_server
                  - switched to JSON::XS
+                 - updated seealso.js (TODO)
                  - minor changes to showservice.xsl
 0.50  2008-02-28 - added showservice.xsl to unAPI format list
                  - added a JavaScript client ('client' directory)

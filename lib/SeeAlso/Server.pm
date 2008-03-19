@@ -360,7 +360,7 @@ sub openSearchDescription {
     my $baseURL = $self->baseURL;
 
     my @xml = '<?xml version="1.0" encoding="UTF-8"?>';
-    push @xml, '<OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/">';
+    push @xml, '<OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:seealso="http://ws.gbv.de/seealso/schema/" >';
 
     if ($source and UNIVERSAL::isa($source, "SeeAlso::Source")) {
         my %descr = %{ $source->description() };
@@ -387,6 +387,18 @@ sub openSearchDescription {
         my $source = $descr{"Source"};
         push @xml, "  <dc:source" . xmlencode( $shortName ) . "</dc:source>"
             if defined $source;
+
+        if ($descr{"Examples"}) {
+            foreach my $example ( @{ $descr{"Examples"} } ) {
+                my $id = $example->{id};
+                my $args = "searchTerms=\"" . xmlencode($id) . "\"";
+                my $response = $example->{response};
+                if (defined $response) {
+                    $args .= " seealso:response=\"" . xmlencode($response) . "\"";
+                }
+                push @xml, "  <Query role=\"example\" $args />";
+            }
+        }
     }
     my $template = $baseURL . (($baseURL =~ /\?/) ? '&' : '?')
                  . "id={searchTerms}&format=seealso&callback={callback}";

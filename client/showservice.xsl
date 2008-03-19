@@ -93,7 +93,7 @@
         <xsl:if test="$favicon">
           <link rel="shortcut icon" type="image/x-icon" href="{$favicon}" />
         </xsl:if>
-        <!--script src="{$clientbase}seealso.js" type="text/javascript" ></script-->
+        <script src="{$clientbase}seealso.js" type="text/javascript" ></script>
         <style type="text/css">
           body, h1, h2, th, td { font-family: sans-serif; }
           table { border-collapse:collapse; }
@@ -172,8 +172,8 @@
             </xsl:choose>
           </b>
           web service. It delivers an <a href="http://unapi.info">unAPI</a> format list that 
-          includes the 'seealso' response format 
-          (<a href="http://www.gbv.de/wikis/cls/SeeAlso_Simple_Specification">SeeAlso Simple</a>).
+          includes the <em>seealso</em> response format 
+          (see <a href="http://www.gbv.de/wikis/cls/SeeAlso_Simple_Specification">SeeAlso Simple Specification</a>).
           You can try the service by typing in an identifier in the query field below.
         </p>
         <xsl:choose>

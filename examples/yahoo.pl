@@ -49,5 +49,9 @@ sub query_method {
 
 print query_seealso_server(
     \&query_method,
-    [ "ShortName" => "Yahoo Search Suggest" ]
+    [
+      "ShortName" => "Yahoo Search Suggest",
+      #"Example" => { "id" => "hello" },
+      #"Examples" => [ { "id" => "hello" }, {"id"=>"huhu", "response"=>"..."} ]
+    ]
 );
