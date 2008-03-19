@@ -1,10 +1,9 @@
 package SeeAlso::Response;
 
-use JSON;
-my $json = JSON->new(autoconv=>0);
+use JSON::XS;
 
 use vars qw( $VERSION );
-$VERSION = "0.40";
+$VERSION = "0.51";
 
 =head1 NAME
 
@@ -29,11 +28,10 @@ method is used.
 sub new {
     my ($class, $query, $completions, $descriptions, $urls) = @_;
 
-    $query = "" unless defined $query;
     if (UNIVERSAL::isa( $query, 'SeeAlso::Identifier' )) {
         $query = $query->normalized();
     } else {
-        $query = "$query"; # convert to string
+        $query = defined $query ? "$query" : ""; # convert to string
     }
 
     my $self = bless {
@@ -120,7 +118,7 @@ sub toJSON {
         $self->{urls}
     ];
 
-    my $jsonstring = $json->encode( $response );
+    my $jsonstring = encode_json($response);
     return $callback ? "$callback($jsonstring);" : $jsonstring;
 }
 

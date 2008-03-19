@@ -14,8 +14,11 @@ use SeeAlso::Identifier;
 use SeeAlso::Response;
 use SeeAlso::Source;
 
-use vars qw($VERSION);
-$VERSION = "0.50";
+
+use vars qw( $VERSION @ISA @EXPORT );
+our @ISA = qw( Exporter );
+our $VERSION = "0.51";
+our @EXPORT = qw( query_seealso_server );
 
 =head1 DESCRIPTION
 
@@ -57,7 +60,7 @@ another subclass of L<SeeAlso::Source>.
 
 =head1 METHODS
 
-=head2 new ( [%params] )
+=head2 new ( [ %params ] )
 
 Creates a new L<SeeAlso::Server> object. You may specify the following
 parameters:
@@ -67,10 +70,6 @@ parameters:
 =item cgi
 
 a L<CGI> object. If not specified, a new L<CGI> object is created.
-
-=item logger
-
-a <SeeAlso::Logger> object for logging.
 
 =item xslt
 
@@ -99,7 +98,7 @@ debug=1 and prohibit with debug=-1.
 
 =item logger
 
-set a logger for this server. See the method C<logger> below.
+set a <SeeAlso::Logger> for this server. See the method C<logger> below.
 
 =back
 
@@ -406,6 +405,60 @@ sub baseURL {
 }
 
 =head1 ADDITIONAL FUNCTIONS
+
+=head2 query_seealso_server ( $source [, \@description ] [, %params ] )
+
+This function is a shortcut method to create and query a SeeAlso server 
+in one command. It is exported by default. The following line is a
+identifcal to the second:
+
+  query_seealso_server( $source, %params );
+
+  SeeAlso::Server->new( %params )->query( $source, $params{id} );
+
+If C<$params{id}> is not set, the C<id> parameter of the C<CGI> object
+(C<$param{cgi}> or C<CGI->new>) is used.
+
+If you pass an array reference as C<$source> instead of a 
+C<SeeAlso::Source> object, a new C<SeeAlso::Source> will be generated
+with C<@{$source}> as parameters. The following line is a identifcal 
+to three next commands:
+
+  query_seealso_server( \&query_function, \@description, %params );
+
+  $source = SeeAlso::Source->new( \&query_function, @description );
+  $server = SeeAlso::Server->new( %params );
+  $server->query( $source, $params{id} );
+
+Please note that you must pass the optional @description parameter as an
+array reference. Here is an example:
+
+  query_seealso_server( 
+     sub { ... }, 
+     [ "ShortName" => "..." ],
+     logger => SeeAlso::Logger->new(...)
+  );
+
+=cut
+
+sub query_seealso_server {
+    my $source = shift;
+
+    if (ref($source) eq "CODE") {
+        my @description;
+        if (ref($_[0]) eq "ARRAY") {
+            my $a = shift;
+            @description = @{ $a };
+        }
+        $source = SeeAlso::Source->new( $source, @description );
+    }
+
+    my %params = @_;
+
+    my $server = SeeAlso::Server->new( %params );
+
+    return $server->query( $source, $params{id} );
+}
 
 =head2 xmlencode ( $string )
 

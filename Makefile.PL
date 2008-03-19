@@ -10,12 +10,12 @@ use ExtUtils::MakeMaker;
     PMLIBDIRS       => [ qw( lib/ ) ],
     AUTHOR          => 'Jakob Voss <jakob.voss@gbv.de>',
     PREREQ_PM       => {
-        'JSON' => '2.0',
+        'JSON::XS' => '2.0',
         'CGI' => '3.0',
         'Carp' => '1.01',
         'DBI' => '1.54',
-        'Business::ISBN' => '2.02',
-        'Date::Parse' => '2.27'
+        'Date::Parse' => '2.27',
+        'Business::ISBN' => '2.02'
     },
     dist            => {
         COMPRESS => 'gzip -9f',

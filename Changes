@@ -1,3 +1,5 @@
+0.51  2008-03-?? - added function query_seealso_server
+                 - switched to JSON::XS
 0.50  2008-02-28 - added XSLT to unAPI format list and self-describe
                  - added a JavaScript client ('client' directory)
                  - added SeeAlso::Identifier::ISIL identifier (preliminary)
