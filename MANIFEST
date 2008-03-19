@@ -39,6 +39,5 @@ t/dbisource.t
 client/showservice.xsl
 client/seealso.js 
 client/xmlverbatim.xsl
-client/xmlverbatim.css 
 
 META.yml                                 Module meta-data (added by MakeMaker)

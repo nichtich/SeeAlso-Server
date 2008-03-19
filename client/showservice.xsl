@@ -4,7 +4,7 @@
   Version 0.8
 
   Usage: Put this file (showservice.xsl) in a directory together with 
-  seealso.js, xmlverbatim.xsl, xmlverbatim.css, and favicon.ico (optional)
+  seealso.js, xmlverbatim.xsl and favicon.ico (optional)
   and let your SeeAlso service point to it in the unAPI format list file.
 
   Copyright 2008 Jakob Voss
@@ -35,13 +35,14 @@
 
   <!-- try to get the Open Search description document -->
   <xsl:param name="osdurl">
-    <xsl:value-of select="$seealso-query-base"/>
+    <!--xsl:value-of select="$seealso-query-base"/>
     <xsl:choose>
       <xsl:when test="not($seealso-query-base)">?</xsl:when>
       <xsl:when test="contains($seealso-query-base,'?')">&amp;</xsl:when>
       <xsl:otherwise>?</xsl:otherwise>
     </xsl:choose>
-    <xsl:text>format=opensearchdescription</xsl:text>
+    <xsl:text>format=opensearchdescription</xsl:text-->
+    <xsl:text>osdexample.xml</xsl:text>
   </xsl:param>
 
   <xsl:variable name="osd" select="document($osdurl)"/>
@@ -57,10 +58,19 @@
   <!-- favicon in the client directory (comment out to skip) -->
   <xsl:param name="favicon"><xsl:value-of select="$clientbase"/>favicon.ico</xsl:param>
 
-  <!-- metadata elements to display in the about-section (TODO: more) -->
+  <!-- metadata elements to display in the about-section (TODO: Image) -->
   <so:MetadataFields>
     <osd:ShortName/>
     <osd:Description/>
+    <osd:Contact/>
+    <osd:Tags/>
+    <osd:LongName/>
+    <osd:Developer/>
+    <osd:Attribution/>
+    <osd:SyndicationRight/>
+    <osd:Language/>
+    <osd:InputEncoding/>
+    <osd:OutputEncoding/>
   </so:MetadataFields>
 
   <!-- root -->
@@ -74,19 +84,23 @@
     </xsl:variable>
     <html>
       <head>
+        <xsl:if test="$osd">
+          <xsl:attribute name="profile">http://a9.com/-/spec/opensearch/1.1/</xsl:attribute>
+          <link rel="search" type="application/opensearchdescription+xml"
+                href="{$osdurl}" title="{$name}" />
+        </xsl:if>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
         <title>SeeAlso service : <xsl:value-of select="$name"/></title>
-        <link rel="stylesheet" type="text/css" href="{$clientbase}xmlverbatim.css" />
         <xsl:if test="$favicon">
           <link rel="shortcut icon" type="image/x-icon" href="{$favicon}" />
         </xsl:if>
-        <script src="{$clientbase}seealso.js" type="text/javascript" ></script>
+        <!--script src="{$clientbase}seealso.js" type="text/javascript" ></script-->
         <style type="text/css">
           body, h1, h2, th, td { font-family: sans-serif; }
           table { border-collapse:collapse; }
           td, th { border: 1px solid #666; padding: 4px; }
           th { text-align: left; background: #96c458; }
-          h2 { color: #96c458; margin: 1em 0em 0.5em 0em; } 
+          h2, h2 a { color: #96c458; margin: 1em 0em 0.5em 0em; } 
           h1 { color: #96c458; border-bottom: 1px solid #96c458; }
           td { background: #c3ff72; }
           p { padding-bottom: 0.5em; }
@@ -107,6 +121,19 @@
             margin-top: 1em;
             padding: 0.5em;
           }
+/* xmlverbatim.css */
+.xmlverb-default          { color: #333333; background-color: #ffffff;
+                            font-family: monospace }
+.xmlverb-element-name     { color: #990000 }
+.xmlverb-element-nsprefix { color: #666600 }
+.xmlverb-attr-name        { color: #660000 }
+.xmlverb-attr-content     { color: #000099; font-weight: bold }
+.xmlverb-ns-name          { color: #666600 }
+.xmlverb-ns-uri           { color: #330099 }
+.xmlverb-text             { color: #000000; font-weight: bold }
+.xmlverb-comment          { color: #006600; font-style: italic }
+.xmlverb-pi-name          { color: #006600; font-style: italic }
+.xmlverb-pi-content       { color: #006666; font-style: italic }
         </style>
         <script type="text/javascript">
           function lookup() {
@@ -147,7 +174,8 @@
           </b>
           web service. It delivers an <a href="http://unapi.info">unAPI</a> format list that 
           includes the 'seealso' response format 
-          (<a href="http://www.gbv.de/wikis/cls/SeeAlso_Simple_Specification">SeeAlso Simple</a>). 
+          (<a href="http://www.gbv.de/wikis/cls/SeeAlso_Simple_Specification">SeeAlso Simple</a>).
+          You can try the service by typing in an identifier in the query field below.
         </p>
         <xsl:choose>
           <xsl:when test="$fullservice">
@@ -159,7 +187,7 @@
             <xsl:call-template name="demo">
               <xsl:with-param name="osd" select="$osd/osd:OpenSearchDescription"/>
             </xsl:call-template>
-            <h2>OpenSearch description document</h2>
+            <h2><a href="{$osdurl}">OpenSearch description document</a></h2>
             <div class="code">
               <xsl:apply-templates select="$osd" mode="xmlverb" />
             </div>
@@ -175,7 +203,9 @@
         </div>
         </xsl:if>
         <div class="footer">This document has automatically been generated based 
-        on the services' <a href="{$osdurl}">OpenSearch description document</a>.</div>
+        on the services' <a href="{$osdurl}">OpenSearch description document</a>
+        (see <a href="http://www.opensearch.org/">OpenSearch.org</a>).
+        </div>
         <!-- TODO: Show version number of the SeeAlso JavaScript library -->
       </body>
     </html>

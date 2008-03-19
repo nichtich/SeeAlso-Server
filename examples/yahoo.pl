@@ -16,17 +16,15 @@
 #
 
 use strict;
+use utf8;
 use LWP::Simple;
 use URI::Escape qw(uri_escape);
-use JSON::XS;
-use utf8;
+use JSON::XS qw(decode_json);
+use SeeAlso::Response;
+use SeeAlso::Server;
 
 use FindBin;
 use lib "$FindBin::RealBin/lib";
-
-use SeeAlso::Server;
-use SeeAlso::Source;
-
 
 sub query_method {
     my $identifier = shift;
@@ -51,12 +49,5 @@ sub query_method {
 
 print query_seealso_server(
     \&query_method,
-    [ "ShortName" => "Yahoo Search Suggest" ],
-);
-
-print query_seealso_server(
-    SeeAlso::Source->new( 
-        \&query_method,
-        "ShortName" => "Yahoo Search Suggest"
-    ),
+    [ "ShortName" => "Yahoo Search Suggest" ]
 );

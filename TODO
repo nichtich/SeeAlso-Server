@@ -16,7 +16,6 @@ Features, that are planned to be implemented before 1.0 release include:
 -- push errors from SeeAlso::Source to SeeAlso::Server
 - Better support of OpenSearch Description (more fields)
 -- use OpenSearch::Description?
--- allow SeeAlso::Source->description( %properties )
 -- title, description, url, date, example, example response, normalize, source
 -- add date of last DBI-update in the description (from database?) on load!
 -- Support WADL and WSDL?
@@ -32,7 +31,6 @@ Features, that are planned to be implemented before 1.0 release include:
 - More Unicode (UTF-8) testing and hints
 - Better/more loading mechanism for SeeAlso::Source::DBI
 -- detect/remove full duplicates (better database index?)
-- add/test support of client-base in XSLT
 - restrict access of cgi server by referrer, IP, etc. (better in .htaccess ?)
 - simplify ETL-examples (thingISBN and Wikipedia)
 - add a REST-server that eats SeeAlso response format via 

@@ -2,7 +2,7 @@
 
 use strict;
 
-use Test::More tests => 12;
+use Test::More tests => 15;
 
 use CGI;
 my $cgi = CGI->new();
@@ -62,14 +62,14 @@ ok ( $http =~ /^Status: 200[^\[]+\["xyz",\[\],\[\],\[\]\]$/m, 'No results' );
 $http = $s->query($source, $identifier, 'foo');
 ok ( $http eq $xml404, 'Result but not right format');
 
-$source = SeeAlso::Source->new(
-    sub {
-        my $id = shift;
-        my $r = SeeAlso::Response->new( $id->normalized );
-        $r->add("test");
-        return $r;
-    }
-);
+sub query_method {
+    my $id = shift;
+    my $r = SeeAlso::Response->new( $id->normalized );
+    $r->add("test");
+    return $r;
+}
+$source = SeeAlso::Source->new( \&query_method );
+
 $http = $s->query($source, $identifier, 'seealso');
 ok ( not $source->hasErrors() and $http =~ /^Status: 200[^\[]+\["xyz",\["test"\],\[""\],\[""\]\]$/m, 'JSON Results' );
 
@@ -77,7 +77,20 @@ $http = $s->query($source, $identifier, 'foo');
 ok ( $http eq $xml300, 'Result but not right format');
 
 $http = $s->query($source, $identifier, 'seealso', 'a[1].b');
-ok ( not $source->hasErrors() and $http =~ /^Status: 200[^\[]+a\[1\]\.b\(\["xyz",\["test"\],\[""\],\[""\]\]\);$/m, 'JSON Result with callback' );
+my $res = '^Status: 200[^\[]+a\[1\]\.b\(\["xyz",\["test"\],\[""\],\[""\]\]\);$';
+ok ( not $source->hasErrors() and $http =~ /$res/m, 'JSON Result with callback' );
+
+$cgi = CGI->new;
+$cgi->param('format'=>'seealso');
+$cgi->param('callback'=>'a[1].b');
+$http = query_seealso_server( $source, cgi => $cgi, id => $identifier );
+ok ( $http =~ /$res/m, 'JSON Result with callback (query_seealso_server)' );
+
+$http = query_seealso_server( \&query_method, cgi => $cgi, id => $identifier );
+ok ( $http =~ /$res/m, 'JSON Result with callback (query_seealso_server, sub)' );
+
+$http = query_seealso_server( \&query_method, ["ShortName"=>"foo"], cgi => $cgi, id => $identifier );
+ok ( $http =~ /$res/m, 'JSON Result with callback (query_seealso_server, sub and description)' );
 
 $http = $s->query($source, $identifier, 'seealso', '{');
 ok ( $http =~ /^Status: 400/, 'invalid callback' );

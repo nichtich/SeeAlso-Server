@@ -54,6 +54,18 @@ object:
   my $http = $server->query( $source );
   print $http;
 
+Or even smaller with the exported function C<query_seealso_server>:
+
+  use SeeAlso::Server;
+  print query_seealso_server(
+      sub {
+          my $identifier = shift; 
+          ....
+          return $response; 
+      },
+      [ "ShortName" => "MySimpleServer" ]
+  );
+
 The examples directory contains a full example. For more specialised servers 
 you may also need to use L<SeeAlso::Identifier> or one of its subclasses and
 another subclass of L<SeeAlso::Source>.
@@ -349,7 +361,6 @@ sub openSearchDescription {
 
     my @xml = '<?xml version="1.0" encoding="UTF-8"?>';
     push @xml, '<OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/">';
-
 
     if ($source and UNIVERSAL::isa($source, "SeeAlso::Source")) {
         my %descr = %{ $source->description() };
