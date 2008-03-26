@@ -18,7 +18,7 @@
  * and the license and Affero General Public License (AGPL.txt).
  * </p>
  * @author: Jakob Voss
- * @version: 0.6.41
+ * @version: 0.6.5
  */
 
 
@@ -264,6 +264,29 @@ function SeeAlsoSource(query) {
 
 
 /**
+ * Wraps another {@link SeeAlsoSource} and filter its responses item per item.
+ */
+function SeeAlsoItemFilter(source, filter) {
+    // TODO: test this!
+    this.source = source;
+    this._queryMethod = function( identifier, callback ) {
+        this.source.query( identifier, function(data) {
+                var r = new SeeAlsoResponse();
+                r.identifier = data.identifier;
+                for(var i=0; i<data.size(); i++) {
+                    var item = filter(data.get(i));
+                    if (item) r.add(item);
+                }
+                callback(r);
+            }
+        );
+    }
+}
+
+SeeAlsoItemFilter.prototype = new SeeAlsoSource;
+
+
+/**
 * SeeAlsoService wraps a SeeAlso-Server, specified by a base URL.
 *
 * @param url the base URL
@@ -295,14 +318,19 @@ function SeeAlsoService( url ) {
      * @param {Function} callback
      */
     this._queryMethod = function(identifier, callback) {
-        this.jsonRequest( this.queryURL(identifier,'?'), callback);
+        this.jsonRequest( this.queryURL(identifier,'?'),
+            function (data) { callback( new SeeAlsoResponse(data) ); }
+        );
     }
 }
 
 SeeAlsoService.prototype = new SeeAlsoSource();
 
+
 /**
  * Performs a HTTP query to get a SeeAlso Response in JSON format.
+ * The question mark in <tt>callback=?</tt> is replaced by a
+ * callback function if existing.
  *
  * <p>To get around the cross site scripting limitations of JavaScript 
  * a <tt>&lt;script&gt;</tt> tag is dynamically added to the page. 
@@ -320,7 +348,7 @@ SeeAlsoService.prototype.jsonRequest = function(url, callback) {
     jsc = typeof jsc == "undefined" ? (new Date).getTime() : jsc+1;
     var jsonp = "jsonp" + jsc; // this should also prevent caching
 
-    var jsre = /=\?(&|$)/g; // todo: what if no callback was specified?!
+    var jsre = /=\?(&|$)/g; // TODO: what if no callback was specified?!
     var head = document.getElementsByTagName("head")[0];
     var script = document.createElement("script");
     script.src = url.replace(jsre, "=" + jsonp + "&");
@@ -328,7 +356,7 @@ SeeAlsoService.prototype.jsonRequest = function(url, callback) {
     script.charset = "UTF-8";
 
     window[ jsonp ] = function(data){
-        callback( new SeeAlsoResponse(data) );
+        callback( data );
         window[ jsonp ] = undefined; // GC
         try{ delete window[ jsonp ]; } catch(e){}
         if ( head ) script.parentNode.removeChild( script ); // yet another IE bug
@@ -360,8 +388,8 @@ if (typeof jQuery != "undefined" && typeof jQuery.getJSON == "function") {
  */
 function SeeAlsoUL(p) {
     p = typeof p == "object" ? p : {};
-    p.preHTML = "<ul>";
-    p.postHTML = "</ul>";
+    p.preHTML = (typeof p.preHTML != "undefined") ?  p.preHTML + "<ul>" : "<ul>";
+    p.postHTML = (typeof p.postHTML != "undefined") ?  p.postHTML + "</ul>" : "</ul>";
     p.delimHTML = "";
     // TODO: allow another itemHTML inside
     p.itemHTML = function(item) { 
@@ -385,89 +413,98 @@ SeeAlsoCSV.prototype = new SeeAlsoView;
 
 /**
  * A SeeAlsoCollection contains a number of {@link SeeAlsoService}
- * and a number of {@link SeeAlsoView} together with some helper 
+ * and a number of {@link SeeAlsoView} together with some helper
  * methods to query the services and display them with views.
  *
+ * @param p a hash with array of services and/or array of views
  * @constructor
  */
-function SeeAlsoCollection() { // TODO: use .prototype syntax
+function SeeAlsoCollection(p) {
+    p = typeof p == "object" ? p : {};
     /**
      * Directory of named services ({@link SeeAlsoService})
      */
-    this.services = {};
+    this.services = p.services ? p.services : {};
     /**
      * Directory of named views ({@link SeeAlsoView})
      */
-    this.views = {};
+    this.views = p.views ? p.views : {};
     /**
      * Default view ({@link SeeAlsoView}) that is used if no specific view is given.
      */
     this.defaultView = new SeeAlsoCSV();
+}
 
-    // Replace all existing tags by querying all services
-    this.replaceTags = function () {
-        var all = document.getElementsByTagName('*');
-        var i, tags=[], length=all.length;
+/**
+ * Replace all existing tags by querying all services.
+ * Please don't use empty HTML tags (<tag/>) because IE
+ * is too stupid to properly support them.
+ */
+SeeAlsoCollection.prototype.replaceTags = function () {
+    var all = document.getElementsByTagName('*');
+    var i, tags=[], length=all.length;
 
-        // <this is line 412>
-        // foo.bar.doz = 1;
+    // cycle through all tags in the document that use this service
+    for (i = 0; i < length; i++) {
+        var elem = all[i];
+        if(!elem.className) continue;
 
-        // cycle through all tags in the document that use this service
-        for (i = 0; i < length; i++) {
-            var elem = all[i];
-            if(!elem.className) continue;
-            var identifier = elem.getAttribute("title");
-            if (!identifier && identifier!="0") continue; // missing title attribute
-            identifier = identifier.replace(/^\s+|\s+$/g,""); // trim
+        // get and trim identifier
+        var identifier = elem.getAttribute("title");
+        if (identifier == null) continue;
+        identifier = identifier.replace(/^\s+|\s+$/g,"");
 
-            // Cycle through all available services
-            for (var serviceClass in this.services) {
-                var reg = new RegExp("\\s" + serviceClass + "\\s");
-                if (reg.test(" " + elem.className + " ")) {
+        // Cycle through all available services
+        for (var serviceClass in this.services) {
+            var reg = new RegExp("\\s" + serviceClass + "\\s");
+            if (reg.test(" " + elem.className + " ")) {
 
-                    // get the view to use
-                    var view = this.defaultView;
-                    var classes = SeeAlsoView.prototype.getClasses(elem);
+                // get the view to use
+                var view = this.defaultView;
+                var classes = SeeAlsoView.prototype.getClasses(elem);
 
-                    for(c in classes) {
-                        if (this.views[ c ]) {
-                            view = this.views[ c ];
-                            break;
-                        }
+                for(c in classes) {
+                    if (this.views[ c ]) {
+                        view = this.views[ c ];
+                        break;
                     }
+                }
 
-                    if ( view ) {
-                        // because views change the DOM, we first only collect them
-                        tags.push(
-                            { service: this.services[serviceClass], identifier: identifier, element:elem, view:view }
-                        );
-                        break; // don't try other services or views
-                    }
+                if ( view ) {
+                    // because views change the DOM, we first only collect them
+                    tags.push(
+                        { service: this.services[serviceClass], identifier: identifier, element:elem, view:view }
+                    );
+                    break; // don't try other services or views
                 }
             }
         }
-
-        // query the services
-        for(i in tags) {
-            var tag = tags[i];
-            tag.service.queryDisplay( tag.identifier, tag.element, tag.view );
-        }
-    };
-
-    // add onLoad (compatible with <body onload="">)
-    this.replaceTagsOnLoad = function() {
-        var me = this;
-        function callReplaceTags() { me.replaceTags(); }
-        if(typeof window.addEventListener != 'undefined') {
-            window.addEventListener('load', callReplaceTags, false);
-        } else if(typeof document.addEventListener != 'undefined') {
-            document.addEventListener('load', callReplaceTags, false);
-        } else if(typeof window.attachEvent != 'undefined') {
-            window.attachEvent('onload', callReplaceTags);
-        }
     }
-}
 
+    // query the services
+    for(i in tags) {
+        var tag = tags[i];
+        tag.service.queryDisplay( tag.identifier, tag.element, tag.view );
+    }
+};
+
+/**
+ * Call {@link #replaceTags} when the HTML page has been loaded.
+ * This is compatible with <tt>&lt;body onload=""&gt;</tt>
+ */
+SeeAlsoCollection.prototype.replaceTagsOnLoad = function() {
+    var me = this;
+    function callReplaceTags() { 
+       me.replaceTags();
+    }
+    if(typeof window.addEventListener != 'undefined') {
+        window.addEventListener('load', callReplaceTags, false);
+    } else if(typeof document.addEventListener != 'undefined') {
+        document.addEventListener('load', callReplaceTags, false);
+    } else if(typeof window.attachEvent != 'undefined') {
+        window.attachEvent('onload', callReplaceTags);
+    }
+};
 
 /**
  * SeeAlso needs JSON.stringify and JSON.parse
