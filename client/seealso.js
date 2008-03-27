@@ -287,10 +287,10 @@ SeeAlsoItemFilter.prototype = new SeeAlsoSource;
 
 
 /**
-* SeeAlsoService wraps a SeeAlso-Server, specified by a base URL.
+* A SeeAlsoService is a {@link SeeAlsoSource} that gets its data from another
+* server.
 *
 * @param url the base URL
-*
 * @constructor
 */
 function SeeAlsoService( url ) {
@@ -312,14 +312,32 @@ function SeeAlsoService( url ) {
     }
 
     /**
+     * Creates and returns a {@link SeeAlsoResponse} object.
+     * You can override this method with a wrapper.
+     */
+    this.createResponse = function(data, identifier) {
+        return new SeeAlsoResponse(data);
+    }
+
+    /**
      * Perform a query and run a callback method with the JSON response.
      * You can define the type of JSON request by setting {@link #jsonRequest}.
+     * The {@link #createResponse} method of this SeeAlsoService is called to
+     * create the {@link SeeAlsoResponse}.
+     *
      * @param {String} identifier
      * @param {Function} callback
      */
     this._queryMethod = function(identifier, callback) {
-        this.jsonRequest( this.queryURL(identifier,'?'),
-            function (data) { callback( new SeeAlsoResponse(data) ); }
+        var me = this;
+        // TODO: check identifier before submit
+        this.jsonRequest(
+            this.queryURL(identifier,'?'),
+            function (data) {
+                callback (
+                    me.createResponse(data, identifier)
+                );
+            }
         );
     }
 }

@@ -1,5 +1,7 @@
 Features, that are planned to be implemented before 1.0 release include:
 
+- fix newest seealso.js
+
 - Add SeeAlso::Test for testing SeeAlso services 
 - Add SeeAlso::Discovery to discover servers via OpenSearch Description 
 - Add test of SeeAlso::Source::DBI with SQLite
