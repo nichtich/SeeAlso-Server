@@ -14,7 +14,6 @@ use SeeAlso::Identifier;
 use SeeAlso::Response;
 use SeeAlso::Source;
 
-
 use vars qw( $VERSION @ISA @EXPORT );
 our @ISA = qw( Exporter );
 our $VERSION = "0.51";
