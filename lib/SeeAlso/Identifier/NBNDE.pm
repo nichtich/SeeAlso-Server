@@ -9,6 +9,8 @@ SeeAlso::Identifier::NBNDE - German National Library URN
 
 =head1 DESCRIPTION
 
+TODO!!!!!!!!!!!!!!!!!
+
 See http://www.persistent-identifier.de/ and RFC 3188.
 
 =cut
