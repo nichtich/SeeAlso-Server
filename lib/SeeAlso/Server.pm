@@ -16,7 +16,7 @@ use SeeAlso::Source;
 
 use vars qw( $VERSION @ISA @EXPORT );
 our @ISA = qw( Exporter );
-our $VERSION = "0.51";
+our $VERSION = "0.51a";
 our @EXPORT = qw( query_seealso_server );
 
 =head1 DESCRIPTION

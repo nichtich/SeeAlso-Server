@@ -2,7 +2,7 @@
 
 use strict;
 
-use Test::More tests => 1;
+use Test::More tests => 2;
 
 use SeeAlso::Identifier::NBNDE qw(calc_check_digit);
 

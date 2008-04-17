@@ -1,3 +1,5 @@
+0.51a            - fixed double-encoding UTF8 in Response->toJSON
+                 - ...
 0.51  2008-03-19 - sources can now have examples
                  - added function query_seealso_server
                  - switched to JSON::XS

@@ -3,7 +3,7 @@ package SeeAlso::Response;
 use JSON::XS;
 
 use vars qw( $VERSION );
-$VERSION = "0.51";
+$VERSION = "0.52";
 
 =head1 NAME
 
@@ -102,7 +102,9 @@ sub hasQuery {
 
 Return the response in JSON format and a non-mandatory 
 callback wrapped around. There is no test whether the 
-callback name is valid so far.
+callback name is valid so far. The encoding will not
+be changed, please only feed response objects with
+UTF-8 strings to get UTF-8 JSON with this method!
 
 =cut
 
@@ -118,7 +120,7 @@ sub toJSON {
         $self->{urls}
     ];
 
-    my $jsonstring = encode_json($response);
+    my $jsonstring = JSON::XS->new->encode($response);
     return $callback ? "$callback($jsonstring);" : $jsonstring;
 }
 
