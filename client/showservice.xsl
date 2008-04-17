@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
   SeeAlso service display and test page.
-  Version 0.8
+  Version 0.8a
 
   Usage: Put this file (showservice.xsl) in a directory together with 
   seealso.js, xmlverbatim.xsl and favicon.ico (optional)
@@ -250,7 +250,6 @@
 
 <xsl:template name="demo">
   <xsl:param name="osd"/>
-  <xsl:param name="json.js"/>
   <xsl:variable name="examples" select="$osd/osd:Query[@role='example'][@searchTerms]"/>
   <h2>Live demo</h2>
   <form>
