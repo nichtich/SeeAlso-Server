@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
   SeeAlso service display and test page.
-  Version 0.8a
+  Version 0.8.2
 
   Usage: Put this file (showservice.xsl) in a directory together with 
   seealso.js, xmlverbatim.xsl and favicon.ico (optional)
@@ -104,14 +104,15 @@
           td { background: #c3ff72; }
           p { padding-bottom: 0.5em; }
           pre, .code { 
-          background: #ddd; 
-          border: 1px solid #666;
-          padding: 4px;
+            background: #ddd; 
+            border: 1px solid #666;
+            padding: 4px;
           }
           table, .code, p { margin: 0em 0.5em 0em; }
+          form { padding-bottom: 0.5em; }
           #display {
-          background: #fff;
-          padding: 4px;
+            background: #fff;
+            padding: 4px;
           }
           .footer {
             border-top: 1px solid #96c458;
@@ -171,10 +172,11 @@
               <xsl:otherwise>SeeAlso Simple</xsl:otherwise>
             </xsl:choose>
           </b>
-          web service. It delivers an <a href="http://unapi.info">unAPI</a> format list that 
-          includes the <em>seealso</em> response format 
-          (see <a href="http://www.gbv.de/wikis/cls/SeeAlso_Simple_Specification">SeeAlso Simple Specification</a>).
-          You can try the service by typing in an identifier in the query field below.
+          web service for retrieving links related to a given identifier.
+          The service provides an <a href="http://unapi.info">unAPI</a> format list that
+          includes the <em>seealso</em> response format
+         (see <a href="http://www.gbv.de/wikis/cls/SeeAlso_Simple_Specification">SeeAlso Simple Specification</a>).
+          You can try the service by typing in an identifier in the <a href='#demo'>query field below</a>.
         </p>
         <xsl:choose>
           <xsl:when test="$fullservice">
@@ -186,7 +188,11 @@
             <xsl:call-template name="demo">
               <xsl:with-param name="osd" select="$osd/osd:OpenSearchDescription"/>
             </xsl:call-template>
-            <h2><a href="{$osdurl}">OpenSearch description document</a></h2>
+            <h2 id='osd' name='osd'>OpenSearch description document</h2>
+            <p>
+            This document is returned at <a href="{$osdurl}"><xsl:value-of select="$osdurl"/></a> to describe
+            the <xsl:value-of select="$name"/> service.
+            </p>
             <div class="code">
               <xsl:apply-templates select="$osd" mode="xmlverb" />
             </div>
@@ -196,7 +202,7 @@
           </xsl:otherwise>
         </xsl:choose>
         <xsl:if test="name(/*[1]) = 'formats'">
-        <h2>unAPI format list</h2>
+        <h2 id='formats' name='formats'>unAPI format list</h2>
         <div class="code">
           <xsl:apply-templates select="/" mode="xmlverb" />
         </div>
@@ -225,7 +231,7 @@
   <xsl:param name="baseurl"/>
   <xsl:param name="osd"/>
   <xsl:param name="fields"/>
-  <h2>About</h2>
+  <h2 id='about' name='about'>About</h2>
   <table>
      <xsl:for-each select="$fields">
       <xsl:variable name="localname" select="local-name(.)"/>
@@ -251,7 +257,7 @@
 <xsl:template name="demo">
   <xsl:param name="osd"/>
   <xsl:variable name="examples" select="$osd/osd:Query[@role='example'][@searchTerms]"/>
-  <h2>Live demo</h2>
+  <h2 id='demo' name='demo'>Live demo</h2>
   <form>
     <table id='demo'>
       <tr>
@@ -263,7 +269,11 @@
             <xsl:text> (for instance </xsl:text>
             <xsl:for-each select="$examples">
               <xsl:if test="position() &gt; 1 and position() &lt; 4">, </xsl:if>
-              <xsl:if test="position() &lt; 4"><tt><xsl:value-of select="@searchTerms"/></tt></xsl:if>
+              <xsl:if test="position() &lt; 4">
+                <tt style="text-decoration:underline" onClick='document.getElementById("identifier").value="{@searchTerms}";lookup();'>
+                    <xsl:value-of select="@searchTerms"/>
+                </tt>
+              </xsl:if>
               <xsl:if test="position() = 4"> ...</xsl:if>
             </xsl:for-each>
             <xsl:text>)</xsl:text>
@@ -272,7 +282,7 @@
       </tr>
       <tr></tr>
       <tr>
-        <th>query URL</th>
+        <th>query URL<sup><a href='#qurlnote'>*</a></sup></th>
         <td><a id='query-url' href=''></a></td>
       </tr>
       <tr>
@@ -286,6 +296,12 @@
       </tr>
     </table>
   </form>
+  <p>
+    <a name='qurlnote' id='qurlnote'/><sup>*</sup>You can add a <tt>callback</tt> parameter to the query URL.
+    The JSON response is then wrapped in in parentheses and a function name of your choice. Callbacks
+    are particularly useful for use with web service requests in client-side JavaScript, but they also
+    involve security risks.
+  </p>
 </xsl:template>
 
 <!-- reusable replace-string function -->
