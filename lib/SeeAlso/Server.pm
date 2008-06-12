@@ -16,7 +16,7 @@ use SeeAlso::Source;
 
 use vars qw( $VERSION @ISA @EXPORT );
 our @ISA = qw( Exporter );
-our $VERSION = "0.51a";
+our $VERSION = "0.51b";
 our @EXPORT = qw( query_seealso_server );
 
 =head1 DESCRIPTION
@@ -324,7 +324,7 @@ sub query {
         $http .= "HTTP response status code is $status\n";
         $http .= "\nInternally the following errors occured:\n- " . join("\n- ", map {chomp; $_;} @errors) . "\n" if @errors;
         $http .= "*/\n";
-        $http .= $response->toJSON($callback);
+        $http .= $response->toJSON($callback) . "\n";
     } else {
         $http = $self->listFormats($response);
     }
