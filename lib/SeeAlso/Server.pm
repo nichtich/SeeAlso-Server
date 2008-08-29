@@ -16,7 +16,7 @@ use SeeAlso::Source;
 
 use vars qw( $VERSION @ISA @EXPORT );
 our @ISA = qw( Exporter );
-our $VERSION = "0.51b";
+our $VERSION = "0.52";
 our @EXPORT = qw( query_seealso_server );
 
 =head1 DESCRIPTION
@@ -111,6 +111,19 @@ debug=1 and prohibit with debug=-1.
 
 set a <SeeAlso::Logger> for this server. See the method C<logger> below.
 
+=item formats
+
+An additional hash of formats. The structure is:
+
+  name => {
+     type => "...",
+     docs => "...",         # optional
+     method => \&function
+ }
+
+You can use this parameter to provide more formats then 'seealso' and
+'opensearchdescription' via unAPI.
+
 =back
 
 =cut
@@ -134,8 +147,26 @@ sub new {
         logger => $logger,
         xslt => $params{xslt} || undef,
         clientbase => $params{clientbase} || undef,
-        debug => $params{debug} || 0
+        debug => $params{debug} || 0,
+        formats => { 'seealso' => { type => 'text/javascript' } }
     }, $class;
+
+    my %formats;
+    %formats = %{$params{formats}} if $params{formats};
+    if (%formats) {
+        foreach my $name (keys %formats) {
+            next if $name eq 'opensearchdescription' or $name eq 'seealso' or $name eq 'demo';
+            my $format = $formats{$name};
+            next unless ref($format) eq 'HASH';
+            next unless defined $format->{type};
+            next unless ref($format->{method}) eq 'CODE';
+            $self->{formats}{$name} = {
+                "type" => $format->{type},
+                "docs" => $format->{docs},
+                "method" => $format->{method}
+            };
+        }
+    }
 
     $self->logger($params{logger}) if defined $params{logger};
 
@@ -157,7 +188,7 @@ sub logger {
     $self->{logger} = $logger;
 }
 
-=head2 listFormats ( $response [, @formats] )
+=head2 listFormats ( $response )
 
 Return a HTTP response that lists available formats according to the
 unAPI specification version 1. You must provide a L<SeeAlso::Response>
@@ -165,15 +196,10 @@ object. If this response has no query then no unAPI parameter was provided
 so HTTP status code 200 is returned. Otherwise the status code depends
 on whether the response is empty (HTTP code 404) or not (HTTP code 300).
 
-The optional second parameter may contain an array of additional formats,
-each beeing a hash with 'name', 'type' and optional 'docs' field as
-defined in the unAPI standard version 1. You can use this parameter to 
-provide more formats then 'seealso' and 'opensearchdescription' via unAPI.
-
 =cut
 
 sub listFormats {
-    my ($self, $response, @formats) = @_;
+    my ($self, $response) = @_;
 
     my $status = 200;
     if ($response->hasQuery) {
@@ -197,21 +223,19 @@ sub listFormats {
         push @xml, "<formats>";
     }
 
-    push @formats, { name=>"seealso", type=>"text/javascript" };
+    my %formats = %{$self->{formats}};
 
     if ( (not defined $self->{description}) || $self->{description} ne "" ) {
-        push @formats, { 
-            name=>"opensearchdescription",
+        $formats{"opensearchdescription"} = {
             type=>"application/opensearchdescription+xml",
-            docs=>"http://www.opensearch.org/Specifications/OpenSearch/1.1/Draft_3#OpenSearch_description_document" }
+            docs=>"http://www.opensearch.org/Specifications/OpenSearch/1.1/Draft_3#OpenSearch_description_document"
+        };
     }
 
-    foreach my $format (@formats) {
-        next unless ref($format) eq 'HASH';
-        my %format = %{$format};
-        next unless defined $format{name} and defined $format{type};
-        my $fstr = "<format name=\"" . xmlencode($format{name}) . "\" type=\"" . xmlencode($format{type}) . "\"";
-        $fstr .= " docs=\"" . xmlencode($format{docs}) . "\"" if defined $format{docs};
+    foreach my $name (sort({$b cmp $a} keys(%formats))) {
+        my $format = $formats{$name};
+        my $fstr = "<format name=\"" . xmlencode($name) . "\" type=\"" . xmlencode($format->{type}) . "\"";
+        $fstr .= " docs=\"" . xmlencode($format->{docs}) . "\"" if defined $format->{docs};
         push @xml, $fstr . " />";
     }
 
@@ -326,6 +350,11 @@ sub query {
         $http .= "*/\n";
         $http .= $response->toJSON($callback) . "\n";
     } else {
+        # TODO is this properly logged?
+        my $f = $self->{formats}{$format};
+        if ($f) {
+            $f->{method}($identifier); # TODO: what if this fails?!
+        }
         $http = $self->listFormats($response);
     }
     return $http;

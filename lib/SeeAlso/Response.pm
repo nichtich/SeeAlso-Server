@@ -1,9 +1,9 @@
 package SeeAlso::Response;
 
-use JSON::XS;
+use JSON::XS qw(encode_json);
 
 use vars qw( $VERSION );
-$VERSION = "0.52";
+$VERSION = "0.53";
 
 =head1 NAME
 
@@ -120,7 +120,7 @@ sub toJSON {
         $self->{urls}
     ];
 
-    my $jsonstring = JSON::XS->new->encode($response);
+    my $jsonstring = encode_json($response);
     return $callback ? "$callback($jsonstring);" : $jsonstring;
 }
 
