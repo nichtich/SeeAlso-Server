@@ -113,7 +113,7 @@ set a <SeeAlso::Logger> for this server. See the method C<logger> below.
 
 =item formats
 
-An additional hash of formats. The structure is:
+An additional hash of formats (experimental). The structure is:
 
   name => {
      type => "...",
@@ -354,8 +354,9 @@ sub query {
         my $f = $self->{formats}{$format};
         if ($f) {
             $f->{method}($identifier); # TODO: what if this fails?!
+        } else {
+            $http = $self->listFormats($response);
         }
-        $http = $self->listFormats($response);
     }
     return $http;
 }
