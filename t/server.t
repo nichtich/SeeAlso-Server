@@ -71,14 +71,14 @@ sub query_method {
 $source = SeeAlso::Source->new( \&query_method );
 
 $http = $s->query($source, $identifier, 'seealso');
-ok ( not $source->hasErrors() and $http =~ /^Status: 200[^\[]+\["xyz",\["test"\],\[""\],\[""\]\]$/m, 'JSON Results' );
+ok ( not $source->errors() and $http =~ /^Status: 200[^\[]+\["xyz",\["test"\],\[""\],\[""\]\]$/m, 'JSON Results' );
 
 $http = $s->query($source, $identifier, 'foo');
 ok ( $http eq $xml300, 'Result but not right format');
 
 $http = $s->query($source, $identifier, 'seealso', 'a[1].b');
 my $res = '^Status: 200[^\[]+a\[1\]\.b\(\["xyz",\["test"\],\[""\],\[""\]\]\);$';
-ok ( not $source->hasErrors() and $http =~ /$res/m, 'JSON Result with callback' );
+ok ( not $source->errors() and $http =~ /$res/m, 'JSON Result with callback' );
 
 $cgi = CGI->new;
 $cgi->param('format'=>'seealso');

@@ -5,7 +5,7 @@ use Carp qw(croak);
 use SeeAlso::Response;
 
 use vars qw($VERSION);
-$VERSION = "0.45";
+$VERSION = "0.46";
 
 =head1 NAME
 
@@ -161,17 +161,6 @@ sub errors {
     my $self = shift;
     push @{ $self->{errors} }, @_ if @_;
     return $self->{errors};
-}
-
-=head2 hasErrors
-
-Return whether errors have occured.
-
-=cut
-
-sub hasErrors {
-    my $self = shift;
-    return defined $self->{errors} and scalar @{ $self->{errors} };
 }
 
 1;

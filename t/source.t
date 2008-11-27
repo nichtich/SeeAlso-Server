@@ -9,7 +9,7 @@ use SeeAlso::Identifier;
 use Data::Dumper;
 
 my $source = SeeAlso::Source->new();
-ok ( ! $source->hasErrors(), "no errors" );
+ok ( ! $source->errors(), "no errors" );
 ok ( ! %{ $source->description() }, "no description" );
 ok ( ! defined $source->description("ShortName") , "no description (2)" );
 
@@ -38,14 +38,14 @@ $source = SeeAlso::Source->new(
 );
 
 my $response = $source->query( SeeAlso::Identifier->new() );
-ok( ! $source->hasErrors() && $response->size() == 1, "query method" );
+ok( ! $source->errors() && $response->size() == 1, "query method" );
 
 $source = SeeAlso::Source->new( sub { shift }, ("ShortName" => "Test") );
-ok( ! $source->hasErrors() && $source->description("ShortName") eq "Test", "ShortName");
+ok( ! $source->errors() && $source->description("ShortName") eq "Test", "ShortName");
 
 $source = SeeAlso::Source->new( sub { shift }, ("LongName" => "Test source", "ShortName" => "Test") );
-ok( ! $source->hasErrors() && $source->description("ShortName") eq "Test", "ShortName");
-ok( ! $source->hasErrors() && $source->description("LongName") eq "Test source", "LongName");
+ok( ! $source->errors() && $source->description("ShortName") eq "Test", "ShortName");
+ok( ! $source->errors() && $source->description("LongName") eq "Test source", "LongName");
 
 my $descr = $source->description();
 ok( $descr->{ShortName} eq "Test", "ShortName (2)");
@@ -53,6 +53,6 @@ ok( $descr->{LongName} eq "Test source", "LongName (2)");
 
 $source = SeeAlso::Source->new( sub { return } );
 $source->query(  SeeAlso::Identifier->new() );
-ok ( $source->hasErrors(), "source generated error");
+ok ( $source->errors(), "source generated error");
 
 

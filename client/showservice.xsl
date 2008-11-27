@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
   SeeAlso service display and test page.
-  Version 0.8.2
+  Version 0.8.3
 
   Usage: Put this file (showservice.xsl) in a directory together with 
   seealso.js, xmlverbatim.xsl and favicon.ico (optional)
@@ -57,7 +57,7 @@
   <!-- favicon in the client directory (comment out to skip) -->
   <xsl:param name="favicon"><xsl:value-of select="$clientbase"/>favicon.ico</xsl:param>
 
-  <!-- metadata elements to display in the about-section (TODO: Image) -->
+  <!-- metadata elements to display in the about-section (TODO: Image etc.) -->
   <so:MetadataFields>
     <osd:ShortName/>
     <osd:Description/>
@@ -103,7 +103,7 @@
           h1 { color: #96c458; border-bottom: 1px solid #96c458; }
           td { background: #c3ff72; }
           p { padding-bottom: 0.5em; }
-          pre, .code { 
+          pre, .code {
             background: #ddd; 
             border: 1px solid #666;
             padding: 4px;
@@ -136,18 +136,31 @@
 .xmlverb-pi-content       { color: #006666; font-style: italic }
         </style>
         <script type="text/javascript">
+          var service = new SeeAlsoService("<xsl:value-of select="$seealso-query-base"/>");
+          function showfullresponse() {
+            var identifier = document.getElementById('identifier').value;
+            var url = service.url + "?format=debug&amp;id=" + identifier;
+            var iframe = document.getElementById('fullresponse');
+            if (iframe.style.display == "none") {
+              iframe.style.display = "";
+              iframe.src = url;
+            } else {
+              iframe.style.display = "none";
+            }
+          }
           function lookup() {
             var identifier = document.getElementById('identifier').value;
-            var service = new SeeAlsoService("<xsl:value-of select="$seealso-query-base"/>");
             var view = new SeeAlsoUL();
             var url = service.url + "?format=seealso&amp;id=" + identifier;
             var a = document.getElementById('query-url');
             a.setAttribute("href",url);
             a.innerHTML = "";
             a.appendChild(document.createTextNode(url));
+            document.getElementById('response').style.display = "";
+            document.getElementById('fullresponse').style.display = "none";
             url += "&amp;callback=?";
             var displayElement = document.getElementById('display');
-            service.query(identifier, function(response) {
+            service.query( identifier, function(response) {
               var json = response.toJSON();
               var r = document.getElementById('response');
               r.innerHTML = "";
@@ -190,8 +203,8 @@
             </xsl:call-template>
             <h2 id='osd' name='osd'>OpenSearch description document</h2>
             <p>
-            This document is returned at <a href="{$osdurl}"><xsl:value-of select="$osdurl"/></a> to describe
-            the <xsl:value-of select="$name"/> service.
+            This document is returned at <a href="{$osdurl}"><xsl:value-of select="$osdurl"/></a>
+            to describe the <xsl:value-of select="$name"/> service.
             </p>
             <div class="code">
               <xsl:apply-templates select="$osd" mode="xmlverb" />
@@ -286,9 +299,11 @@
         <td><a id='query-url' href=''></a></td>
       </tr>
       <tr>
-        <th>response</th>
-        <td><pre id='response'></pre></td>
-        <!-- TODO: check the result (query/@so:response) if it was one of the examples -->
+        <th onclick="showfullresponse();">response</th>
+        <td>
+            <pre id='response'></pre>
+            <iframe id="fullresponse" width="90%" name="fullresponse" src="" scrolling="auto" style="display:none;" class="code" />
+        </td>
       </tr>
       <tr>
         <th>display</th>

@@ -297,7 +297,7 @@ sub query {
         $response = $source->query($identifier);
     };
     push @errors, $@ if $@;
-    push @errors, @{ $source->errors() } if $source->hasErrors();
+    push @errors, @{ $source->errors() } if $source->errors();
     if (@errors) {
         undef $response;
     } else {

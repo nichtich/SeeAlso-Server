@@ -1,6 +1,7 @@
-0.52             - added support of additional unAPI formats
-0.51a            - fixed double-encoding UTF8 in Response->toJSON
-                 - ...
+0.52  2008-11-27 - added support of additional unAPI formats
+                 - fixed double-encoding UTF8 in Response->toJSON
+                 - removed hasErrors method
+                 - updated seealso.js and showservice.xslt
 0.51  2008-03-19 - sources can now have examples
                  - added function query_seealso_server
                  - switched to JSON::XS

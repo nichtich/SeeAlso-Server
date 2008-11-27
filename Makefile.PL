@@ -1,4 +1,4 @@
-use 5.005;
+use 5.8.2;
 use strict;
 use ExtUtils::MakeMaker;
 

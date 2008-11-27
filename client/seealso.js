@@ -18,7 +18,7 @@
  * and the license and Affero General Public License (AGPL.txt).
  * </p>
  * @author: Jakob Voss
- * @version: 0.6.5
+ * @version: 0.6.9d
  */
 
 
@@ -126,10 +126,23 @@ SeeAlsoResponse.prototype.size = function() {
 
 /**
  * Creates an object to process and display a {@link SeeAlsoResponse}.
+ *
+ * You can pass the following parameters in a named hash:
+ *
+ * preHTML   : HTML fragment before items
+ * postHTML  : HTML fragment after items
+ * delimHTML : HTML fragment between items
+ * emptyHTML : HTML to return if there are no items
+ * linkTarget: target attribut for links (for instance "new" to open a new window)
+ * maxItems  : maximum number of items to show (default: 10, negative: inf)
+ * moreHTML  : HTML fragment to append if maximum number exceeded
+ * itemHTML  : A function that creates HTML for one item
+ * itemAttr  : a function (of item) or hash
+ *
  * @constructor
  */
 function SeeAlsoView(p) {
-    p = typeof p == "object" ? p : {};
+    p = (typeof p == "object") ? p : {};
 
     this.delimHTML = typeof p.delimHTML == "string" ? p.delimHTML : ", ";
     this.preHTML = (typeof p.preHTML == "string" || typeof p.preHTML == "function")
@@ -138,22 +151,62 @@ function SeeAlsoView(p) {
         ? p.postHTML : "";
     this.emptyHTML = (typeof p.emptyHTML != "undefined") ? p.emptyHTML : "";
     this.maxItems = typeof p.maxItems == "number" ? p.maxItems : 10;
-    this.moreItems = typeof p.moreItems != "undefined" ? p.moreItems : " ...";
+    this.moreHTML = typeof p.moreHTML != "undefined" ? p.moreHTML : " ...";
+    if (typeof p.itemFilter == "function") this.itemFilter = p.itemFilter;
+    this.linkTarget = typeof p.linkTarget == "string" ? p.linkTarget : "";
+    this.itemHTML = typeof p.itemHTML == "function" ? p.itemHTML : this.defaultItemHTML;
 
-    // TODO: put this in the prototype
-    this._itemHTML = function(item) {
-        var label = item.label != "" ? item.label : item.url;
-        if (label == "") return "";
-        var html; // TODO: escape strings and test for empty values!
-        if (item.uri) {
-            html = '<a href="' + item.uri + '">' + label + "</a>";
-        } else {
-            html = label;
+    if (typeof p.itemAttr != "undefined") {
+        if (typeof p.itemAttr == "object") {
+            this.itemAttr = function (item) { return p.itemAttr; }
+        } else if (typeof p.itemAttr == "function") {
+            this.itemAttr = p.itemAttr;
         }
-        return html; 
+    }
+}
+
+/**
+ * Utility method to escape HTML characters in a string 
+ */
+SeeAlsoView.prototype.escapeHTML = function(s) {
+    return s.replace(/&/g,"&amp;").replace(/"/g,"&quot;")
+            .replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+/**
+ * Default method to create HTML from one item
+ */
+SeeAlsoView.prototype.defaultItemHTML = function(item) {
+    var label = item.label != "" ? item.label : item.uri;
+    if (label == "") return "";
+    var html, attr = {}, elem;
+
+    if (item.uri) {
+        elem = "a";
+        attr['href'] = item.uri;
+        if (this.linkTarget) attr['target'] = this.linkTarget;
+        // TODO: not tested!
+        if (item.description != "") attr['title'] = item.description;
     }
 
-    this.itemHTML = typeof p.itemHTML == "function" ? p.itemHTML : this._itemHTML;
+    if (typeof this.itemAttr == "function") {
+        var ia = this.itemAttr(item);
+        for (key in ia) attr[key] = ia[key];
+    }
+
+    // add 'span' element only if needed
+    if (!elem) { for (i in attr) { elem = "span"; break; } }
+
+    if (elem) {
+        html = '<'+elem;
+        for (p in attr) {
+            html += ' ' + p + '="' + this.escapeHTML(attr[p]) + '"';
+        }
+        html += '>' + this.escapeHTML(label) + '</'+elem+'>';
+    } else {
+        html = this.escapeHTML(label);
+    }
+    return html;
 }
 
 /**
@@ -165,6 +218,10 @@ SeeAlsoView.prototype.makeHTML = function(response) {
     if (!(response instanceof SeeAlsoResponse)) {
         response = new SeeAlsoResponse(response)
     }
+
+    if (typeof this.itemFilter == "function")
+        response = response.filter(this.itemFilter);
+
     if (!response || !response.size()) {
         return (typeof this.emptyHTML == "function"
             ? this.emptyHTML(response.identifier) : this.emptyHTML);
@@ -172,9 +229,9 @@ SeeAlsoView.prototype.makeHTML = function(response) {
     var html = typeof this.preHTML == "function"
         ? this.preHTML(response) : this.preHTML;
     for(var i=0; i<response.size(); i++) {
-        if (i >= this.maxItems) {
-            html += typeof this.moreItems == "function"
-                ? this.moreItems(response) : this.moreItems;
+        if (this.maxItems >= 0 && i >= this.maxItems) {
+            html += typeof this.moreHTML == "function"
+                ? this.moreHTML(response) : this.moreHTML;
             break;
         }
         if (i>0) {
@@ -189,18 +246,23 @@ SeeAlsoView.prototype.makeHTML = function(response) {
 
 /**
  * Display a list of response items in a given HTML element.
- * @param element HTML DOM element
+ * @param element HTML DOM element or ID
  * @param response {@link SeeAlsoResponse} or response string/object
  */
 SeeAlsoView.prototype.display = function(element, response) {
     var html = this.makeHTML(response);
+    if (typeof element == "string") {
+        element = document.getElementById(element);
+    }
+    if (!element) return;
+
     // TODO: IE completely kills leading whitespace when innerHTML is used.
     // if ( /^\s/.test( html ) ) createTextNode( html.match(/^\s*/)[0] ) ...
     element.innerHTML = html;
 
     // Display all parent containers (may be hidden by default)
     // Note that containers will be shown as block elements only!
-    if (response && response.size()) {
+    if ((response && response.size()) || html) {
         while ((element = element.parentNode)) {
             if (this.getClasses(element)["seealso-container"])
                 element.style.display = '';
@@ -233,41 +295,87 @@ SeeAlsoView.prototype.getClasses = function(elem) {
  */
 function SeeAlsoSource(query) {
     if (typeof query == "function") {
-        this._queryMethod = query;
+        this._queryMethod = function(id, callback) {
+            callback( query(id) );
+        }
     }
-
     /**
      * Either return a SeeAlsoResponse or call the callback method
      */
     this.query = function( identifier, callback ) {
-        if (!this._queryMethod) return new SeeAlsoResponse();
-        if (typeof callback == "function") {
-            this._queryMethod(identifier, callback);
-            return undefined;
-        } else {
-            return this._queryMethod(identifier);
+        identifier = this.normalizeIdentifier(identifier);
+        if (this._queryMethod) {
+            if (typeof callback == "function") {
+                if (identifier != "") {
+                    this._queryMethod(identifier, callback);
+                } else {
+                    callback( new SeeAlsoResponse([identifier]) );
+                }
+                return undefined;
+            } else {
+                if (identifier != "") return this._queryMethod(identifier);
+            }
         }
+        return new SeeAlsoResponse([identifier]);
     }
 
     /**
-     * Perform a query and display the response with
-     * a given view at a given DOM element
+     * Perform a query and display the response at a given DOM 
+     * element with a given view (default is {@link SeeAlsoCSV}).
      */
     this.queryDisplay = function(identifier, element, view) {
+        if (!view) view = new SeeAlsoCSV();
         this.query( identifier,
             function(data) {
                 view.display(element, data);
             }
         );
     }
+
+    /**
+     * Normalized and/or checks an identifier. If this returns an
+     * empty string, the SeeAlso response will also be empty.
+     */
+    this.normalizeIdentifier = function(identifier) {
+        return identifier;
+    }
 }
 
 
 /**
+ * Caches a SeeAlsoSource. If the identifier has been queried
+ * before, a copy of the SeeAlsoResponse from the cache is used. 
+ */
+function SeeAlsoCache(source) {
+    this.source = source;
+    this.cache = {};
+
+    this._queryMethod = function( identifier, callback ) {
+        if (this.cache[identifier]) {
+            callback(this.cache[identifier]);
+        } else {
+            var cache = this.cache;
+            this.source.query( identifier, function(data) {
+                cache[identifier] = data;
+                callback(data);
+            });
+        }
+    };
+}
+
+SeeAlsoCache.prototype = new SeeAlsoSource;
+
+
+/**
  * Wraps another {@link SeeAlsoSource} and filter its responses item per item.
+ *
+ * @param source a SeeAlsoSource
+ * @param filter a function that gets an item (with fields 'label', 'url', and
+ * 'uri') and returns a (modified) item - or nothing to remove the item.
+ *
+ * TODO: Use SeeAlsoResponse.itemFilter
  */
 function SeeAlsoItemFilter(source, filter) {
-    // TODO: test this!
     this.source = source;
     this._queryMethod = function( identifier, callback ) {
         this.source.query( identifier, function(data) {
@@ -275,7 +383,7 @@ function SeeAlsoItemFilter(source, filter) {
                 r.identifier = data.identifier;
                 for(var i=0; i<data.size(); i++) {
                     var item = filter(data.get(i));
-                    if (item) r.add(item);
+                    if (item) r.add(item.label, item.description, item.uri);
                 }
                 callback(r);
             }
@@ -305,8 +413,9 @@ function SeeAlsoService( url ) {
      * @todo check whether URL escaping is needed / check identifier
      */
     this.queryURL = function(identifier, callback) {
-        var url = this.url + (this.url.indexOf('?') == -1 ? '?' : '&')
-                + "format=seealso&id=" + identifier;
+        var url = this.url + (this.url.indexOf('?') == -1 ? '?' : '&');
+        if (url.indexOf("format=") == -1) url += "format=seealso&";
+        url += "id=" + identifier;
         if (callback) url += "&callback=" + callback;
         return url;
     }
@@ -352,7 +461,7 @@ SeeAlsoService.prototype = new SeeAlsoSource();
  *
  * <p>To get around the cross site scripting limitations of JavaScript 
  * a <tt>&lt;script&gt;</tt> tag is dynamically added to the page. 
- * Please note that this is a serious security problem! The SeeAlso 
+ * Please note that this can be serious security issue! The SeeAlso 
  * service that you call may access the content of your page and cookies.
  * Don't call any services that you don't trust. A solution is to
  * either use a proxy at the domain of your page or use an implementation 
@@ -364,7 +473,7 @@ SeeAlsoService.prototype = new SeeAlsoSource();
  */
 SeeAlsoService.prototype.jsonRequest = function(url, callback) {
     jsc = typeof jsc == "undefined" ? (new Date).getTime() : jsc+1;
-    var jsonp = "jsonp" + jsc; // this should also prevent caching
+    var jsonp = "jsonp" + jsc; // prevent caching
 
     var jsre = /=\?(&|$)/g; // TODO: what if no callback was specified?!
     var head = document.getElementsByTagName("head")[0];
@@ -383,50 +492,144 @@ SeeAlsoService.prototype.jsonRequest = function(url, callback) {
     head.appendChild(script);
 };
 
-// if jQuery is included <em>before</em> seealso, it is used to perform
-// JSON requests. Support of <tt>JSONRequest.get</tt> will be added.
-/*
-SeeAlsoService.prototype.jsonRequest = function(url, callback) {
-    JSONRequest.get(url, function (id,object,error) { 
-        if (object) { callback( new SeeAlsoResponse(object) ); }
-    }
-};
-*/
-if (typeof jQuery != "undefined" && typeof jQuery.getJSON == "function") {
-    SeeAlsoService.prototype.jsonRequest = function(url, callback) {
-        $.getJSON( url, 
-            function(data) { callback( new SeeAlsoResponse(data) ); }
-        );
-    }
-};
-
 
 /**
- * Unordered list
+ * Unordered list.
+ *
+ * You can pass another function with itemHTML that is wrapped.
  */
 function SeeAlsoUL(p) {
-    p = typeof p == "object" ? p : {};
+    p = (typeof p == "object") ? p : {};
     p.preHTML = (typeof p.preHTML != "undefined") ?  p.preHTML + "<ul>" : "<ul>";
     p.postHTML = (typeof p.postHTML != "undefined") ?  p.postHTML + "</ul>" : "</ul>";
     p.delimHTML = "";
-    // TODO: allow another itemHTML inside
+    this.innerItemHTML = typeof p.itemHTML == "function" ? p.itemHTML : this.defaultItemHTML;
+
     p.itemHTML = function(item) { 
-        return "<li>" +  this._itemHTML(item) + "</li>" 
+        return "<li>" +  this.innerItemHTML(item) + "</li>";
     }
     SeeAlsoView.prototype.constructor.call(this, p);
 }
 
 SeeAlsoUL.prototype = new SeeAlsoView;
 
+
 /**
- * Comma seperated list 
+ * Ordered List.
+ */
+function SeeAlsoOL(p) {
+    p = (typeof p == "object") ? p : {};
+    p.preHTML = (typeof p.preHTML != "undefined") ?  p.preHTML + "<ol>" : "<ol>";
+    p.postHTML = (typeof p.postHTML != "undefined") ?  p.postHTML + "</ol>" : "</ol>";
+    p.delimHTML = "";
+    this.innerItemHTML = typeof p.itemHTML == "function" ? p.itemHTML : this.defaultItemHTML;
+
+    p.itemHTML = function(item) { 
+        return "<li>" +  this.innerItemHTML(item) + "</li>";
+    }
+    SeeAlsoView.prototype.constructor.call(this, p);
+}
+
+SeeAlsoOL.prototype = new SeeAlsoView;
+
+
+/**
+ * Comma seperated list
  */
 function SeeAlsoCSV(p) {
-    p = typeof p == "object" ? p : {};
     SeeAlsoView.prototype.constructor.call(this, p);
 }
 
 SeeAlsoCSV.prototype = new SeeAlsoView;
+
+
+/**
+ * Display an image (URL is in the item.uri, dimension is in the description)
+ */
+function SeeAlsoIMG(p) {
+    p = typeof p == "object" ? p : {};
+
+    this.width = 1 * p.width;
+    this.height = 1 * p.height;
+
+    p.itemHTML = function(item) {
+        var html = "";
+        if (item.uri) {
+            var dim = item.description.match(/^(\d+)x(\d+)$/);
+            if (dim) {
+                var w = dim[1], h = dim[2];
+                if (!w || !h) {
+                    attr = "";
+                } else {
+                    var width = w, height = h;
+                    if (this.width && !this.height) {
+                        width = this.width;
+                        height = h * (this.width / w);
+                    } else if (this.height) {
+                        height = this.height;
+                        width = w * (this.height / h);
+                    }
+                    attr = 'width="' + width + '" height="' + height + '"';
+                }
+            }
+            html = '<img src="' + this.escapeHTML(item.uri)
+                 + '" alt="' + this.escapeHTML(item.label) + '" ' + attr + '></img>';
+        }
+        return html;
+    }
+
+    SeeAlsoView.prototype.constructor.call(this, p);
+}
+SeeAlsoIMG.prototype = new SeeAlsoView;
+
+
+/**
+ * Experimental SeeAlsoView to display a tag cloud.
+ */
+function SeeAlsoCloud(p) {
+    p = typeof p == "object" ? p : {};
+
+    if (typeof p.delimHTML == "undefined") p.delimHTML = " ";
+    p.maxItems = -1; // inf
+
+    // this.sort = true;
+
+    this.display = function(element, response) {
+        var min=0, max=0, i, item;
+        for(i=0; i<response.size(); i++) {
+            var v = 1 * response.get(i).description;
+            if (v < min) min = v;
+            if (v > max) max = v;
+        }
+        // sort (TODO: make this a method of SeeAlsoResponse)
+        var sorted = [];
+        for(i=0; i<response.size(); i++) {
+            item = response.get(i);
+            sorted.push( [ item.label, item.description, item.uri ] );
+        }
+        sorted.sort( function(a,b) {
+                a = a[0].toLowerCase(); b = b[0].toLowerCase();
+                if (a > b ) return 1; else if (a < b) return -1; else return 0;
+        });
+
+        var r = new SeeAlsoResponse([response.identifier]);
+        for(i=0; i<sorted.length; i++) {
+            item = sorted[i];
+            r.add( item[0], item[1], item[2] );
+        }
+
+        this.itemAttr = function (item) {
+            var v = 1 * item.description;
+            // calculate font size. TODO: use a given number of different sizes instead
+            var size = Math.round((150.0*(1.0+(1.5*v-max/2)/max)));
+            return { 'style': "font-size: "+size+"%" };
+        };
+        SeeAlsoView.prototype.display.call(this, element, r);
+    }
+
+    SeeAlsoView.prototype.constructor.call(this, p);
+}
+SeeAlsoCloud.prototype = new SeeAlsoView();
 
 
 /**
@@ -438,7 +641,7 @@ SeeAlsoCSV.prototype = new SeeAlsoView;
  * @constructor
  */
 function SeeAlsoCollection(p) {
-    p = typeof p == "object" ? p : {};
+    p = (typeof p == "object") ? p : {};
     /**
      * Directory of named services ({@link SeeAlsoService})
      */
@@ -446,7 +649,13 @@ function SeeAlsoCollection(p) {
     /**
      * Directory of named views ({@link SeeAlsoView})
      */
-    this.views = p.views ? p.views : {};
+    this.views = p.views ? p.views : {
+        'seealso-csv' : new SeeAlsoCSV(),
+        'seealso-ul' : new SeeAlsoUL(),
+        'seealso-ol' : new SeeAlsoOL(),
+        'seealso-img' : new SeeAlsoIMG(),
+        'seealso-cloud' : new SeeAlsoCloud()
+    };
     /**
      * Default view ({@link SeeAlsoView}) that is used if no specific view is given.
      */
@@ -457,45 +666,52 @@ function SeeAlsoCollection(p) {
  * Replace all existing tags by querying all services.
  * Please don't use empty HTML tags (<tag/>) because IE
  * is too stupid to properly support them.
+ * @param root element to start from (default is the document root)
  */
-SeeAlsoCollection.prototype.replaceTags = function () {
-    var all = document.getElementsByTagName('*');
+SeeAlsoCollection.prototype.replaceTags = function (root) {
+    if (root) {
+        if (typeof root == "string") {
+            root = document.getElementById(root) || document;
+        }
+    } else {
+        root = document;
+    }
+    var all = root.getElementsByTagName('*');
     var i, tags=[], length=all.length;
 
     // cycle through all tags in the document that use this service
     for (i = 0; i < length; i++) {
         var elem = all[i];
-        if(!elem.className) continue;
 
-        // get and trim identifier
-        var identifier = elem.getAttribute("title");
-        if (identifier == null) continue;
-        identifier = identifier.replace(/^\s+|\s+$/g,"");
+        var tag = this.parseTag(elem, this);
+        if (!tag) continue;
 
-        // Cycle through all available services
-        for (var serviceClass in this.services) {
-            var reg = new RegExp("\\s" + serviceClass + "\\s");
-            if (reg.test(" " + elem.className + " ")) {
+        if (tag.tooltip) {
+            var collection = this;
+            elem.onfocus = elem.onmouseover = function() {
+                var node = this;
 
-                // get the view to use
-                var view = this.defaultView;
-                var classes = SeeAlsoView.prototype.getClasses(elem);
-
-                for(c in classes) {
-                    if (this.views[ c ]) {
-                        view = this.views[ c ];
-                        break;
-                    }
+                // check whether tooltip content is already loaded
+                for(var c=node.firstChild; c!=null; c=c.nextSibling) {
+                    if (c.tagName == "SPAN") return;
                 }
 
-                if ( view ) {
-                    // because views change the DOM, we first only collect them
-                    tags.push(
-                        { service: this.services[serviceClass], identifier: identifier, element:elem, view:view }
-                    );
-                    break; // don't try other services or views
+                tag = collection.parseTag(node, collection);
+                if (!tag || !tag.tooltip) return;
+
+                // create a span element for tooltip content
+                var span = document.createElement("span");
+                if (tag.tooltip == "right") {
+                    node.appendChild(span);
+                } else {
+                    node.insertBefore(span, node.firstChild);
                 }
+
+                tag.service.queryDisplay(tag.identifier, span, tag.view);
             }
+        } else { // collect tags - they will change the DOM we are iterating!
+            tag["element"] = elem;
+            tags.push(tag);
         }
     }
 
@@ -507,13 +723,55 @@ SeeAlsoCollection.prototype.replaceTags = function () {
 };
 
 /**
+ * Parse the attributes of an HTML tag to find out service, view, and identifier.
+ * Returns a hash with 'service', 'view', 'identifier', and 'tooltip' or null.
+ * The second parameter must be a SeeAlsoCollection
+ */
+SeeAlsoCollection.prototype.parseTag = function (elem, collection) {
+    if (!collection) collection = this;
+
+    // parse classes and title attribute (as identifier)
+    var identifier = "", classes = SeeAlsoView.prototype.getClasses(elem);
+    for (var c in classes) {
+        identifier = elem.getAttribute("title") || "";
+        identifier = identifier.replace(/^\s+|\s+$/g,"");
+        break;
+    }
+    if (identifier == "") return;
+
+    // parse service and view (and tooltip)
+    var service, view, tooltip=false;
+    for (var c in classes) {
+        if (!service && collection.services[c]) {
+            service = collection.services[c];
+        } else if (!view && collection.views[c]) {
+            view = collection.views[c];
+        } else if(c == "tooltip") {
+            tooltip = "over";
+        } else if(c == "tooltip-right") {
+            tooltip = "right";
+        }
+    }
+    if (!view) view = collection.defaultView;
+    if (!service || !view) return;
+
+    return {
+        "identifier": identifier,
+        "service": service,
+        "view": view,
+        "tooltip": tooltip
+    };
+};
+
+/**
  * Call {@link #replaceTags} when the HTML page has been loaded.
  * This is compatible with <tt>&lt;body onload=""&gt;</tt>
+ * @param id of the root element to search for tags (default is document root)
  */
-SeeAlsoCollection.prototype.replaceTagsOnLoad = function() {
+SeeAlsoCollection.prototype.replaceTagsOnLoad = function(root) {
     var me = this;
     function callReplaceTags() { 
-       me.replaceTags();
+       me.replaceTags(root);
     }
     if(typeof window.addEventListener != 'undefined') {
         window.addEventListener('load', callReplaceTags, false);
