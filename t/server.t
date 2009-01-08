@@ -2,7 +2,7 @@
 
 use strict;
 
-use Test::More tests => 15;
+use Test::More tests => 16;
 
 use CGI;
 my $cgi = CGI->new();
@@ -74,7 +74,7 @@ $http = $s->query($source, $identifier, 'seealso');
 ok ( not $source->errors() and $http =~ /^Status: 200[^\[]+\["xyz",\["test"\],\[""\],\[""\]\]$/m, 'JSON Results' );
 
 $http = $s->query($source, $identifier, 'foo');
-ok ( $http eq $xml300, 'Result but not right format');
+is ( $http, $xml300, 'Result but not right format');
 
 $http = $s->query($source, $identifier, 'seealso', 'a[1].b');
 my $res = '^Status: 200[^\[]+a\[1\]\.b\(\["xyz",\["test"\],\[""\],\[""\]\]\);$';
@@ -94,3 +94,12 @@ ok ( $http =~ /$res/m, 'JSON Result with callback (query_seealso_server, sub and
 
 $http = $s->query($source, $identifier, 'seealso', '{');
 ok ( $http =~ /^Status: 400/, 'invalid callback' );
+
+sub quc {
+    my $id = shift;
+    return "UC:" . uc($id->value);
+}
+$s = SeeAlso::Server->new( formats => { "uc" => { type => "text/plain", method => \&quc } } );
+$http = $s->query( $source, new SeeAlso::Identifier("abc"), "uc" );
+ok ( $http eq "UC:ABC", "additional unAPI format" );
+

@@ -16,7 +16,7 @@ use SeeAlso::Source;
 
 use vars qw( $VERSION @ISA @EXPORT );
 our @ISA = qw( Exporter );
-our $VERSION = "0.52";
+our $VERSION = "0.53";
 our @EXPORT = qw( query_seealso_server );
 
 =head1 DESCRIPTION
@@ -27,7 +27,7 @@ so this module also implements the unAPI protocol version 1.
 
 =head1 SYNOPSIS
 
-To implement a SeeAlso linkserver, you need instances of L<SeeAlso::Server>,
+To implement a SeeAlso linkserver, you need instances of C<SeeAlso::Server>,
 and L<SeeAlso::Source>. The Source object must return a L<SeeAlso::Response> 
 object:
 
@@ -122,7 +122,7 @@ An additional hash of formats (experimental). The structure is:
  }
 
 You can use this parameter to provide more formats then 'seealso' and
-'opensearchdescription' via unAPI.
+'opensearchdescription' via unAPI (these two formats cannot be overwritten).
 
 =back
 
@@ -151,11 +151,10 @@ sub new {
         formats => { 'seealso' => { type => 'text/javascript' } }
     }, $class;
 
-    my %formats;
-    %formats = %{$params{formats}} if $params{formats};
-    if (%formats) {
+    if ($params{formats}) {
+        my %formats = %{$params{formats}};
         foreach my $name (keys %formats) {
-            next if $name eq 'opensearchdescription' or $name eq 'seealso' or $name eq 'demo';
+            next if $name eq 'opensearchdescription' or $name eq 'seealso' or $name eq 'debug';
             my $format = $formats{$name};
             next unless ref($format) eq 'HASH';
             next unless defined $format->{type};
@@ -291,29 +290,35 @@ sub query {
     }
 
     # If everything is ok up to here, we should definitely return some valid stuff
+    $format = "seealso" if ( $format eq "debug" && $self->{debug} == -1 ); 
+    $format = "debug" if ( $format eq "seealso" && $self->{debug} == 1 ); 
 
     my ($response, @errors);
-    eval {
-        $response = $source->query($identifier);
-    };
-    push @errors, $@ if $@;
-    push @errors, @{ $source->errors() } if $source->errors();
-    if (@errors) {
-        undef $response;
-    } else {
-        if (defined $response && !UNIVERSAL::isa($response, 'SeeAlso::Response')) {
-            push @errors, ref($source) . "->query must return a SeeAlso::Response object but it did return '" . ref($response) . "'";
-            undef $response;
-        }
-    }
-
-    $response = SeeAlso::Response->new() unless defined $response;
-
     my $status = 200;
-    if ($callback && !($callback =~ /^[a-zA-Z0-9\._\[\]]+$/)) {
-        push @errors, "Invalid callback name specified";
-        undef $callback;
-        $status = 400;
+    if ($format eq "seealso" or $format eq "debug" or !$self->{formats}{$format}) {
+        eval {
+            $response = $source->query($identifier);
+        };
+        push @errors, $@ if $@;
+        push @errors, @{ $source->errors() } if $source->errors();
+        if (@errors) {
+            undef $response;
+        } else {
+            if (defined $response && !UNIVERSAL::isa($response, 'SeeAlso::Response')) {
+                push @errors, ref($source) . "->query must return a SeeAlso::Response object but it did return '" . ref($response) . "'";
+                undef $response;
+            }
+        }
+
+        $response = SeeAlso::Response->new() unless defined $response;
+
+        if ($callback && !($callback =~ /^[a-zA-Z0-9\._\[\]]+$/)) {
+            push @errors, "Invalid callback name specified";
+            undef $callback;
+            $status = 400;
+        }
+    } else {
+        $response = SeeAlso::Response->new( $identifier );
     }
 
     if ( $self->{logger} ) {
@@ -324,9 +329,6 @@ sub query {
         };
         push @errors, $@ if $@;
     }
-
-    $format = "seealso" if ( $format eq "debug" && $self->{debug} == -1 ); 
-    $format = "debug" if ( $format eq "seealso" && $self->{debug} == 1 ); 
 
     if ( $format eq "seealso" ) {
         $http .= $cgi->header( -status => $status, -type => 'text/javascript; charset: utf-8' );
@@ -351,9 +353,10 @@ sub query {
         $http .= $response->toJSON($callback) . "\n";
     } else {
         # TODO is this properly logged?
+        # TODO: put 'seealso' as format method in the array
         my $f = $self->{formats}{$format};
         if ($f) {
-            $f->{method}($identifier); # TODO: what if this fails?!
+            $http = $f->{method}($identifier); # TODO: what if this fails?!
         } else {
             $http = $self->listFormats($response);
         }
@@ -514,7 +517,7 @@ sub query_seealso_server {
 
 =head2 xmlencode ( $string )
 
-Replace &, <, >, " by XML entities
+Replace &, <, >, " by XML entities.
 
 =cut
 

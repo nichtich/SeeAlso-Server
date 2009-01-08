@@ -18,7 +18,10 @@ with C<SeeAlso::Identifier::PND>. A PND number consists of eight digits
 and a checkdigit which may also be 'X'.
 
 This subclass of L<SeeAlso::Identifier> overrides the constructor C<new>
-and the method C<valid>.
+and the methods C<valid> and C<normalized>.
+
+This class be replaced by C<SeeAlso::Identifier::GND> for a unified
+authority file of names and other objects (Gemeinsame Normdatei).
 
 =cut
 
@@ -27,7 +30,7 @@ use Carp;
 
 use vars qw( $VERSION @ISA );
 @ISA = qw( SeeAlso::Identifier );
-$VERSION = "0.51";
+$VERSION = "0.52";
 
 =head1 METHODS
 
@@ -55,13 +58,15 @@ sub value {
     my $value = shift;
 
     if (defined $value) {
+        $value = lc($value);
+        $value =~ s/^http:\/\/d-nb.info\/gnd\///i;
         $self->{value} = uc($value);
     }
 
     return $self->{value};
 }
 
-=head2 valid
+=head2 valid ( )
 
 Check for validness.
 
@@ -82,6 +87,18 @@ sub valid() {
     return $sum eq $9;
 }
 
+=head2 normalized ( )
+
+Return a normalized version of the identifier as Uniform Resource Identifier
+(URI) by adding the prefix C<http://d-nb.info/gnd/>.
+
+=cut
+
+sub normalized() {
+    my $self = shift;
+    return $self->valid() ? ("http://d-nb.info/gnd/" . $self->{value}) : "";
+}
+
 1;
 
 __END__
@@ -92,7 +109,7 @@ Jakob Voss C<< <jakob.voss@gbv.de> >>
 
 =head1 LICENSE
 
-Copyright (C) 2007 by Verbundzentrale Goettingen (VZG) and Jakob Voss
+Copyright (C) 2007-2009 by Verbundzentrale Goettingen (VZG) and Jakob Voss
 
 This library is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself, either Perl version 5.8.8 or, at

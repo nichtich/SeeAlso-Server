@@ -1,3 +1,6 @@
+0.53  2008-01-08 - fixed support of additional unAPI formats
+                 - added URI for SeeAlso::Identifier::PND (GND)
+                 - added SeeAlso::Identifier::ISIL
 0.52  2008-11-27 - added support of additional unAPI formats
                  - fixed double-encoding UTF8 in Response->toJSON
                  - removed hasErrors method

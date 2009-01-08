@@ -3,16 +3,12 @@ Features, that are planned to be implemented before 1.0 release include:
 - Add SeeAlso::Test for testing SeeAlso services
 - Add SeeAlso::Discovery to discover servers via OpenSearch Description 
 - Add test of SeeAlso::Source::DBI with SQLite
+- Create unAPI::Server to base on
 - clean up the code
 -- look for TODOs
 -- look for missing documentation 
 - remove/add missing zeroes in ISBN?
-- Add a tutorial
 -- Create a management object (needed for testing and quality of service)?
-- Add/improve Wikipedia/LibraryThing examples
--- rewrite, test and document ETL cycle
--- more examples!
---- Feed2Seealso (RSS2Seealso, ATOM2Seealso)
 - Better error handling (also log errors)
 -- push errors from SeeAlso::Source to SeeAlso::Server
 - Better support of OpenSearch Description (more fields), maybe with OpenSearch::Description
@@ -34,6 +30,11 @@ Features, that are planned to be implemented before 1.0 release include:
   HTTP POST (new), HTTP PUT (add) and HTTP DELETE (delete).
   Response formats and status codes need to be defined for this
 - remove Date::Parse prequisite
+
+== Examples ==
+* Add/improve Wikipedia/LibraryThing examples
+** rewrite, test and document ETL cycle
+* Feed2Seealso (RSS2Seealso, ATOM2Seealso)
 
 == JavaScript client ==
 * Document purpose and usage

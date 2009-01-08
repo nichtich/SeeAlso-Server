@@ -2,6 +2,7 @@ package SeeAlso::Identifier::ISIL;
 
 use strict;
 use warnings;
+use utf8;
 
 =head1 NAME
 
@@ -81,9 +82,8 @@ sub value {
 
     if (defined $value) {
         $self->{value} = undef;
-        $value =~ s/^[ \t]+//;
-        $value =~ s/[ \t]+$//;
-        $value =~ s/^ISIL //;
+        $value =~ s/^\s+|\s+$//g;
+        $value =~ s/^ISIL |^info:isil\///;
 
         # ISIL too long
         return unless length($value) <= 16;
@@ -107,7 +107,7 @@ sub value {
 }
 
 
-=head2 prefix
+=head2 prefix ( )
 
 Returns the ISIL prefix.
 
@@ -118,7 +118,7 @@ sub prefix {
     return $1 if (defined $self->{value} and $self->value =~ /^([A-Z0-9]+)-(.+)$/);
 }
 
-=head2 local
+=head2 local ( )
 
 Returns the ISIL local library identifier.
 
@@ -127,6 +127,17 @@ Returns the ISIL local library identifier.
 sub local {
     my $self = shift;
     return $2 if (defined $self->{value} and $self->value =~ /^([A-Z0-9]+)-(.+)$/);
+}
+
+=head2 normalized ( )
+
+Returns a normalized form as URI.
+
+=cut
+
+sub normalized {
+    my $self = shift;
+    return "info:isil/" . $self->{value} if $self->valid();
 }
 
 =head1 UTILITY FUNCTIONS
@@ -140,13 +151,15 @@ Creates an ISIL from an old German library identifier ("Sigel")
 sub sigel2isil {
     my $sigel = shift;
 
-    # Falls das Sigel mit einem Buchstaben beginnt, wird dieser in einen Großbuchstaben umgewandelt
+    # Falls das Sigel mit einem Buchstaben beginnt, 
+    # wird dieser in einen Großbuchstaben umgewandelt
     my $isil = ucfirst($sigel);
 
     # Bindestriche und Leerzeichen werden entfernt
     $isil =~ s/[- ]//g;
 
-    # Umlaute und Eszett (Ä,Ö,Ü,ä,ö,ü,ß) werden durch einfache Buchstaben ersetzen (AE,ÖE,UE,ae,oe,ue,ss)
+    # Umlaute und Eszett (Ä,Ö,Ü,ä,ö,ü,ß) werden durch 
+    # einfache Buchstaben ersetzen (AE,ÖE,UE,ae,oe,ue,ss).
     $isil =~ s/Ä/AE/g;
     $isil =~ s/Ö/OE/g;
     $isil =~ s/Ü/UE/g;
@@ -160,7 +173,14 @@ sub sigel2isil {
 
 1;
 
-__END__
+=head1 NOTES
+
+We could add validity check on prefixes with an additional prefix list.
+Note the usage of ISO 3166-2:1998 codes is only a recommendation in
+ISO 15511:2003. Moreover some country subdivision have changed since
+1998 and National ISIL Agencies may have other reasons not to use the
+same codes as provided by L<Locale::SubCountry>. You can find a list
+of prefixes in the source code of this package.
 
 =head1 AUTHOR
 
@@ -168,7 +188,7 @@ Jakob Voss C<< <jakob.voss@gbv.de> >>
 
 =head1 LICENSE
 
-Copyright (C) 2007 by Verbundzentrale Goettingen (VZG) and Jakob Voss
+Copyright (C) 2007-2009 by Verbundzentrale Goettingen (VZG) and Jakob Voss
 
 This library is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself, either Perl version 5.8.8 or, at
@@ -176,26 +196,7 @@ your option, any later version of Perl 5 you may have available.
 
 =cut
 
-TODO: see ~/svn/sigel2isil
-
-ISIL prefixes are managed by the ISIL Registration Authority
-at http://www.bs.dk/isil/ . An ISIL prefix can either be a
-country code or a non country-code.
-
-A country code identifies the country in which the library or
-related organization is located at the time the ISIL is assigned.
-The country code shall consist of two uppercase letters in
-accordance with the codes specified in ISO 3166-1.
-
-A non-country code prefix is any combination of Latin alphabet
-characters (upper or lower case) or digits (but not special marks).
-The prefix may be one, three, or four characters in length.
-The prefix is registered at a global level with the ISIL
-Registration Authority.
-
-#As defined in ISO 15511:2003 country codes should follow
-#ISO 3166-1:1997 but there can be exceptions with non-national
-#ISIL Agencies and country codes that changed since 1997.
+__END__
 
 use vars qw( %ISIL_prefixes );
 
@@ -218,25 +219,7 @@ use vars qw( %ISIL_prefixes );
   'US' => ['United States of America', undef],
 
   # in preperation (2006)
-  'M' => ['Library of Congress - outside US', undef]
-  # ???
-  # 'ZDB' => ['Staatsbibliothek zu Berlin - Zeitschriftendatenbank', undef]
+  'M' => ['Library of Congress - outside US', undef],
+  'ZDB' => ['Staatsbibliothek zu Berlin - Zeitschriftendatenbank', undef],
+  'OCLC' => ['OCLC WorldCat Registry', undef],
 );
-
-# ISO/TC46/SC4
-# Report of ISIL Registration Authority
-# to ISO TC46/SC4 January 2006
-
-"If appropriate when assigning a new identifier to a library or related organisation, it is recommended
-that the Library identifier of the ISIL include the element indicating the geographic subdivision
-(state, province, region, city, etc.) where the library or the related organisation is located. If the
-geographic subdivision element is used, it is recommended that the element be in accordance
-with the codes specified in ISO 3166-2: 1998."
-
-Note the usage of ISO 3166-2:1998 codes is only a recommendation in
-ISO 15511:2003. Moreover some country subdivision have changed since
-1998 and National ISIL Agencies may have other reasons not to use the
-same codes as provided by L<Locale::SubCountry> so this method is only
-a guess.
-
-
