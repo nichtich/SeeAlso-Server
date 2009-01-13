@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
   SeeAlso service display and test page.
-  Version 0.8.3
+  Version 0.8.5
 
   Usage: Put this file (showservice.xsl) in a directory together with 
   seealso.js, xmlverbatim.xsl and favicon.ico (optional)
   and let your SeeAlso service point to it in the unAPI format list file.
 
-  Copyright 2008 Jakob Voss
+  Copyright (C) 2007-2009 by Verbundzentrale Goettingen (VZG) and Jakob Voss
 
   Licensed under the Apache License, Version 2.0 (the "License"); 
   you may not use this file except in compliance with the License.
@@ -56,21 +56,6 @@
 
   <!-- favicon in the client directory (comment out to skip) -->
   <xsl:param name="favicon"><xsl:value-of select="$clientbase"/>favicon.ico</xsl:param>
-
-  <!-- metadata elements to display in the about-section (TODO: Image etc.) -->
-  <so:MetadataFields>
-    <osd:ShortName/>
-    <osd:Description/>
-    <osd:Contact/>
-    <osd:Tags/>
-    <osd:LongName/>
-    <osd:Developer/>
-    <osd:Attribution/>
-    <osd:SyndicationRight/>
-    <osd:Language/>
-    <osd:InputEncoding/>
-    <osd:OutputEncoding/>
-  </so:MetadataFields>
 
   <!-- root -->
   <xsl:template match="/">
@@ -151,7 +136,9 @@
           function lookup() {
             var identifier = document.getElementById('identifier').value;
             var view = new SeeAlsoUL();
-            var url = service.url + "?format=seealso&amp;id=" + identifier;
+            var url = service.url;
+            url += url.indexOf('?') == -1 ? '?' : '&amp;';
+            url += "format=seealso&amp;id=" + identifier;
             var a = document.getElementById('query-url');
             a.setAttribute("href",url);
             a.innerHTML = "";
@@ -196,7 +183,6 @@
             <xsl:call-template name="about">
               <xsl:with-param name="baseurl" select="$seealso-query-base"/>
               <xsl:with-param name="osd" select="$osd/osd:OpenSearchDescription"/>
-              <xsl:with-param name="fields" select="document('')/*/so:MetadataFields/*"/>
             </xsl:call-template>
             <xsl:call-template name="demo">
               <xsl:with-param name="osd" select="$osd/osd:OpenSearchDescription"/>
@@ -243,19 +229,18 @@
 <xsl:template name="about">
   <xsl:param name="baseurl"/>
   <xsl:param name="osd"/>
-  <xsl:param name="fields"/>
   <h2 id='about' name='about'>About</h2>
   <table>
-     <xsl:for-each select="$fields">
+     <xsl:for-each select="$osd/*">
       <xsl:variable name="localname" select="local-name(.)"/>
       <xsl:variable name="fullname" select="name(.)"/>
       <xsl:variable name="namespace" select="namespace-uri(.)"/>
-      <xsl:for-each select="$osd/*[name()=$localname and namespace-uri()=$namespace]">
-      <tr>
-        <th><xsl:value-of select="$localname"/></th>
-        <td><xsl:value-of select="normalize-space(.)"/></td>
-      </tr>
-      </xsl:for-each>
+      <xsl:if test="$localname != 'Query' and $localname!='Url'">
+        <tr>
+          <th><xsl:value-of select="$localname"/></th>
+          <td><xsl:value-of select="normalize-space(.)"/></td>
+        </tr>
+      </xsl:if>
     </xsl:for-each>
     <tr>
       <th>BaseURL</th><td><tt><xsl:value-of select="$baseurl"/></tt></td>
@@ -264,6 +249,7 @@
       <th>URL template</th>
       <td><tt><xsl:value-of select="$osd/osd:Url[@type='text/javascript'][1]/@template"/></tt></td>
     </tr>
+    <!-- TODO: add information about additional fields (if any) -->
   </table>  
 </xsl:template>
 
@@ -312,10 +298,10 @@
     </table>
   </form>
   <p>
-    <a name='qurlnote' id='qurlnote'/><sup>*</sup>You can add a <tt>callback</tt> parameter to the query URL.
-    The JSON response is then wrapped in in parentheses and a function name of your choice. Callbacks
-    are particularly useful for use with web service requests in client-side JavaScript, but they also
-    involve security risks.
+    <a name='qurlnote' id='qurlnote'/><sup>*</sup>In addition you can add a <tt>callback</tt> parameter 
+    to the query URL. The JSON response is then wrapped in in parentheses and a function name of your choice.
+    Callbacks are particularly useful for use with web service requests in client-side JavaScript, but they
+    also involve security risks.
   </p>
 </xsl:template>
 

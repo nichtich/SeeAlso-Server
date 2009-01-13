@@ -134,7 +134,7 @@ sub set_file {
     my $self = shift;
     my $file = shift;
 
-    if (ref($file) eq "GLOB" or $file->isa("IO::Handle")) {
+    if (ref($file) eq "GLOB" or eval { $file->isa("IO::Handle") }) {
         $self->{filename} = "";
         $self->{handle} = $file;
     } else {
