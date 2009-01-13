@@ -37,6 +37,7 @@ t/isbn.t
 t/source.t
 t/thingisbn.t
 t/dbisource.t
+t/critique.t
 
 client/showservice.xsl
 client/seealso.js 
