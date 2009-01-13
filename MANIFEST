@@ -7,7 +7,7 @@ Changes
 
 lib/SeeAlso/Server.pm
 lib/SeeAlso/Identifier.pm
-lib/SeeAlso/Identifier/PND.pm
+lib/SeeAlso/Identifier/GND.pm
 lib/SeeAlso/Identifier/ISIL.pm
 lib/SeeAlso/Identifier/ISBN.pm
 lib/SeeAlso/Response.pm
@@ -31,7 +31,7 @@ t/listFormats200noosd.xml
 t/listFormats404.xml
 t/listFormats300.xml
 t/identifier.t
-t/pnd.t
+t/gnd.t
 t/isil.t
 t/isbn.t
 t/source.t

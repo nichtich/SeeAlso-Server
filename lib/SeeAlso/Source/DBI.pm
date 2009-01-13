@@ -1,6 +1,14 @@
 package SeeAlso::Source::DBI;
 
 use strict;
+use warnings;
+
+=head1 NAME
+
+SeeAlso::Source::DBI - returns links stored in an SQL database (abstract class)
+
+=cut
+
 use Carp qw(croak);
 use DBI;
 
@@ -9,10 +17,6 @@ use SeeAlso::Source;
 use vars qw( @ISA $VERSION );
 @ISA = qw( SeeAlso::Source );
 $VERSION = "0.44";
-
-=head1 NAME
-
-SeeAlso::Source::DBI - returns links stored in an SQL database (abstract class)
 
 =head1 DESCRIPTION
 
@@ -231,3 +235,15 @@ sub insertResponse {
 }
 
 1;
+
+=head1 AUTHOR
+
+Jakob Voss C<< <jakob.voss@gbv.de> >>
+
+=head1 LICENSE
+
+Copyright (C) 2007-2009 by Verbundzentrale Goettingen (VZG) and Jakob Voss
+
+This library is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself, either Perl version 5.8.8 or, at
+your option, any later version of Perl 5 you may have available.

@@ -3,7 +3,10 @@ Features, that are planned to be implemented before 1.0 release include:
 - Add SeeAlso::Test for testing SeeAlso services
 - Add SeeAlso::Discovery to discover servers via OpenSearch Description 
 - Add test of SeeAlso::Source::DBI with SQLite
+
+= Redesign =
 - Create unAPI::Server to base on
+
 - clean up the code
 -- look for TODOs
 -- look for missing documentation 

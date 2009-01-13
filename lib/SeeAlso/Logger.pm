@@ -1,12 +1,14 @@
 package SeeAlso::Logger;
 
+use strict;
+use warnings;
+
 =head1 NAME
 
 SeeAlso::Logger - log requests to a SeeAlso Simple service
 
 =cut
 
-use strict;
 use Carp qw(croak);
 use POSIX qw(strftime);
 

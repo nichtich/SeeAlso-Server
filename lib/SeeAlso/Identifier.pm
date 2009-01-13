@@ -1,6 +1,7 @@
 package SeeAlso::Identifier;
 
-use Carp;
+use strict;
+use warnings;
 
 =head1 NAME
 
@@ -8,6 +9,7 @@ SeeAlso::Identifier - an identifier passed to a SeeAlso-Server
 
 =cut
 
+use Carp;
 use vars qw($VERSION);
 $VERSION = "0.40";
 

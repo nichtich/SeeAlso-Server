@@ -1,13 +1,18 @@
 package SeeAlso::Response;
 
-use JSON::XS qw(encode_json);
-
-use vars qw( $VERSION );
-$VERSION = "0.53";
+use strict;
+use warnings;
 
 =head1 NAME
 
 SeeAlso::Response - SeeAlso Simple Response
+
+=cut
+
+use JSON::XS qw(encode_json);
+
+use vars qw( $VERSION );
+$VERSION = "0.53";
 
 =head1 DESCRIPTION
 
@@ -59,6 +64,11 @@ sub new {
 =head2 add ( $label [, $description [, $uri ] ] )
 
 Add an item to the result set. All parameters must be strings.
+The URI is not checked for well-formedness, so it is recommended
+to use a specific URI class like C<URI> and pass a normalized
+version of the URI:
+
+  $uri = URI->new( $uri_str )->canonical
 
 =cut
 
