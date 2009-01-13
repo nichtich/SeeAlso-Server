@@ -10,8 +10,7 @@ SeeAlso::Identifier - an identifier passed to a SeeAlso-Server
 =cut
 
 use Carp;
-use vars qw($VERSION);
-$VERSION = "0.40";
+our $VERSION = "0.41";
 
 =head1 DESCRIPTION
 

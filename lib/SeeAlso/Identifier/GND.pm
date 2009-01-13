@@ -31,9 +31,8 @@ C<new> and the methods C<valid> and C<normalized>.
 use SeeAlso::Identifier;
 use Carp;
 
-use vars qw( $VERSION @ISA );
-@ISA = qw( SeeAlso::Identifier );
-$VERSION = "0.53";
+use base qw( SeeAlso::Identifier );
+our $VERSION = "0.53";
 
 =head1 METHODS
 

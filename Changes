@@ -1,7 +1,7 @@
-0.53  2008-01-08 - fixed support of additional unAPI formats
+0.53  2008-01-13 - fixed support of additional unAPI formats
                  - moved SeeAlso::Identifier::PND to SeeAlso::Identifier::GND
                  - added SeeAlso::Identifier::ISIL
-                 - added Test::Perl::Critic test
+                 - added Test::Perl::Critic (enable by setting TEST_AUTHOR)
 0.52  2008-11-27 - added support of additional unAPI formats
                  - fixed double-encoding UTF8 in Response->toJSON
                  - removed hasErrors method

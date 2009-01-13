@@ -14,8 +14,7 @@ use SeeAlso::Identifier;
 use SeeAlso::Response;
 use SeeAlso::Source;
 
-use vars qw( $VERSION @ISA @EXPORT );
-our @ISA = qw( Exporter );
+use base qw( Exporter );
 our $VERSION = "0.53";
 our @EXPORT = qw( query_seealso_server );
 
@@ -338,13 +337,12 @@ sub query {
         $http .= "/*\n";
 
         use Class::ISA;
-        no strict 'refs'; # not clean but cool
         my %vars = ( Server => $self, Source => $source, Identifier => $identifier, Response => $response );
         foreach my $var (keys %vars) {
             $http .= "$var is a " .
-                join(", ", map { $_." ".${"$_\::VERSION"}; }
+                join(", ", map { $_ . " " . $_->VERSION; }
                 Class::ISA::self_and_super_path(ref($vars{$var})))
-            . "\n";
+            . "\n"
         }
         $http .= "\n";
         $http .= "HTTP response status code is $status\n";

@@ -4,8 +4,7 @@ use strict;
 use Carp qw(croak);
 use SeeAlso::Response;
 
-use vars qw($VERSION);
-$VERSION = "0.46";
+our $VERSION = "0.46";
 
 =head1 NAME
 

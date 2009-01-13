@@ -11,8 +11,7 @@ SeeAlso::Response - SeeAlso Simple Response
 
 use JSON::XS qw(encode_json);
 
-use vars qw( $VERSION );
-$VERSION = "0.53";
+our $VERSION = "0.53";
 
 =head1 DESCRIPTION
 

@@ -13,9 +13,8 @@ use Business::ISBN;
 use SeeAlso::Identifier;
 use Carp;
 
-use vars qw( $VERSION @ISA );
-@ISA = qw( SeeAlso::Identifier );
-$VERSION = "0.5";
+use base qw( SeeAlso::Identifier );
+our $VERSION = "0.5";
 
 =head1 METHODS
 
@@ -39,6 +38,8 @@ sub new {
 Get and/or set the value of the ISBN.
 Returns undef or the valid value ISBN-13 with hyphens.
 
+- remove/add missing zeroes in ISBN?
+
 =cut
 
 sub value {
@@ -46,7 +47,7 @@ sub value {
     my $value = shift;
 
     if (defined $value) {
-        $value =~ s/^[uU][rR][nN]:[iI][sS][Bb][Nn]://;
+        $value =~ s/^urn:isbn://i;
         $self->{value} = Business::ISBN->new( $value );
         return unless defined $self->{value};
 
@@ -85,7 +86,7 @@ But this method does: first only valid ISBN (with valid checkdigit)
 are allowed, second all ISBN are converted to ISBN-13 notation without
 hyphens (URIs without defined normalization and valitidy check are pointless).
 
-Up to now the "<tt>urn:isbn</tt>"-flavor of URI for ISBN is used but you could
+Up to now the "C<urn:isbn>"-flavor of URI for ISBN is used but you could
 also use "http://purl.org/isbn/" instead.
 
 =cut

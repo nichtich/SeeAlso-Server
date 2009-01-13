@@ -19,10 +19,9 @@ use SeeAlso::Identifier;
 use Carp;
 use Exporter;
 
-use vars qw( $VERSION @ISA @EXPORT_OK );
-@ISA = qw( SeeAlso::Identifier Exporter );
-$VERSION = "0.10";
-@EXPORT_OK = qw( calc_check_digit );
+use base qw( SeeAlso::Identifier Exporter );
+our $VERSION = "0.10";
+our @EXPORT_OK = qw( calc_check_digit );
 
 =head1 METHODS
 

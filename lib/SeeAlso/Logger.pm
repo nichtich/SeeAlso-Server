@@ -12,8 +12,7 @@ SeeAlso::Logger - log requests to a SeeAlso Simple service
 use Carp qw(croak);
 use POSIX qw(strftime);
 
-use vars qw($VERSION);
-$VERSION = "0.45";
+our $VERSION = "0.45";
 
 =head1 DESCRIPTION
 
@@ -135,13 +134,14 @@ sub set_file {
     my $self = shift;
     my $file = shift;
 
-    my $ishandle = do { no strict; defined fileno($file); };
-    if ($ishandle) {
+    if (ref($file) eq "GLOB" or $file->isa("IO::Handle")) {
         $self->{filename} = "";
         $self->{handle} = $file;
     } else {
         $self->{filename} = $file;
-        $self->{handle} = eval { local *FH; open( FH, ">>$file" ) or die; binmode FH, ":utf8"; *FH{IO}; };
+        $self->{handle} = eval {
+            my $fh; open( $fh, ">>", $file ) or die; binmode $fh, ":utf8"; $fh;
+        };
         undef $self->{handle} if ( $@ ); # failed to open file
     }
     return $self->{handle};

@@ -46,8 +46,7 @@ use Carp;
 
 require Exporter;
 
-use vars qw( $VERSION @ISA @EXPORT_OK );
-our @ISA = qw( SeeAlso::Identifier Exporter );
+use base qw( SeeAlso::Identifier Exporter );
 our $VERSION = "0.1";
 our @EXPORT_OK = qw( sigel2isil );
 
@@ -198,9 +197,7 @@ your option, any later version of Perl 5 you may have available.
 
 __END__
 
-use vars qw( %ISIL_prefixes );
-
-%ISIL_prefixes = (
+our %ISIL_prefixes = (
   'AU' => ['Australia', undef],
   'CA' => ['Canada', undef],
   'CY' => ['Cyprus', undef],

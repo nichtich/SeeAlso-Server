@@ -12,11 +12,8 @@ SeeAlso::Source::DBI - returns links stored in an SQL database (abstract class)
 use Carp qw(croak);
 use DBI;
 
-use SeeAlso::Source;
-
-use vars qw( @ISA $VERSION );
-@ISA = qw( SeeAlso::Source );
-$VERSION = "0.44";
+use base qw( SeeAlso::Source );
+our $VERSION = "0.45";
 
 =head1 DESCRIPTION
 
@@ -173,19 +170,19 @@ sub loadFile {
             # See http://www.postgresql.org/docs/current/interactive/sql-copy.html
         }
     } else {
-        open (FH, $filename) or croak("Failed to open $filename");
+        my $fh; open ($fh, "<", $filename) or croak("Failed to open $filename");
         my $query = $self->insertQuery;
         croak ("insertQuery not available in loadFile") unless $query;
         my $rows = 0;
         my $invalidRows = 0;
-        while (<FH>) {
+        while (<$fh>) {
             if ( my @data = $self->parseInsertString($_) ) {
                 $query->execute( @data ) && $rows++;
             } else {
                 $invalidRows++;
             }
         }
-        close FH;
+        close $fh;
         $self->errors("loadFile skipped $invalidRows invalid rows") if $invalidRows;
         return $rows;
     }
