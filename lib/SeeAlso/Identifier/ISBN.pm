@@ -2,6 +2,7 @@ package SeeAlso::Identifier::ISBN;
 
 use strict;
 use warnings;
+use utf8;
 
 =head1 NAME
 

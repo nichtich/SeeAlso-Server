@@ -41,10 +41,7 @@ Registration Authority.
 
 =cut
 
-use SeeAlso::Identifier;
 use Carp;
-
-require Exporter;
 
 use base qw( SeeAlso::Identifier Exporter );
 our $VERSION = "0.1";

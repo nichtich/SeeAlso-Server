@@ -15,7 +15,7 @@ use SeeAlso::Response;
 use SeeAlso::Source;
 
 use base qw( Exporter );
-our $VERSION = "0.53";
+our $VERSION = "0.54";
 our @EXPORT = qw( query_seealso_server );
 
 =head1 DESCRIPTION
@@ -104,11 +104,11 @@ the empty string.
 
 set debug level. By default (0) format=debug adds debugging information
 as JavaScript comment in the JSON response. You can force this with
-debug=1 and prohibit with debug=-1.
+C<debug = 1> and prohibit with C<debug = -1>.
 
 =item logger
 
-set a <SeeAlso::Logger> for this server. See the method C<logger> below.
+set a L<SeeAlso::Logger> for this server. See the method C<logger> below.
 
 =item formats
 
@@ -438,9 +438,9 @@ sub openSearchDescription {
     return join("\n", @xml);
 }
 
-=head2 baseURL
+=head2 baseURL ( )
 
-Return the full SeeAlso base URL of this server. Append the <tt>format=seealso</tt> parameter
+Return the full SeeAlso base URL of this server. Append the 'format=seealso' parameter
 to get a SeeAlso simple base URL.
 
 =cut
@@ -469,8 +469,8 @@ identifcal to the second:
 
   SeeAlso::Server->new( %params )->query( $source, $params{id} );
 
-If C<$params{id}> is not set, the C<id> parameter of the C<CGI> object
-(C<$param{cgi}> or C<CGI->new>) is used.
+If C<$params{id}> is not set, the C<id> parameter of the L<CGI> object
+(C<$param{cgi}> or C<CGI::new>) is used.
 
 If you pass an array reference as C<$source> instead of a 
 C<SeeAlso::Source> object, a new C<SeeAlso::Source> will be generated
