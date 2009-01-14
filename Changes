@@ -1,3 +1,4 @@
+0.5?  ?          - changed and enhanced SeeAlso::Identifier::ISBN
 0.53  2008-01-13 - fixed support of additional unAPI formats
                  - moved SeeAlso::Identifier::PND to SeeAlso::Identifier::GND
                  - added SeeAlso::Identifier::ISIL
