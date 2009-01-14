@@ -44,7 +44,7 @@ Registration Authority.
 use Carp;
 
 use base qw( SeeAlso::Identifier Exporter );
-our $VERSION = "0.1";
+our $VERSION = "0.2";
 our @EXPORT_OK = qw( sigel2isil );
 
 =head1 METHODS
@@ -153,6 +153,9 @@ sub sigel2isil {
 
     # Bindestriche und Leerzeichen werden entfernt
     $isil =~ s/[- ]//g;
+
+    # Slashes werden Bindestriche
+    $isil =~ s/\//-/g;
 
     # Umlaute und Eszett (Ä,Ö,Ü,ä,ö,ü,ß) werden durch 
     # einfache Buchstaben ersetzen (AE,ÖE,UE,ae,oe,ue,ss).
