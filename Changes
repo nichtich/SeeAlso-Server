@@ -1,5 +1,7 @@
-0.5?  ?          - changed and enhanced SeeAlso::Identifier::ISBN
-0.53  2008-01-13 - fixed support of additional unAPI formats
+0.5?  2009-?     - changed and enhanced SeeAlso::Identifier::ISBN
+                 - minor changes in SeeAlso::Response and SeeAlso::Server
+                 - toJSON does no utf8 encoding anymore
+0.53  2009-01-13 - fixed support of additional unAPI formats
                  - moved SeeAlso::Identifier::PND to SeeAlso::Identifier::GND
                  - added SeeAlso::Identifier::ISIL
                  - added Test::Perl::Critic (enable by setting TEST_AUTHOR)

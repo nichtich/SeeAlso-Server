@@ -10,8 +10,9 @@ SeeAlso::Response - SeeAlso Simple Response
 =cut
 
 use JSON::XS qw(encode_json);
+use Carp;
 
-our $VERSION = "0.53";
+our $VERSION = "0.54";
 
 =head1 DESCRIPTION
 
@@ -22,9 +23,9 @@ same as am OpenSearch Suggestions Response.
 
 =head2 new ( [ $query [, $completions, $descriptions, $urls ] )
 
-Creates a new L<SeeAlso::Response> object (this is the same as an 
+Creates a new L<SeeAlso::Response> object (this is the same as an
 OpenSearch Suggestions Response object). If the passed query parameter
-is an instance of L<SeeAlso::Identifier>, the return of its C<normalized> 
+is an instance of L<SeeAlso::Identifier>, the return of its C<normalized>
 method is used.
 
 =cut
@@ -50,7 +51,6 @@ sub new {
             unless ref($completions) eq "ARRAY"
                 and defined $descriptions and ref($descriptions) eq "ARRAY"
                 and defined $urls and ref($urls) eq "ARRAY";
-        # TODO: check length and content of $completions, $descriptions, $urls
         for (my $i=0; $i < @{$completions}; $i++) {
             $self->add($$completions[$i], $$descriptions[$i], $$urls[$i]);
         }
@@ -63,11 +63,14 @@ sub new {
 =head2 add ( $label [, $description [, $uri ] ] )
 
 Add an item to the result set. All parameters must be strings.
-The URI is not checked for well-formedness, so it is recommended
-to use a specific URI class like C<URI> and pass a normalized
-version of the URI:
+The URI is only partly checked for well-formedness, so it is 
+recommended to use a specific URI class like C<URI> and pass 
+a normalized version of the URI:
 
   $uri = URI->new( $uri_str )->canonical
+
+Otherwise your SeeAlso response may be invalid. If you pass a 
+non-empty URI without schema, this method will croak.
 
 =cut
 
@@ -76,9 +79,12 @@ sub add {
 
     $label = "" unless defined $label;
     $description = "" unless defined $description;
-    $uri = "" unless defined $uri;
-
-    # TODO: check URI
+    if ( defined $uri ) {
+        croak('error adding an irregular URI') 
+            unless $uri =~ /^[a-z][a-z0-9.+\-]*:/i;
+    } else {
+        $uri = "";
+    }
 
     push @{ $self->{completions} }, $label;
     push @{ $self->{descriptions} }, $description;
@@ -109,18 +115,20 @@ sub hasQuery {
 
 =head2 toJSON ( [ $callback ] )
 
-Return the response in JSON format and a non-mandatory 
-callback wrapped around. There is no test whether the 
-callback name is valid so far. The encoding will not
-be changed, please only feed response objects with
-UTF-8 strings to get UTF-8 JSON with this method!
+Return the response in JSON format and a non-mandatory callback wrapped
+around. The method will croak if you supply a callback name that does
+not match C<^[a-z][a-z0-9._\[\]]*$>.
+
+The encoding is not changed, so please only feed response objects with
+UTF-8 strings to get JSON in UTF-8.
 
 =cut
 
 sub toJSON {
     my ($self, $callback) = @_;
 
-    # TODO: check callback name
+    croak ("Invalid callback name")
+        if ( $callback and !($callback =~ /^[a-z][a-z0-9._\[\]]*$/i));
 
     my $response = [
         $self->{query},
@@ -129,7 +137,10 @@ sub toJSON {
         $self->{urls}
     ];
 
-    my $jsonstring = encode_json($response);
+    my $jsonstring = JSON::XS->new->utf8(0)->encode($response); 
+    # $json->utf8 
+    # my $jsonstring = encode_json($response);
+
     return $callback ? "$callback($jsonstring);" : $jsonstring;
 }
 
