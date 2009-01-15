@@ -140,7 +140,8 @@ sub normalized {
 
 =head2 sigel2isil ( $sigel )
 
-Creates an ISIL from an old German library identifier ("Sigel")
+Creates an ISIL from an old German library identifier ("Sigel"). This
+function is only a heuristic, not all cases can be mapped automatically.
 
 =cut
 
