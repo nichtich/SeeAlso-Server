@@ -173,7 +173,9 @@ sub new {
 
 =head2 logger ( [ $logger ] )
 
-Get/set a logger for this server. The logger must be of class L<SeeAlso::Logger>.
+Get/set a logger for this server. The logger must be of class L<SeeAlso::Logger>
+or it will be passed to its constructor. This means you can also use references to
+file handles and L<IO::Handle> objects.
 
 =cut
 
@@ -181,8 +183,9 @@ sub logger {
     my $self = shift;
     my $logger = shift;
     return $self->{logger} unless defined $logger;
-    croak('Parameter cgi must be a SeeAlso::Logger object!')
-        unless UNIVERSAL::isa($logger, 'SeeAlso::Logger');
+    if (!UNIVERSAL::isa($logger, 'SeeAlso::Logger')) {
+        $logger = SeeAlso::Logger->new($logger);
+    }
     $self->{logger} = $logger;
 }
 
@@ -411,14 +414,14 @@ sub openSearchDescription {
             if defined $descr{"BaseURL"};
 
         my $modified = $descr{"DateModified"};
-        push @xml, "  <dcterms:modified>" . xmlencode( $shortName ) . "</dcterms:modified>"
+        push @xml, "  <dcterms:modified>" . xmlencode( $modified ) . "</dcterms:modified>"
             if defined $modified;
 
         my $source = $descr{"Source"};
-        push @xml, "  <dc:source" . xmlencode( $shortName ) . "</dc:source>"
+        push @xml, "  <dc:source" . xmlencode( $source ) . "</dc:source>"
             if defined $source;
 
-        if ($descr{"Examples"}) {
+        if ($descr{"Examples"}) { # TODO: add more parameters
             foreach my $example ( @{ $descr{"Examples"} } ) {
                 my $id = $example->{id};
                 my $args = "searchTerms=\"" . xmlencode($id) . "\"";

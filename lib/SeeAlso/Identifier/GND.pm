@@ -32,7 +32,7 @@ use SeeAlso::Identifier;
 use Carp;
 
 use base qw( SeeAlso::Identifier );
-our $VERSION = "0.53";
+our $VERSION = "0.54";
 
 =head1 METHODS
 
@@ -102,6 +102,18 @@ If the identifier is not valid, this methods returns an empty string.
 sub normalized {
     my $self = shift;
     return $self->valid() ? ("http://d-nb.info/gnd/" . $self->{value}) : "";
+}
+
+=head2 indexed ( )
+
+Return a shortened version of the GND identifier, that is only the eight
+plus one digits.
+
+=cut
+
+sub indexed {
+    my $self = shift;
+    return $self->value();
 }
 
 1;

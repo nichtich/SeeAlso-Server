@@ -35,3 +35,6 @@ foreach my $p (@prefixes) {
     $gnd->value( $p . "118601121" );
     ok( $gnd->normalized eq "http://d-nb.info/gnd/118601121", "possible prefix '$p'");
 }
+
+$gnd->value( "118601121" );
+is( $gnd->indexed, "118601121", "indexed version" );
