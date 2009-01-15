@@ -1,6 +1,8 @@
 Features, that are planned to be implemented before 1.0 release include:
 
 == Next ==
+- Add multiple example parameters (see pnd2gso)
+- Add description of multiple formats in OSDD
 - Add caching HTTP header
 
 == Tests ==
