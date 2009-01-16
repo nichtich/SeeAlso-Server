@@ -164,7 +164,7 @@ sub value {
     return $self->{value};
 }
 
-=head2 normalized
+=head2 normalized ( )
 
 Return a normalized representation of this identifier.
 By default this is what the value method returns.
@@ -180,7 +180,7 @@ sub normalized {
     }
 }
 
-=head2 indexed
+=head2 indexed ( )
 
 Return the index value of this identifier.
 By default this is the normalized form but you may
@@ -197,7 +197,7 @@ sub indexed {
     }
 }
 
-=head2 valid
+=head2 valid ( )
 
 Returns whether this identifier is valid. By default
 all non empty identifiers (everything but '' and undef)

@@ -127,13 +127,13 @@ sub local {
 
 =head2 normalized ( )
 
-Returns a normalized form as URI.
+Returns a normalized form as URI or the empty string.
 
 =cut
 
 sub normalized {
     my $self = shift;
-    return "info:isil/" . $self->{value} if $self->valid();
+    return $self->valid ? "info:isil/" . $self->{value} : "";
 }
 
 =head1 UTILITY FUNCTIONS
