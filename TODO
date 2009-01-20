@@ -1,15 +1,15 @@
 Features, that are planned to be implemented before 1.0 release include:
 
 == Next ==
+- Add perl client SeeAlso::Client (as SeeAlso::Source)
 - Add multiple example parameters (see pnd2gso)
 - Add description of multiple formats in OSDD
 - Add caching HTTP header
 
 == Tests ==
-- Add SeeAlso::Test for testing SeeAlso services
+- Add SeeAlso::Test for testing SeeAlso services (?)
 - Add test of SeeAlso::Source::DBI with SQLite
 - Add a management class for multiple services
-- Add perl client (as SeeAlso::Source)
 
 = Redesign =
 - Create unAPI::Server to base on
@@ -22,11 +22,7 @@ Features, that are planned to be implemented before 1.0 release include:
 
 == Misc ==
 - Add SeeAlso::Discovery to discover servers via OpenSearch Description 
-- clean up the code
--- look for TODOs
--- look for missing documentation 
-- Better error handling (also log errors)
--- push errors from SeeAlso::Source to SeeAlso::Server
+- rewrite SeeAlso::Source::DBI
 - Support WADL and WSDL in addition to OpenSearch Description
 - Run as a real server (on a port of your choice) : better performance?
 - Add SeeAlso::Source::Union and example
@@ -38,6 +34,9 @@ Features, that are planned to be implemented before 1.0 release include:
   HTTP POST (new), HTTP PUT (add) and HTTP DELETE (delete).
   Response formats and status codes need to be defined for this
 - remove Date::Parse prequisite
+- clean up the code
+-- look for TODOs
+-- look for missing documentation 
 
 == Examples ==
 - Add/improve Wikipedia/LibraryThing examples
@@ -48,7 +47,5 @@ Features, that are planned to be implemented before 1.0 release include:
 - Document purpose and usage
 
 == XSLT client ==
-- Document purpose and usage
-- Add more OSD fields
 - Add example result check
-- IE seems to have problem with iframe and document(.) ?
+- Check out: IE seems to have problem with iframe and document(.) ?

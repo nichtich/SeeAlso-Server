@@ -5,11 +5,8 @@ use utf8;
 use Carp qw(croak);
 use DBI;
 
-use SeeAlso::Source::DBI;
-
-use vars qw( @ISA $VERSION );
-@ISA = qw( SeeAlso::Source::DBI );
-$VERSION = "0.3";
+use base qw( SeeAlso::Source::DBI );
+our $VERSION = "0.3";
 
 =head1 NAME
 

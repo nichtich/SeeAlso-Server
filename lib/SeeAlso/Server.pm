@@ -1,12 +1,15 @@
 package SeeAlso::Server;
 
+use strict;
+use warnings;
+use utf8;
+
 =head1 NAME
 
 SeeAlso::Server - SeeAlso Linkserver Protocol Server
 
 =cut
 
-use strict;
 use Carp qw(croak);
 use CGI qw(-oldstyle_urls);
 
@@ -72,7 +75,7 @@ another subclass of L<SeeAlso::Source>.
 
 =head2 new ( [ %params ] )
 
-Creates a new L<SeeAlso::Server> object. You may specify the following
+Creates a new SeeAlso::Server object. You may specify the following
 parameters:
 
 =over
@@ -84,7 +87,8 @@ a L<CGI> object. If not specified, a new L<CGI> object is created.
 =item xslt
 
 the URL (relative or absolute) of an XSLT script to display the unAPI
-format list. An XSLT to display a full demo client is available.
+format list. It is recommended to use the XSLT client 'showservice.xsl'
+that is available in the 'client' directory of this package.
 
 =item clientbase
 
@@ -147,7 +151,8 @@ sub new {
         xslt => $params{xslt} || undef,
         clientbase => $params{clientbase} || undef,
         debug => $params{debug} || 0,
-        formats => { 'seealso' => { type => 'text/javascript' } }
+        formats => { 'seealso' => { type => 'text/javascript' } },
+        errors => undef
     }, $class;
 
     if ($params{formats}) {
@@ -253,13 +258,17 @@ Missing parameters are tried to get from the server's L<CGI> object.
 
 This is what the method actually does:
 The source (of type L<SeeAlso::Source>) is queried for the
-identifier (of type L<SeeAlso::Identifier>). Depending on
-the response (of type L<SeeAlso::Response>) and the requested
+identifier (of type L<SeeAlso::Identifier> or a plain string).
+Depending on the response (of type L<SeeAlso::Response>) and the requested
 format ('seealso' or 'opensearchdescription' for valid responses)
 the right HTTP response is returned. This can be either a
 list of formats in unAPI Response format (XML), or a list
 of links in OpenSearch Suggestions Response format (JSON),
 or an OpenSearch Description Document (XML).
+
+This method catches all warnings and errors that may occur in the query 
+method and appends them to the error list that can be accessed by the
+errors method. The error list is cleaned before each call of query.
 
 =cut
 
@@ -271,11 +280,11 @@ sub query {
     croak('First parameter must be a SeeAlso::Source object!')
         unless defined $source and UNIVERSAL::isa($source, 'SeeAlso::Source');
 
-    if (not defined $identifier) {
-        $identifier = SeeAlso::Identifier->new( $cgi->param('id') );
+    if (defined $identifier) {
+        $identifier = SeeAlso::Identifier->new($identifier)
+            unless UNIVERSAL::isa($identifier,"SeeAlso::Identifier");
     } else {
-        croak('Second parameter must be a SeeAlso::Identifier object!')
-          unless defined $source and UNIVERSAL::isa($identifier, 'SeeAlso::Identifier');
+        $identifier = SeeAlso::Identifier->new( $cgi->param('id') );
     }
 
     $format = $cgi->param('format') unless defined $format;
@@ -295,19 +304,22 @@ sub query {
     $format = "seealso" if ( $format eq "debug" && $self->{debug} == -1 ); 
     $format = "debug" if ( $format eq "seealso" && $self->{debug} == 1 ); 
 
-    my ($response, @errors);
+    $self->{errors} = (); # clean error list
+    my $response;
     my $status = 200;
     if ($format eq "seealso" or $format eq "debug" or !$self->{formats}{$format}) {
         eval {
+            local $SIG{'__WARN__'} = sub {
+                $self->errors(shift);
+            };
             $response = $source->query($identifier);
         };
-        push @errors, $@ if $@;
-        push @errors, @{ $source->errors() } if $source->errors();
-        if (@errors) {
+        if ($@) {
+            $self->errors( $@ );
             undef $response;
         } else {
             if (defined $response && !UNIVERSAL::isa($response, 'SeeAlso::Response')) {
-                push @errors, ref($source) . "->query must return a SeeAlso::Response object but it did return '" . ref($response) . "'";
+                $self->errors ( ref($source) . "->query must return a SeeAlso::Response object but it did return '" . ref($response) . "'");
                 undef $response;
             }
         }
@@ -315,7 +327,7 @@ sub query {
         $response = SeeAlso::Response->new() unless defined $response;
 
         if ($callback && !($callback =~ /^[a-zA-Z0-9\._\[\]]+$/)) {
-            push @errors, "Invalid callback name specified";
+            $self->errors( "Invalid callback name specified" );
             undef $callback;
             $status = 400;
         }
@@ -327,9 +339,9 @@ sub query {
         my $service = $source->description( "ShortName" );
         eval {
             $self->{logger}->log( $cgi, $response, $service )
-            || push @errors, "Logging failed";
+            || $self->errors("Logging failed");
         };
-        push @errors, $@ if $@;
+        $self->errors( $@ ) if $@;
     }
 
     if ( $format eq "seealso" ) {
@@ -349,7 +361,8 @@ sub query {
         }
         $http .= "\n";
         $http .= "HTTP response status code is $status\n";
-        $http .= "\nInternally the following errors occured:\n- " . join("\n- ", map {chomp; $_;} @errors) . "\n" if @errors;
+        $http .= "\nInternally the following errors occured:\n- "
+              . join("\n- ", $self->errors()) . "\n" if $self->errors();
         $http .= "*/\n";
         $http .= $response->toJSON($callback) . "\n";
     } else {
@@ -363,6 +376,23 @@ sub query {
         }
     }
     return $http;
+}
+
+=head2 errors ( [ $message ] )
+
+Returns a list of errors and warning messages that have ocurred during the 
+last query. You can also add an error message but this is only useful interally.
+
+=cut
+
+sub errors {
+    my $self = shift;
+    my $message = shift;
+    if (defined $message) {
+        chomp $message;
+        push @{ $self->{errors} }, $message;
+    }
+    return $self->{errors};
 }
 
 =head2 openSearchDescription ( [$source] )
@@ -417,9 +447,9 @@ sub openSearchDescription {
         push @xml, "  <dcterms:modified>" . xmlencode( $modified ) . "</dcterms:modified>"
             if defined $modified;
 
-        my $source = $descr{"Source"};
-        push @xml, "  <dc:source" . xmlencode( $source ) . "</dc:source>"
-            if defined $source;
+        my $src = $descr{"Source"};
+        push @xml, "  <dc:source>" . xmlencode( $src ) . "</dc:source>"
+            if defined $src;
 
         if ($descr{"Examples"}) { # TODO: add more parameters
             foreach my $example ( @{ $descr{"Examples"} } ) {
@@ -443,7 +473,8 @@ sub openSearchDescription {
 
 =head2 baseURL ( )
 
-Return the full SeeAlso base URL of this server. Append the 'format=seealso' parameter
+Return the full SeeAlso base URL of this server. 
+You can append the 'format=seealso' parameter
 to get a SeeAlso simple base URL.
 
 =cut
@@ -534,3 +565,15 @@ sub xmlencode {
 }
 
 1;
+
+=head1 AUTHOR
+
+Jakob Voss C<< <jakob.voss@gbv.de> >>
+
+=head1 LICENSE
+
+Copyright (C) 2007-2009 by Verbundzentrale Goettingen (VZG) and Jakob Voss
+
+This library is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself, either Perl version 5.8.8 or, at
+your option, any later version of Perl 5 you may have available.

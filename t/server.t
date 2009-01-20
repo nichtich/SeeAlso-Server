@@ -2,7 +2,7 @@
 
 use strict;
 
-use Test::More tests => 16;
+use Test::More tests => 19;
 
 use CGI;
 my $cgi = CGI->new();
@@ -71,14 +71,14 @@ sub query_method {
 $source = SeeAlso::Source->new( \&query_method );
 
 $http = $s->query($source, $identifier, 'seealso');
-ok ( not $source->errors() and $http =~ /^Status: 200[^\[]+\["xyz",\["test"\],\[""\],\[""\]\]$/m, 'JSON Results' );
+ok ( not $s->errors() and $http =~ /^Status: 200[^\[]+\["xyz",\["test"\],\[""\],\[""\]\]$/m, 'JSON Results' );
 
 $http = $s->query($source, $identifier, 'foo');
 is ( $http, $xml300, 'Result but not right format');
 
 $http = $s->query($source, $identifier, 'seealso', 'a[1].b');
 my $res = '^Status: 200[^\[]+a\[1\]\.b\(\["xyz",\["test"\],\[""\],\[""\]\]\);$';
-ok ( not $source->errors() and $http =~ /$res/m, 'JSON Result with callback' );
+ok ( not $s->errors() and $http =~ /$res/m, 'JSON Result with callback' );
 
 $cgi = CGI->new;
 $cgi->param('format'=>'seealso');
@@ -103,3 +103,19 @@ $s = SeeAlso::Server->new( formats => { "uc" => { type => "text/plain", method =
 $http = $s->query( $source, new SeeAlso::Identifier("abc"), "uc" );
 ok ( $http eq "UC:ABC", "additional unAPI format" );
 
+
+# check error handler
+$source = SeeAlso::Source->new( sub { 1 / int(shift->value); } );
+
+$s->query($source, "", "seealso");
+# Argument "" isn\'t numeric 
+# Illegal division by zero
+is ( scalar @{ $s->errors() }, 2, "error handler");
+
+$s->query($source, "0", "seealso");
+# Illegal division by zero
+is ( scalar @{ $s->errors() }, 1, "error handler");
+
+$s->query($source, "1", "seealso");
+# Query method did not return SeeAlso::Response!
+is ( scalar @{ $s->errors() }, 1, "error handler");

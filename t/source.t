@@ -2,18 +2,17 @@
 
 use strict;
 
-use Test::More tests => 15;
+use Test::More tests => 16;
 use SeeAlso::Source;
 use SeeAlso::Identifier;
 
 use Data::Dumper;
 
-my $source = SeeAlso::Source->new();
-ok ( ! $source->errors(), "no errors" );
+my ($source, $response);
+
+$source = SeeAlso::Source->new();
 ok ( ! %{ $source->description() }, "no description" );
 ok ( ! defined $source->description("ShortName") , "no description (2)" );
-
-#print STDERR "DDDDDD:" . $source->description("ShortName") . "\n";
 
 $source->description("ShortName","Foo");
 ok ( $source->description("ShortName") eq "Foo", "set description" );
@@ -32,27 +31,29 @@ $source = SeeAlso::Source->new(
     sub {
         my $id = shift;
         my $r = SeeAlso::Response->new( $id->normalized );
-        $r->add("test");
+        $r->add("test") if $id->value eq "xxx" or $id->value eq "";
         return $r;
     }
 );
 
-my $response = $source->query( SeeAlso::Identifier->new() );
-ok( ! $source->errors() && $response->size() == 1, "query method" );
+$response = $source->query( SeeAlso::Identifier->new("xxx") );
+is( $response->size(), 1, "query method with identifier (1)" );
+$response = $source->query( SeeAlso::Identifier->new("yyy") );
+is( $response->size(), 0, "query method with identifier (2)" );
+$response = $source->query( SeeAlso::Identifier->new() );
+is( $response->size(), 1, "query method with empty identifier" );
+$response = $source->query( "xxx" );
+is( $response->size(), 1, "query method with string as identifier" );
 
 $source = SeeAlso::Source->new( sub { shift }, ("ShortName" => "Test") );
-ok( ! $source->errors() && $source->description("ShortName") eq "Test", "ShortName");
+is( $source->description("ShortName"), "Test", "ShortName");
 
 $source = SeeAlso::Source->new( sub { shift }, ("LongName" => "Test source", "ShortName" => "Test") );
-ok( ! $source->errors() && $source->description("ShortName") eq "Test", "ShortName");
-ok( ! $source->errors() && $source->description("LongName") eq "Test source", "LongName");
+is( $source->description("ShortName"), "Test", "ShortName");
+is( $source->description("LongName"), "Test source", "LongName");
 
 my $descr = $source->description();
-ok( $descr->{ShortName} eq "Test", "ShortName (2)");
-ok( $descr->{LongName} eq "Test source", "LongName (2)");
-
-$source = SeeAlso::Source->new( sub { return } );
-$source->query(  SeeAlso::Identifier->new() );
-ok ( $source->errors(), "source generated error");
+is( $descr->{ShortName}, "Test", "ShortName (2)");
+is( $descr->{LongName}, "Test source", "LongName (2)");
 
 

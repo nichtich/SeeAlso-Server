@@ -4,7 +4,7 @@ use strict;
 use Carp qw(croak);
 use SeeAlso::Response;
 
-our $VERSION = "0.46";
+our $VERSION = "0.54";
 
 =head1 NAME
 
@@ -36,8 +36,7 @@ sub new {
         if defined $query and ref($query) ne "CODE";
 
     my $self = bless {
-        mQuery => $query || undef,
-        errors => undef
+        mQuery => $query || undef
     }, $class;
     $self->description( @description ) if @description;
 
@@ -118,8 +117,9 @@ sub description {
 
 =head2 query ( $identifier )
 
-Gets a L<SeeAlso::Identifier> object and returns a L<SeeAlso::Response> object.
-If you override this method, make sure that errors get catched!
+Given an identifier (either a L<SeeAlso::Identifier> object or just a
+plain string) returns a L<SeeAlso::Response> object by calling the
+query method.
 
 =cut
 
@@ -128,38 +128,16 @@ sub query {
     my $identifier = shift;
     my $response;
 
+    $identifier = SeeAlso::Identifier->new($identifier)
+        unless UNIVERSAL::isa($identifier,"SeeAlso::Identifier");
+
     if ( $self->{mQuery} ) {
-        #eval {
-            $response = &{$self->{mQuery}}($identifier);
-        #};
+        $response = &{$self->{mQuery}}($identifier);
     } else {
-        #eval {
-            $response = $self->mQuery($identifier);
-        #}
+        $response = $self->mQuery($identifier);
     }
-    if ($@) {
-        $self->errors($@);
-    } else {
-        if ( ! UNIVERSAL::isa($response, "SeeAlso::Response") ) {
-            $self->errors("Query method did not return SeeAlso::Response!");
-            undef $response;
-        }
-    }
-    return $response = SeeAlso::Response->new( $identifier->normalized )
-        unless defined $response;
+
     return $response;
-}
-
-=head2 errors ( [ $message [, $message ... ] ] )
-
-Get/add error messages.
-
-=cut
-
-sub errors {
-    my $self = shift;
-    push @{ $self->{errors} }, @_ if @_;
-    return $self->{errors};
 }
 
 1;
