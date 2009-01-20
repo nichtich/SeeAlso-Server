@@ -15,14 +15,13 @@ Features, that are planned to be implemented before 1.0 release include:
 - Create unAPI::Server to base on
 - Better support of OpenSearch Description (more fields), maybe with OpenSearch::Description
 -- title, description, url, date, example, example response, normalize, source
--- add date of last DBI-update in the description (from database?) on load
-- Better/more loading mechanism for SeeAlso::Source::DBI
+- Rewrite SeeAlso::Source::DBI
+-- Better/more loading mechanism for SeeAlso::Source::DBI
 -- simplify ETL-examples (thingISBN and Wikipedia)
 -- detect/remove full duplicates (better database index?)
 
 == Misc ==
 - Add SeeAlso::Discovery to discover servers via OpenSearch Description 
-- rewrite SeeAlso::Source::DBI
 - Support WADL and WSDL in addition to OpenSearch Description
 - Run as a real server (on a port of your choice) : better performance?
 - Add SeeAlso::Source::Union and example
