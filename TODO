@@ -5,6 +5,7 @@ Features, that are planned to be implemented before 1.0 release include:
 - Add multiple example parameters (see pnd2gso)
 - Add description of multiple formats in OSDD
 - Add caching HTTP header
+- Print errors to error logfile in SeeAlso::Server
 
 == Tests ==
 - Add SeeAlso::Test for testing SeeAlso services (?)
