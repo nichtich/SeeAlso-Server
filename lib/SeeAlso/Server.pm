@@ -104,6 +104,10 @@ openSearchDescription method of this class is used. You can switch off
 support of OpenSearch Description by setting opensearchdescription to 
 the empty string.
 
+=item expires
+
+Send HTTP "Expires" header for caching (see the setExpires method for details).
+
 =item debug
 
 set debug level. By default (0) format=debug adds debugging information
@@ -152,8 +156,10 @@ sub new {
         clientbase => $params{clientbase} || undef,
         debug => $params{debug} || 0,
         formats => { 'seealso' => { type => 'text/javascript' } },
-        errors => undef
+        errors => undef,
     }, $class;
+
+    $self->setExpires($params{expires}) if $params{expires};
 
     if ($params{formats}) {
         my %formats = %{$params{formats}};
@@ -192,6 +198,23 @@ sub logger {
         $logger = SeeAlso::Logger->new($logger);
     }
     $self->{logger} = $logger;
+}
+
+=head2 setExpires( $expires )
+
+Set "Expires" HTTP header for cache control. The parameter is expected to be
+either a HTTP Date (better use L<HTTP::Date> to create it) or a string such as
+"now" (immediately), "+180s" (in 180 seconds), "+2m" (in 2 minutes), "+12h" 
+(in 12 hours), "+1d" (in 1 day), "+3M" (in 3 months), "+1y" (in 1 year), 
+"-3m" (3 minutes ago).
+
+The "Expires" header is only sent for responses in seealso format!
+
+=cut
+
+sub setExpires {
+    my ($self, $expires) = @_;
+    $self->{expires} = $expires;
 }
 
 =head2 listFormats ( $response )
@@ -345,7 +368,9 @@ sub query {
     }
 
     if ( $format eq "seealso" ) {
-        $http .= $cgi->header( -status => $status, -type => 'text/javascript; charset: utf-8' );
+        my %headers =  (-status => $status, -type => 'text/javascript; charset: utf-8');
+        $headers{"-expires"} = $self->{expires} if ($self->{expires});
+        $http .= $cgi->header(%headers);
         $http .= $response->toJSON($callback);
     } elsif ( $format eq "debug") {
         $http .= $cgi->header( -status => $status, -type => 'text/javascript; charset: utf-8' );

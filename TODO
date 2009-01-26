@@ -1,5 +1,7 @@
 Features, that are planned to be implemented before 1.0 release include:
 
+Names of ::Store methods: retrieve/insert/update/delete ???
+
 == Next ==
 - Add perl client SeeAlso::Client (as SeeAlso::Source)
 - Add multiple example parameters (see pnd2gso)

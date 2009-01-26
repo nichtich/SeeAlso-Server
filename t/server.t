@@ -2,7 +2,7 @@
 
 use strict;
 
-use Test::More tests => 19;
+use Test::More tests => 20;
 
 use CGI;
 my $cgi = CGI->new();
@@ -95,6 +95,10 @@ ok ( $http =~ /$res/m, 'JSON Result with callback (query_seealso_server, sub and
 $http = $s->query($source, $identifier, 'seealso', '{');
 ok ( $http =~ /^Status: 400/, 'invalid callback' );
 
+$s = SeeAlso::Server->new( expires => "+1d" );
+$http = $s->query( $source, new SeeAlso::Identifier("abc"), "seealso" );
+ok ( $http =~ /Expires:/, 'Expires header');
+
 sub quc {
     my $id = shift;
     return "UC:" . uc($id->value);
@@ -102,7 +106,6 @@ sub quc {
 $s = SeeAlso::Server->new( formats => { "uc" => { type => "text/plain", method => \&quc } } );
 $http = $s->query( $source, new SeeAlso::Identifier("abc"), "uc" );
 ok ( $http eq "UC:ABC", "additional unAPI format" );
-
 
 # check error handler
 $source = SeeAlso::Source->new( sub { 1 / int(shift->value); } );
