@@ -3,7 +3,7 @@
 use strict;
 use utf8;
 
-use Test::More tests => 4;
+use Test::More tests => 5;
 use lib "./lib";
 use SeeAlso::Identifier::ISIL qw(sigel2isil);
 
@@ -16,3 +16,5 @@ ok ( $isil->normalized eq 'info:isil/DE-7' , "normalized ISIL as URI" );
 
 $isil = sigel2isil("Gö 116");
 ok ( $isil->value eq "DE-Goe116" , "sigel2isil" );
+
+is ($isil->indexed, "DE-GOE116", "indexed version (uppercase)");

@@ -1,6 +1,7 @@
 0.5?  2009-?     - changed and enhanced SeeAlso::Identifier::ISBN
                  - minor changes/fixes in SeeAlso::Response, ::Server, ::Source
                  - toJSON does no utf8 encoding anymore
+                 - added fromJSON
                  - minor fixes in SeeAlso::Identifier::ISIL and ::GND
 0.53  2009-01-13 - fixed support of additional unAPI formats
                  - moved SeeAlso::Identifier::PND to SeeAlso::Identifier::GND

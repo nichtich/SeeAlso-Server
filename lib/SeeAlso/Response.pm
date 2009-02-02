@@ -12,7 +12,7 @@ SeeAlso::Response - SeeAlso Simple Response
 use JSON::XS qw(encode_json);
 use Carp;
 
-our $VERSION = "0.54";
+our $VERSION = "0.55";
 
 =head1 DESCRIPTION
 
@@ -24,14 +24,41 @@ same as am OpenSearch Suggestions Response.
 =head2 new ( [ $query [, $completions, $descriptions, $urls ] )
 
 Creates a new L<SeeAlso::Response> object (this is the same as an
-OpenSearch Suggestions Response object). If the passed query parameter
-is an instance of L<SeeAlso::Identifier>, the return of its C<normalized>
-method is used.
+OpenSearch Suggestions Response object). The optional parameters
+are passed to the set method, so this is equivalent:
+
+  $r = SeeAlso::Response->new($query, $completions, $descriptions, $urls);
+  $r = SeeAlso::Response->new->set($query, $completions, $descriptions, $urls);
 
 =cut
 
 sub new {
-    my ($class, $query, $completions, $descriptions, $urls) = @_;
+    my $this = shift;
+
+    my $class = ref($this) || $this;
+    my $self = bless {
+        'query' => "",
+        'completions' => [],
+        'descriptions' => [],
+        'urls' => []
+    }, $class;
+
+    $self->set(@_);
+
+    return $self;
+}
+
+=head2 set ( [ $query [, $completions, $descriptions, $urls ] )
+
+Set the query parameter or the full content of this response. If the
+query parameter is an instance of L<SeeAlso::Identifier>, the return
+of its C<normalized> method is used. This methods croaks if the passed
+parameters do not fit to a SeeAlso response.
+
+=cut
+
+sub set {
+    my ($self, $query, $completions, $descriptions, $urls) = @_;
 
     if (UNIVERSAL::isa( $query, 'SeeAlso::Identifier' )) {
         $query = $query->normalized();
@@ -39,18 +66,21 @@ sub new {
         $query = defined $query ? "$query" : ""; # convert to string
     }
 
-    my $self = bless {
-        'query' => $query,
-        'completions' => [],
-        'descriptions' => [],
-        'urls' => []
-    }, $class;
+    $self->{query} = $query;
 
     if (defined $completions) {
         croak ("bad arguments to SeeAlso::Response->new")
             unless ref($completions) eq "ARRAY"
                 and defined $descriptions and ref($descriptions) eq "ARRAY"
                 and defined $urls and ref($urls) eq "ARRAY";
+        my $l = @{$completions};
+        croak ("length of arguments to SeeAlso::Response->new differ")
+            unless @{$descriptions} == $l and @{$urls} == $l;
+
+        $self->{completions} = [];
+        $self->{descriptions} = [];
+        $self->{urls} = [];
+
         for (my $i=0; $i < @{$completions}; $i++) {
             $self->add($$completions[$i], $$descriptions[$i], $$urls[$i]);
         }
@@ -58,7 +88,6 @@ sub new {
 
     return $self;
 }
-
 
 =head2 add ( $label [, $description [, $uri ] ] )
 
@@ -77,8 +106,16 @@ non-empty URI without schema, this method will croak.
 sub add {
     my ($self, $label, $description, $uri) = @_;
 
-    $label = "" unless defined $label;
-    $description = "" unless defined $description;
+    if (defined $label) {
+        croak("label must be a string") if ref($label);
+    } else {
+        $label = "";
+    }
+    if (defined $description) {
+        croak("description must be a string") if ref($description);
+    } else {
+        $description = "";
+    }
     if ( defined $uri ) {
         croak('error adding an irregular URI') 
             unless $uri =~ /^[a-z][a-z0-9.+\-]*:/i;
@@ -89,6 +126,8 @@ sub add {
     push @{ $self->{completions} }, $label;
     push @{ $self->{descriptions} }, $description;
     push @{ $self->{urls} }, $uri;
+
+    return $self;
 }
 
 =head2 size
@@ -102,15 +141,15 @@ sub size {
     return scalar @{$self->{completions}};
 }
 
-=head2 hasQuery
+=head2 getQuery
 
-Returns whether a non-empty query has been provided.
+Get the query parameter.
 
 =cut
 
-sub hasQuery {
+sub getQuery {
     my $self = shift;
-    return $self->{query} ne "";
+    return $self->{query};
 }
 
 =head2 toJSON ( [ $callback ] )
@@ -142,6 +181,34 @@ sub toJSON {
     # my $jsonstring = encode_json($response);
 
     return $callback ? "$callback($jsonstring);" : $jsonstring;
+}
+
+=head2 fromJSON ( $jsonstring )
+
+Set this response by parsing JSON format. You can use this method as
+as constructor or as method;
+
+  my $response = SeeAlso::Response->fromJSON( $jsonstring );
+  $response->fromJSON( $jsonstring )
+
+Croaks if the JSON string does not fit SeeAlso response format.
+
+=cut
+
+sub fromJSON {
+    my ($self, $jsonstring) = @_;
+    my $json = JSON::XS->new->decode($jsonstring);
+    use Data::Dumper;
+
+    croak("SeeAlso response format must be array of size 4")
+        unless ref($json) eq "ARRAY" and @{$json} == 4;
+
+    if (ref($self)) { # call as method
+        $self->set(@{$json});
+        return $self;
+    } else { # call as constructor
+        return SeeAlso::Response->new(@{$json});
+    }
 }
 
 1;

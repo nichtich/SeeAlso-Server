@@ -11,10 +11,12 @@ SeeAlso::Client - SeeAlso Linkserver Protocol Client
 =cut
 
 use Carp qw(croak);
+use JSON::XS;
+use LWP::Simple qw(get);
 # use CGI qw(-oldstyle_urls);
 
-# use SeeAlso::Identifier;
-# use SeeAlso::Response;
+use SeeAlso::Identifier;
+use SeeAlso::Response;
 # use SeeAlso::Source;
 
 use base qw( SeeAlso::Source );
@@ -39,7 +41,7 @@ sub new {
     # my (%options) = @_;
 
     my $self = bless {
-        'baseurl' => $baseurl
+        'baseurl' => $baseurl || ""
     }, $class;
 
     return $self;
@@ -59,14 +61,26 @@ TOOD: on failure: catch/trow
 sub query {
     my ($self, $identifier) = @_;
 
-    my $url = $self->{$url} . (index($self->{$url},'?') == -1 ? '?' : '&');
-    $url .= "format=seealso&" if $url =~ /format=/;
+    $identifier = SeeAlso::Identifier->new($identifier)
+        unless UNIVERSAL::isa($identifier,"SeeAlso::Identifier");
+
+    my $url = $self->{baseurl} . (index($self->{baseurl},'?') == -1 ? '?' : '&');
+    $url .= "format=seealso&" unless $url =~ /format=/;
     $url .= "id=" . $identifier->normalized; # TODO urlescape
     # if (callback) url += "&callback=" + callback;
-
+#print STDERR "$url\n";
     my $json = get($url);
-    # TODO: parse $json and return SeeAlso::Response object;
-    # print STDERR $json;
+
+    if (defined $json) {
+        # TODO: this may croak!
+        my $r = SeeAlso::Response->fromJSON( $json );
+        use Data::Dumper;
+        print STDERR Dumper($r) . "\n";;
+        print STDERR $r->toJSON() . "\n";
+    } else {
+        # todo
+        print STDERR "no json!\n";
+    }
 }
 
 =head2 baseURL ( [ $url ] )
@@ -100,7 +114,7 @@ sub baseURL {
 
 Equivalent to
 
-  SeeAlso::Client($baseurl)->query($identifier)
+  SeeAlso::Client->new($baseurl)->query($identifier)
 
 =cut
 

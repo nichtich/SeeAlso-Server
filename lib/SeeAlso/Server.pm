@@ -231,7 +231,7 @@ sub listFormats {
     my ($self, $response) = @_;
 
     my $status = 200;
-    if ($response->hasQuery) {
+    if ($response->getQuery() ne "") {
         $status = $response->size ? 300 : 404;
     }
 
@@ -246,7 +246,7 @@ sub listFormats {
         push @xml, "<?seealso-client-base " . xmlencode($self->{clientbase}) . "?>";
     }
 
-    if ($response->hasQuery) {
+    if ($response->getQuery() ne "") {
         push @xml, "<formats id=\"" . xmlencode($response->{query}) . "\">";
     } else {
         push @xml, "<formats>";

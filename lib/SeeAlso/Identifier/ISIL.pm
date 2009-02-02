@@ -44,7 +44,7 @@ Registration Authority.
 use Carp;
 
 use base qw( SeeAlso::Identifier Exporter );
-our $VERSION = "0.2";
+our $VERSION = "0.21";
 our @EXPORT_OK = qw( sigel2isil );
 
 =head1 METHODS
@@ -127,7 +127,9 @@ sub local {
 
 =head2 normalized ( )
 
-Returns a normalized form as URI or the empty string.
+Returns a normalized form as URI or the empty string. Please note
+that because of lower/uppercase differences, two ISIL variants
+that only differ in case, may not be normalized to the same string.
 
 =cut
 
@@ -136,12 +138,24 @@ sub normalized {
     return $self->valid ? "info:isil/" . $self->{value} : "";
 }
 
+=head2 indexed ( )
+
+Returns a version of ISIL to be used for indexing. This is an
+uppercase string because two ISIL must not differ only in case.
+
+=cut
+
+sub indexed {
+    my $self = shift;
+    return $self->valid ? uc($self->{value}) : "";
+}
+
 =head1 UTILITY FUNCTIONS
 
 =head2 sigel2isil ( $sigel )
 
 Creates an ISIL from an old German library identifier ("Sigel"). This
-function is only a heuristic, not all cases can be mapped automatically.
+function is only a heuristic, not all cases can be mapped automatically!
 
 =cut
 

@@ -206,7 +206,7 @@ sub log {
 
     my $id = $cgi->param('id') || '';
 
-    my $valid = $response->hasQuery() ? '1' : '0';
+    my $valid = $response->getQuery() eq "" ? '0' : '1';
     my $size = $response->size();
 
     my @values = (
