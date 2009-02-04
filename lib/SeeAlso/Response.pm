@@ -130,7 +130,7 @@ sub add {
     return $self;
 }
 
-=head2 size
+=head2 size ( )
 
 Get the number of entries in this response.
 
@@ -141,7 +141,7 @@ sub size {
     return scalar @{$self->{completions}};
 }
 
-=head2 getQuery
+=head2 getQuery ( )
 
 Get the query parameter.
 
