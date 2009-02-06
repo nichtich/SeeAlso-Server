@@ -6,7 +6,6 @@ Names of ::Store methods: retrieve/insert/update/delete ???
 - Add perl client SeeAlso::Client (as SeeAlso::Source)!
 - Add multiple example parameters (see pnd2gso)
 - Add description of multiple formats in OSDD
-- Add caching HTTP header
 - Print errors to error logfile in SeeAlso::Server
 
 == Tests ==
