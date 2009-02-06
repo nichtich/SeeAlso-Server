@@ -75,7 +75,7 @@ Qualified Dublin Core element Date.Modified.
 
 Source of the data (dc:source)
 
-=item Example
+=item Example[s]
 
 An example query (a hash of 'id' and optional 'response').
 
