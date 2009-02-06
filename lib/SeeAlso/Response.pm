@@ -107,17 +107,17 @@ sub add {
     my ($self, $label, $description, $uri) = @_;
 
     if (defined $label) {
-        croak("label must be a string") if ref($label);
+        croak("response label must be a string") if ref($label);
     } else {
         $label = "";
     }
     if (defined $description) {
-        croak("description must be a string") if ref($description);
+        croak("response description must be a string") if ref($description);
     } else {
         $description = "";
     }
-    if ( defined $uri ) {
-        croak('error adding an irregular URI') 
+    if ( defined $uri && $uri ne "" ) {
+        croak("irregular response URI") 
             unless $uri =~ /^[a-z][a-z0-9.+\-]*:/i;
     } else {
         $uri = "";

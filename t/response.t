@@ -2,7 +2,7 @@
 
 use strict;
 
-use Test::More tests => 19;
+use Test::More tests => 20;
 
 use SeeAlso::Response;
 
@@ -26,6 +26,9 @@ is( $r->size, 2, 'test size' );
 
 $r = $r->new("123");
 is( $r->toJSON(), '["123",[],[],[]]', '$obj->new');
+
+$r->add("x","",""); # empty description and URI
+is( $r->toJSON(), '["123",["x"],[""],[""]]', '$obj->add');
 
 $r = SeeAlso::Response->fromJSON($json);
 is( $r->toJSON(), $json, 'fromJSON');

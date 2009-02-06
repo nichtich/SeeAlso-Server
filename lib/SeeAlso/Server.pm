@@ -18,7 +18,7 @@ use SeeAlso::Response;
 use SeeAlso::Source;
 
 use base qw( Exporter );
-our $VERSION = "0.54";
+our $VERSION = "0.55";
 our @EXPORT = qw( query_seealso_server );
 
 =head1 DESCRIPTION
@@ -38,7 +38,8 @@ object:
 
   use SeeAlso::Source;
   use SeeAlso::Response;
-  my $source = SeeAlso::Source->new( sub {
+
+  sub query {
       my $identifier = shift;
       return unless $identifier->valid;
 
@@ -49,7 +50,9 @@ object:
       # ...
 
       return $response;
-  } );
+  }
+
+  my $source = SeeAlso::Source->new( \&query );
   $source->description( "ShortName" => "MySimpleServer" );
 
   my $http = $server->query( $source );
@@ -387,7 +390,7 @@ sub query {
         $http .= "\n";
         $http .= "HTTP response status code is $status\n";
         $http .= "\nInternally the following errors occured:\n- "
-              . join("\n- ", $self->errors()) . "\n" if $self->errors();
+              . join("\n- ", @{ $self->errors() }) . "\n" if $self->errors();
         $http .= "*/\n";
         $http .= $response->toJSON($callback) . "\n";
     } else {

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
   SeeAlso service display and test page.
-  Version 0.8.5
+  Version 0.8.6
 
   Usage: Put this file (showservice.xsl) in a directory together with 
   seealso.js, xmlverbatim.xsl and favicon.ico (optional)
@@ -95,6 +95,9 @@
           }
           table, .code, p { margin: 0em 0.5em 0em; }
           form { padding-bottom: 0.5em; }
+          #display-styles {
+            margin-top: 0.5em;
+          }
           #display {
             background: #fff;
             padding: 4px;
@@ -121,43 +124,67 @@
 .xmlverb-pi-content       { color: #006666; font-style: italic }
         </style>
         <script type="text/javascript">
+          var collection = new SeeAlsoCollection();
           var service = new SeeAlsoService("<xsl:value-of select="$seealso-query-base"/>");
-          function showfullresponse() {
-            var identifier = document.getElementById('identifier').value;
-            var url = service.url + "?format=debug&amp;id=" + identifier;
-            var iframe = document.getElementById('fullresponse');
-            if (iframe.style.display == "none") {
-              iframe.style.display = "";
-              iframe.src = url;
-            } else {
-              iframe.style.display = "none";
-            }
+          var view = new SeeAlsoUL();
+          var currentResponse;
+          var displayElement;
+          function toggleFullResponse(sign) {
+              var identifier = document.getElementById('identifier').value;
+              var url = service.url + "?format=debug&amp;id=" + identifier;
+              var iframe = document.getElementById('fullresponse');
+              if (iframe.style.display == "none") {
+                  iframe.style.display = "";
+                  iframe.src = url;
+              } else {
+                  iframe.style.display = "none";
+              }
+              sign.firstChild.data = sign.firstChild.data == "+" ? "-" : "+";
           }
           function lookup() {
-            var identifier = document.getElementById('identifier').value;
-            var view = new SeeAlsoUL();
-            var url = service.url;
-            url += url.indexOf('?') == -1 ? '?' : '&amp;';
-            url += "format=seealso&amp;id=" + identifier;
-            var a = document.getElementById('query-url');
-            a.setAttribute("href",url);
-            a.innerHTML = "";
-            a.appendChild(document.createTextNode(url));
-            document.getElementById('response').style.display = "";
-            document.getElementById('fullresponse').style.display = "none";
-            url += "&amp;callback=?";
-            var displayElement = document.getElementById('display');
-            service.query( identifier, function(response) {
-              var json = response.toJSON();
-              var r = document.getElementById('response');
-              r.innerHTML = "";
-              r.appendChild(document.createTextNode(json));
-              view.display(displayElement,response);
-            });
-          }  
+              var identifier = document.getElementById('identifier').value;
+              var url = service.url;
+              url += url.indexOf('?') == -1 ? '?' : '&amp;';
+              url += "format=seealso&amp;id=" + identifier;
+              var a = document.getElementById('query-url');
+              a.setAttribute("href",url);
+              a.innerHTML = "";
+              a.appendChild(document.createTextNode(url));
+              document.getElementById('response').style.display = "";
+              document.getElementById('fullresponse').style.display = "none";
+              url += "&amp;callback=?";
+              service.query( identifier, function(response) {
+                  currentResponse = response;
+                  var json = response.toJSON();
+                  var r = document.getElementById('response');
+                  r.innerHTML = "";
+                  r.appendChild(document.createTextNode(json));
+                  if (displayElement) view.display(displayElement,response);
+              });
+          }
+          function changeView(select) {
+              var viewName = select.options[select.options.selectedIndex].value;
+              view = collection.views[viewName];
+              if (!view) view = new SeeAlsoUL();
+              if (currentResponse) view.display(displayElement,currentResponse);
+          }
+          function init() {
+              displayElement = document.getElementById('display');
+              lookup();
+              var displaystyles = document.getElementById('display-styles');
+              for(var viewName in collection.views) {
+                  var option = document.createElement("option");
+                  option.appendChild(document.createTextNode(viewName));
+                  if (viewName == "seealso-ul") {
+                      option.setAttribute("selected","selected");
+                  }
+                  displaystyles.appendChild(option);
+              }
+              displaystyles.style.display = "block";
+          }
          </script> 
       </head>
-      <body onload="lookup();">
+      <body onload="init();">
         <h1>
           <xsl:choose>
             <xsl:when test="string-length($name) &gt; 0"><xsl:value-of select="$name"/></xsl:when>
@@ -285,15 +312,24 @@
         <td><a id='query-url' href=''></a></td>
       </tr>
       <tr>
-        <th onclick="showfullresponse();">response</th>
+        <th>
+            response
+        </th>
         <td>
+            <small style="float:right;">[<span onclick="toggleFullResponse(this);">+</span>]</small>
             <pre id='response'></pre>
             <iframe id="fullresponse" width="90%" name="fullresponse" src="" scrolling="auto" style="display:none;" class="code" />
         </td>
       </tr>
       <tr>
-        <th>display</th>
-        <td><div id='display'></div></td>
+        <th>
+          display
+          <select id='display-styles' style="display:none;" onchange="changeView(this);">
+          </select>
+        </th>
+        <td>
+          <div id='display'></div>
+        </td>
       </tr>
     </table>
   </form>
