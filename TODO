@@ -1,7 +1,5 @@
 Features, that are planned to be implemented before 1.0 release include:
 
-Names of ::Store methods: retrieve/insert/update/delete ???
-
 == Next ==
 - Add perl client SeeAlso::Client (as SeeAlso::Source)!
 - Add multiple example parameters (see pnd2gso)
@@ -20,6 +18,7 @@ Names of ::Store methods: retrieve/insert/update/delete ???
 -- title, description, url, date, example, example response, normalize, source
 - Rewrite SeeAlso::Source::DBI to SeeAlso::CRUD or SeeAlso::Store
 -- Better/more loading mechanism for SeeAlso::Source::DBI
+-- Names of ::Store methods: retrieve/insert/update/delete
 -- simplify ETL-examples (thingISBN and Wikipedia)
 -- detect/remove full duplicates (better database index?)
 
