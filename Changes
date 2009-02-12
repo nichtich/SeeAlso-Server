@@ -1,4 +1,5 @@
-0.55  2009-?     - changed and enhanced SeeAlso::Identifier::ISBN
+0.55  2009-?     - added first version of SeeAlso::Client
+                 - changed and enhanced SeeAlso::Identifier::ISBN
                  - minor changes/fixes in SeeAlso::Response, ::Server, ::Source
                  - toJSON does no utf8 encoding anymore
                  - added fromJSON

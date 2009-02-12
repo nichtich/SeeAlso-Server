@@ -69,12 +69,12 @@ sub query {
     if (defined $json) {
         # TODO: this may croak!
         my $r = SeeAlso::Response->fromJSON( $json );
-        use Data::Dumper;
-        print STDERR Dumper($r) . "\n";;
-        print STDERR $r->toJSON() . "\n";
+        # use Data::Dumper;
+        # print STDERR Dumper($r) . "\n";;
+        # print STDERR $r->toJSON() . "\n";
     } else {
-        # todo
-        print STDERR "no json!\n";
+        # TODO: croak?
+        # print STDERR "no json!\n";
     }
 }
 
