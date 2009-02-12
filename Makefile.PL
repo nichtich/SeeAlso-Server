@@ -13,9 +13,10 @@ use ExtUtils::MakeMaker;
         'JSON::XS' => '2.0',
         'CGI' => '3.0',
         'Carp' => '1.01',
+	'URI' => '1.35',
         'DBI' => '1.54',
         'Date::Parse' => '2.27',
-        'Business::ISBN' => '2.02'
+        'Business::ISBN' => '2.02',
     },
     dist            => {
         COMPRESS => 'gzip -9f',

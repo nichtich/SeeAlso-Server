@@ -5,6 +5,7 @@ LICENSE
 gpl-3.0.txt
 Changes
 
+lib/SeeAlso/Client.pm
 lib/SeeAlso/Server.pm
 lib/SeeAlso/Identifier.pm
 lib/SeeAlso/Identifier/GND.pm
@@ -32,6 +33,7 @@ t/listFormats404.xml
 t/listFormats300.xml
 t/identifier.t
 t/gnd.t
+t/client.t
 t/isil.t
 t/isbn.t
 t/source.t

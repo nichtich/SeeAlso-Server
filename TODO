@@ -1,14 +1,17 @@
 Features, that are planned to be implemented before 1.0 release include:
 
 == Next ==
-- Add perl client SeeAlso::Client (as SeeAlso::Source)!
+- Finish SeeAlso::Client (including tests and examples, OSDD...)
+- create a SeeAlso::Source from parsing OSDD
 - Add multiple example parameters (see pnd2gso)
 - Add description of multiple formats in OSDD
 - Print errors to error logfile in SeeAlso::Server
+- Caching is needed!
 
 == Tests ==
 - Add more Unicode tests from toJSON and fromJSON!
-- Add SeeAlso::Test for testing SeeAlso services (?)
+- Test servers with SeeAlso::Client
+- (See L<TAP::Harness> and L<Test::Harness>)
 - Add test of SeeAlso::Source::DBI with SQLite
 - Add a management class for multiple services
 
@@ -21,8 +24,11 @@ Features, that are planned to be implemented before 1.0 release include:
 -- Names of ::Store methods: retrieve/insert/update/delete
 -- simplify ETL-examples (thingISBN and Wikipedia)
 -- detect/remove full duplicates (better database index?)
+- have a look at uri-isbn.t in L<URI> and allow wrapping
+  of any URI as SeeAlso::Identifier
 
 == Misc ==
+- Add normalization of content (SeeAlso::Response)
 - Add SeeAlso::Discovery to discover servers via OpenSearch Description 
 - Support WADL and WSDL in addition to OpenSearch Description
 - Run as a real server (on a port of your choice) : better performance?
