@@ -23,7 +23,6 @@ examples/yahoo.pl
 examples/i2lt.pl
 examples/i2ltconf.pl
 
-t/pod-coverage.t
 t/response.t
 t/pod.t
 t/server.t
