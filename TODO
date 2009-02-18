@@ -32,7 +32,7 @@ Features, that are planned to be implemented before 1.0 release include:
 - Add SeeAlso::Discovery to discover servers via OpenSearch Description 
 - Support WADL and WSDL in addition to OpenSearch Description
 - Run as a real server (on a port of your choice) : better performance?
-- Add SeeAlso::Source::Union and example
+- Add SeeAlso::Source::Union and example (with: use threads;)
 - Add SeeAlso::Source::Cache and example (maybe with DBI)
 - Add an example of a multilangual source with equal identifiers: LibraryThing?
 - More Unicode (UTF-8) testing and hints
