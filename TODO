@@ -7,6 +7,8 @@ Features, that are planned to be implemented before 1.0 release include:
 - Add description of multiple formats in OSDD
 - Print errors to error logfile in SeeAlso::Server
 - Caching is needed!
+- add and describe minimal server example (examples/server.pl)
+- add Wikipedia2ISBN example (!)
 
 == Tests ==
 - Add more Unicode tests from toJSON and fromJSON!
