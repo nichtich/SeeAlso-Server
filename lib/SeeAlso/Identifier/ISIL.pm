@@ -44,7 +44,7 @@ Registration Authority.
 use Carp;
 
 use base qw( SeeAlso::Identifier Exporter );
-our $VERSION = "0.21";
+our $VERSION = "0.22";
 our @EXPORT_OK = qw( sigel2isil );
 
 =head1 METHODS
@@ -79,7 +79,7 @@ sub value {
     if (defined $value) {
         $self->{value} = undef;
         $value =~ s/^\s+|\s+$//g;
-        $value =~ s/^ISIL |^info:isil\///;
+        $value =~ s/^ISIL |^info:isil\///i;
 
         # ISIL too long
         return unless length($value) <= 16;
