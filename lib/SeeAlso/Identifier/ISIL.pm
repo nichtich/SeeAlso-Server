@@ -127,9 +127,10 @@ sub local {
 
 =head2 normalized ( )
 
-Returns a normalized form as URI or the empty string. Please note
-that because of lower/uppercase differences, two ISIL variants
+Returns a normalized form as info URI or the empty string. Please 
+note that because of lower/uppercase differences, two ISIL variants
 that only differ in case, may not be normalized to the same string.
+The 'indexed' method returns an all-upercase representation of ISIL.
 
 =cut
 
