@@ -19,7 +19,6 @@ use SeeAlso::Source;
 
 use base qw( Exporter );
 our $VERSION = "0.55";
-our @EXPORT = qw( query_seealso_server );
 
 =head1 DESCRIPTION
 
@@ -29,14 +28,10 @@ so this module also implements the unAPI protocol version 1.
 
 =head1 SYNOPSIS
 
-To implement a SeeAlso linkserver, you need instances of C<SeeAlso::Server>,
-and L<SeeAlso::Source>. The Source object must return a L<SeeAlso::Response> 
-object:
+The core of every SeeAlso linkserver is a query method that gets a 
+L<SeeAlso::Identifier> and returns a L<SeeAlso::Response>.
 
   use SeeAlso::Server;
-  my $server = SeeAlso::Server->new( cgi => $cgi );
-
-  use SeeAlso::Source;
   use SeeAlso::Response;
 
   sub query {
@@ -44,35 +39,18 @@ object:
       return unless $identifier->valid;
 
       my $response = SeeAlso::Response->new( $identifier );
-
-      # add response content depending on $identifier->value
       $response->add( $label, $description, $uri );
-      # ...
-
+      
       return $response;
   }
 
-  my $source = SeeAlso::Source->new( \&query );
-  $source->description( "ShortName" => "MySimpleServer" );
-
-  my $http = $server->query( $source );
+  my @description = ( "ShortName" => "MySimpleServer" );
+  my $server = SeeAlso::Server->new( description => \@description );
+  my $http = $server->query( \&query );
   print $http;
 
-Or even smaller with the exported function C<query_seealso_server>:
-
-  use SeeAlso::Server;
-  print query_seealso_server(
-      sub {
-          my $identifier = shift; 
-          ....
-          return $response; 
-      },
-      [ "ShortName" => "MySimpleServer" ]
-  );
-
-The examples directory contains a full example. For more specialised servers 
-you may also need to use L<SeeAlso::Identifier> or one of its subclasses and
-another subclass of L<SeeAlso::Source>.
+Instead of providing a simple query method, you can also use a
+L<SeeAlso::Source> object.
 
 =head1 METHODS
 
@@ -101,11 +79,11 @@ script so far.
 
 =item description
 
-a string (or function) that contains (or returns) an
-OpenSearch Description document as XML string. By default the
-openSearchDescription method of this class is used. You can switch off 
-support of OpenSearch Description by setting opensearchdescription to 
-the empty string.
+By default the openSearchDescription method is used to create the
+self-description of a server based on a L<SeeAlso::Source>. You 
+can disable support of OpenSearch Description by setting this parameter
+to false or override the description by setting this parameter to
+an array reference.
 
 =item expires
 
@@ -142,14 +120,15 @@ sub new {
     my ($class, %params) = @_;
 
     my $cgi = $params{cgi};
-    my $description = $params{description};
     my $logger = $params{logger};
+
+    my $description = 1;
+    if ( exists $params{description} ) {
+        $description = $params{description} || 0;
+    }
 
     croak('Parameter cgi must be a CGI object!')
         if defined $cgi and not UNIVERSAL::isa($cgi, 'CGI');
-    croak('Parameter description must either be a string, function or undef!')
-        if defined $description and not ($description eq "" or 
-           ref($description) eq 'SCALAR' or ref($description) eq 'CODE');
 
     my $self = bless {
         cgi => $cgi || new CGI,
@@ -234,7 +213,7 @@ sub listFormats {
     my ($self, $response) = @_;
 
     my $status = 200;
-    if ($response->getQuery() ne "") {
+    if ($response->query() ne "") {
         $status = $response->size ? 300 : 404;
     }
 
@@ -249,15 +228,15 @@ sub listFormats {
         push @xml, "<?seealso-client-base " . xmlencode($self->{clientbase}) . "?>";
     }
 
-    if ($response->getQuery() ne "") {
-        push @xml, "<formats id=\"" . xmlencode($response->{query}) . "\">";
+    if ($response->query() ne "") {
+        push @xml, "<formats id=\"" . xmlencode($response->query()) . "\">";
     } else {
         push @xml, "<formats>";
     }
 
     my %formats = %{$self->{formats}};
 
-    if ( (not defined $self->{description}) || $self->{description} ne "" ) {
+    if ( $self->{description} ) {
         $formats{"opensearchdescription"} = {
             type=>"application/opensearchdescription+xml",
             docs=>"http://www.opensearch.org/Specifications/OpenSearch/1.1/Draft_3#OpenSearch_description_document"
@@ -303,11 +282,14 @@ sub query {
     my $cgi = $self->{cgi};
     my $http = "";
 
+    if (ref($source) eq "CODE") {
+        $source = new SeeAlso::Source( $source );
+    }
     croak('First parameter must be a SeeAlso::Source object!')
         unless defined $source and UNIVERSAL::isa($source, 'SeeAlso::Source');
 
     if (defined $identifier) {
-        $identifier = SeeAlso::Identifier->new($identifier)
+        $identifier = SeeAlso::Identifier->new( $identifier )
             unless UNIVERSAL::isa($identifier,"SeeAlso::Identifier");
     } else {
         $identifier = SeeAlso::Identifier->new( $cgi->param('id') );
@@ -362,6 +344,7 @@ sub query {
     }
 
     if ( $self->{logger} ) {
+        # TODO: if you override the description, this is not taken!
         my $service = $source->description( "ShortName" );
         eval {
             $self->{logger}->log( $cgi, $response, $service )
@@ -423,11 +406,11 @@ sub errors {
     return $self->{errors};
 }
 
-=head2 openSearchDescription ( [$source] )
+=head2 openSearchDescription ( [ $source ] )
 
 Returns an OpenSearch Description document.
 If you pass a L<SeeAlso::Source> instance,
-additional information will be printed.
+additional information will be added.
 
 =cut
 
@@ -435,20 +418,14 @@ sub openSearchDescription {
     my $self = shift;
     my $source = shift;
 
-    return if defined $self->{description} && $self->{description} eq ""; # switched off
-    return $self->{description} if ref($self->{description}) eq "SCALAR"; # fixed string
-
-    my $xml;
-    if (ref($self->{description}) eq 'CODE') {
-        eval {
-            $xml = &{$self->{description}}();
-        };
-        return "" if ($@); # TODO: where to put error message?
-        return "$xml";     # TODO: if scalar?
-    }
-
     my $cgi = $self->{cgi};
     my $baseURL = $self->baseURL;
+
+    return unless $self->{description};
+    if ( ref($self->{description}) eq "ARRAY" ) {
+        $source = SeeAlso::Source->new( sub {} );
+        $source->description( @{$self->{description}} );
+    }
 
     my @xml = '<?xml version="1.0" encoding="UTF-8"?>';
     push @xml, '<OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:seealso="http://ws.gbv.de/seealso/schema/" >';
@@ -520,60 +497,6 @@ sub baseURL {
 }
 
 =head1 ADDITIONAL FUNCTIONS
-
-=head2 query_seealso_server ( $source [, \@description ] [, %params ] )
-
-This function is a shortcut method to create and query a SeeAlso server 
-in one command. It is exported by default. The following line is a
-identifcal to the second:
-
-  query_seealso_server( $source, %params );
-
-  SeeAlso::Server->new( %params )->query( $source, $params{id} );
-
-If C<$params{id}> is not set, the C<id> parameter of the L<CGI> object
-(C<$param{cgi}> or C<CGI::new>) is used.
-
-If you pass an array reference as C<$source> instead of a 
-C<SeeAlso::Source> object, a new C<SeeAlso::Source> will be generated
-with C<@{$source}> as parameters. The following line is a identifcal 
-to three next commands:
-
-  query_seealso_server( \&query_function, \@description, %params );
-
-  $source = SeeAlso::Source->new( \&query_function, @description );
-  $server = SeeAlso::Server->new( %params );
-  $server->query( $source, $params{id} );
-
-Please note that you must pass the optional @description parameter as an
-array reference. Here is an example:
-
-  query_seealso_server( 
-     sub { ... }, 
-     [ "ShortName" => "..." ],
-     logger => SeeAlso::Logger->new(...)
-  );
-
-=cut
-
-sub query_seealso_server {
-    my $source = shift;
-
-    if (ref($source) eq "CODE") {
-        my @description;
-        if (ref($_[0]) eq "ARRAY") {
-            my $a = shift;
-            @description = @{ $a };
-        }
-        $source = SeeAlso::Source->new( $source, @description );
-    }
-
-    my %params = @_;
-
-    my $server = SeeAlso::Server->new( %params );
-
-    return $server->query( $source, $params{id} );
-}
 
 =head2 xmlencode ( $string )
 

@@ -60,13 +60,7 @@ parameters do not fit to a SeeAlso response.
 sub set {
     my ($self, $query, $completions, $descriptions, $urls) = @_;
 
-    if (UNIVERSAL::isa( $query, 'SeeAlso::Identifier' )) {
-        $query = $query->normalized();
-    } else {
-        $query = defined $query ? "$query" : ""; # convert to string
-    }
-
-    $self->{query} = $query;
+    $self->query( $query );
 
     if (defined $completions) {
         croak ("bad arguments to SeeAlso::Response->new")
@@ -141,14 +135,21 @@ sub size {
     return scalar @{$self->{completions}};
 }
 
-=head2 getQuery ( )
+=head2 query ( $query )
 
-Get the query parameter.
+Get and/or set query parameter.
 
 =cut
 
-sub getQuery {
+sub query {
     my $self = shift;
+    if (@_) {
+        my $query = shift;
+        if (UNIVERSAL::isa( $query, 'SeeAlso::Identifier' )) {
+            $query = $query->normalized() 
+        }
+        $self->{query} = defined $query ? "$query" : ""; # convert to string
+    }
     return $self->{query};
 }
 

@@ -1,9 +1,11 @@
-0.55  2009-?     - added first version of SeeAlso::Client
+0.55  2009-04-16 - added first version of SeeAlso::Client
                  - changed and enhanced SeeAlso::Identifier::ISBN
                  - minor changes/fixes in SeeAlso::Response, ::Server, ::Source
                  - toJSON does no utf8 encoding anymore
                  - added fromJSON
                  - minor fixes in SeeAlso::Identifier::ISIL and ::GND
+                 - removed query_seealso_server
+                 - modified showservice.xsl
 0.53  2009-01-13 - fixed support of additional unAPI formats
                  - moved SeeAlso::Identifier::PND to SeeAlso::Identifier::GND
                  - added SeeAlso::Identifier::ISIL

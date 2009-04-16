@@ -2,7 +2,7 @@
 
 use strict;
 
-use Test::More tests => 20;
+use Test::More tests => 21;
 
 use CGI;
 my $cgi = CGI->new();
@@ -83,13 +83,13 @@ ok ( not $s->errors() and $http =~ /$res/m, 'JSON Result with callback' );
 $cgi = CGI->new;
 $cgi->param('format'=>'seealso');
 $cgi->param('callback'=>'a[1].b');
-$http = query_seealso_server( $source, cgi => $cgi, id => $identifier );
+$http = SeeAlso::Server->new( cgi => $cgi )->query( $source, $identifier );
 ok ( $http =~ /$res/m, 'JSON Result with callback (query_seealso_server)' );
 
-$http = query_seealso_server( \&query_method, cgi => $cgi, id => $identifier );
+$http = SeeAlso::Server->new( cgi => $cgi )->query( \&query_method, $identifier );
 ok ( $http =~ /$res/m, 'JSON Result with callback (query_seealso_server, sub)' );
 
-$http = query_seealso_server( \&query_method, ["ShortName"=>"foo"], cgi => $cgi, id => $identifier );
+$http =  SeeAlso::Server->new( cgi => $cgi, description => ["ShortName"=>"foo"] )->query( \&query_method, $identifier );
 ok ( $http =~ /$res/m, 'JSON Result with callback (query_seealso_server, sub and description)' );
 
 $http = $s->query($source, $identifier, 'seealso', '{');
@@ -122,3 +122,10 @@ is ( scalar @{ $s->errors() }, 1, "error handler");
 $s->query($source, "1", "seealso");
 # Query method did not return SeeAlso::Response!
 is ( scalar @{ $s->errors() }, 1, "error handler");
+
+
+# return empty result with uppercase identifier
+sub qUC { my $id = shift; return SeeAlso::Response->new( uc($id->normalized()) ); }
+$s = SeeAlso::Server->new();
+$http = $s->query( \&qUC, "abc", "seealso" );
+ok ( $http =~ /\["ABC",\[\],\[\],\[\]\]/, "code as source" );

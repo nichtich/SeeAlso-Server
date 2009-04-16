@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
   SeeAlso service display and test page.
-  Version 0.8.6
+  Version 0.8.7
 
   Usage: Put this file (showservice.xsl) in a directory together with 
   seealso.js, xmlverbatim.xsl and favicon.ico (optional)
@@ -44,7 +44,12 @@
     <xsl:text>format=opensearchdescription</xsl:text>
   </xsl:param>
 
+  <!-- global variables -->
   <xsl:variable name="osd" select="document($osdurl)"/>
+  <xsl:variable name="fullservice" select="namespace-uri($osd/*[1]) = 'http://a9.com/-/spec/opensearch/1.1/'"/>
+  <xsl:variable name="name">
+    <xsl:apply-templates select="$osd/osd:OpenSearchDescription" mode="name"/>
+  </xsl:variable>
 
   <!-- locate the other files -->
   <xsl:variable name="xsltpi" select="/processing-instruction('xml-stylesheet')"/>
@@ -62,10 +67,6 @@
     <xsl:apply-templates select="formats"/>
   </xsl:template>
   <xsl:template match="/formats">
-    <xsl:variable name="fullservice" select="namespace-uri($osd/*[1]) = 'http://a9.com/-/spec/opensearch/1.1/'"/>
-    <xsl:variable name="name">
-       <xsl:apply-templates select="$osd/osd:OpenSearchDescription" mode="name"/>
-    </xsl:variable>
     <html>
       <head>
         <xsl:if test="$osd">
@@ -83,18 +84,19 @@
           body, h1, h2, th, td { font-family: sans-serif; }
           table { border-collapse:collapse; }
           td, th { border: 1px solid #666; padding: 4px; }
-          th { text-align: left; background: #96c458; }
-          h2, h2 a { color: #96c458; margin: 1em 0em 0.5em 0em; } 
+          th { text-align: left; vertical-align: top; background: #c3ff72; color: #333; }
+          td { background: #d0ffa0; }
+          h2, h2 a { color: #96c458; margin: 1em 0em 0.5em 0em; font-size: 1em; } 
           h1 { color: #96c458; border-bottom: 1px solid #96c458; }
-          td { background: #c3ff72; }
-          p { padding-bottom: 0.5em; }
+          p { padding-bottom: 0.5em; padding-left: 0.5em; font-size: small; }
           pre, .code {
             background: #ddd; 
             border: 1px solid #666;
             padding: 4px;
           }
           table, .code, p { margin: 0em 0.5em 0em; }
-          form { padding-bottom: 0.5em; }
+          table { margin-bottom: 0.5em; }
+
           #display-styles {
             margin-top: 0.5em;
           }
@@ -191,26 +193,13 @@
             <xsl:otherwise>SeeAlso service</xsl:otherwise>
           </xsl:choose>
         </h1>
-        <p>
-          This is the base URL of a 
-          <b>
-            <xsl:choose>
-              <xsl:when test="$fullservice">SeeAlso Full</xsl:when>
-              <xsl:otherwise>SeeAlso Simple</xsl:otherwise>
-            </xsl:choose>
-          </b>
-          web service for retrieving links related to a given identifier.
-          The service provides an <a href="http://unapi.info">unAPI</a> format list that
-          includes the <em>seealso</em> response format
-         (see <a href="http://www.gbv.de/wikis/cls/SeeAlso_Simple_Specification">SeeAlso Simple Specification</a>).
-          You can try the service by typing in an identifier in the <a href='#demo'>query field below</a>.
-        </p>
         <xsl:choose>
           <xsl:when test="$fullservice">
             <xsl:call-template name="about">
               <xsl:with-param name="baseurl" select="$seealso-query-base"/>
               <xsl:with-param name="osd" select="$osd/osd:OpenSearchDescription"/>
             </xsl:call-template>
+            <xsl:call-template name="intro"/>
             <xsl:call-template name="demo">
               <xsl:with-param name="osd" select="$osd/osd:OpenSearchDescription"/>
             </xsl:call-template>
@@ -224,6 +213,7 @@
             </div>
           </xsl:when>
           <xsl:otherwise>
+            <xsl:call-template name="intro"/>
             <xsl:call-template name="demo"/>
           </xsl:otherwise>
         </xsl:choose>
@@ -247,22 +237,40 @@
         <xsl:value-of select="osd:ShortName"/>
       </xsl:when>
       <xsl:otherwise>
-        <xsl:text>no name found!</xsl:text>
+        <i>unnamed SeeAlso web service</i>
       </xsl:otherwise>
     </xsl:choose>
   </xsl:template>
+
+<!-- short information -->
+<xsl:template name="intro">
+  <p>
+    This is the base URL of a 
+    <b>
+    <xsl:choose>
+      <xsl:when test="$fullservice">SeeAlso Full</xsl:when>
+      <xsl:otherwise>SeeAlso Simple</xsl:otherwise>
+    </xsl:choose>
+    </b>
+    web service for retrieving links related to a given identifier.
+    The service provides an <a href="http://unapi.info">unAPI</a> format list that
+    includes the <em>seealso</em> response format
+    (see <a href="http://www.gbv.de/wikis/cls/SeeAlso_Simple_Specification">SeeAlso Simple Specification</a>).
+    You can test the service by typing in an identifier in the query field below.
+    In practise this web service should not be queried by hand but included in another web page or application.
+  </p>
+</xsl:template>
 
 <!-- Show BaseURL, URL template and additional metadata in the OpenSearch description document -->
 <xsl:template name="about">
   <xsl:param name="baseurl"/>
   <xsl:param name="osd"/>
-  <h2 id='about' name='about'>About</h2>
   <table>
-     <xsl:for-each select="$osd/*">
+    <xsl:for-each select="$osd/*">
       <xsl:variable name="localname" select="local-name(.)"/>
       <xsl:variable name="fullname" select="name(.)"/>
       <xsl:variable name="namespace" select="namespace-uri(.)"/>
-      <xsl:if test="$localname != 'Query' and $localname!='Url'">
+      <xsl:if test="$localname != 'Query' and $localname!='Url' and $localname != 'ShortName'">
         <tr>
           <th><xsl:value-of select="$localname"/></th>
           <td><xsl:value-of select="normalize-space(.)"/></td>
@@ -270,11 +278,11 @@
       </xsl:if>
     </xsl:for-each>
     <tr>
-      <th>BaseURL</th><td><tt><xsl:value-of select="$baseurl"/></tt></td>
+      <th>BaseURL</th><td><a href="{$baseurl}"><xsl:value-of select="$baseurl"/></a></td>
     </tr>
     <tr>
       <th>URL template</th>
-      <td><tt><xsl:value-of select="$osd/osd:Url[@type='text/javascript'][1]/@template"/></tt></td>
+      <td><xsl:value-of select="$osd/osd:Url[@type='text/javascript'][1]/@template"/></td>
     </tr>
     <!-- TODO: add information about additional fields (if any) -->
   </table>  
@@ -283,20 +291,20 @@
 <xsl:template name="demo">
   <xsl:param name="osd"/>
   <xsl:variable name="examples" select="$osd/osd:Query[@role='example'][@searchTerms]"/>
-  <h2 id='demo' name='demo'>Live demo</h2>
   <form>
     <table id='demo'>
       <tr>
         <th>query</th>
         <td>
           <input type="text" id="identifier" onkeyup="lookup();" size="40" value="{/formats/@id}"/>
-          <!-- Show the first 3 examples -->
+          <!-- Show the first 3 examples. TODO: show dropdown if more then 3 examples -->
           <xsl:if test="$osd and $examples">
-            <xsl:text> (for instance </xsl:text>
+            <xsl:text> (try: </xsl:text>
             <xsl:for-each select="$examples">
               <xsl:if test="position() &gt; 1 and position() &lt; 4">, </xsl:if>
               <xsl:if test="position() &lt; 4">
-                <tt style="text-decoration:underline" onClick='document.getElementById("identifier").value="{@searchTerms}";lookup();'>
+                <!-- TODO: @searchTerms may contain bad characters -->
+                <tt style="text-decoration:underline" onclick='document.getElementById("identifier").value="{@searchTerms}";lookup();'>
                     <xsl:value-of select="@searchTerms"/>
                 </tt>
               </xsl:if>

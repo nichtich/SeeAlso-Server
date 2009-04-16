@@ -2,7 +2,7 @@
 
 use strict;
 
-use Test::More tests => 20;
+use Test::More tests => 22;
 
 use SeeAlso::Response;
 
@@ -10,11 +10,11 @@ my $r = SeeAlso::Response->new();
 is( $r->toJSON(), '["",[],[],[]]', 'empty response');
 is( $r->size(), 0, 'test empty' );
 is( $r->toJSON('callme'), 'callme(["",[],[],[]]);', 'callback');
-is( $r->getQuery(), "", 'empty query' );
+is( $r->query(), "", 'empty query' );
 
 $r = SeeAlso::Response->new("123");
 is( $r->toJSON(), '["123",[],[],[]]', 'empty response with query');
-is( $r->getQuery(), "123", 'getQuery' );
+is( $r->query(), "123", 'query' );
 
 $r->add("foo","baz","uri:bar");
 my $json = '["123",["foo"],["baz"],["uri:bar"]]';
@@ -41,7 +41,10 @@ is( $r->toJSON(), $json, 'fromJSON');
 
 $r->set("xyz");
 is( $r->size, 1, 'set with only setting the query' );
-is( $r->getQuery, "xyz", 'set with only setting the query' );
+is( $r->query(), "xyz", 'set with only setting the query' );
+
+$r = SeeAlso::Response->new("a",["b"],["c"],["uri:doz"]);
+is( $r->query("xyz"), "xyz", 'set with the query method' );
 
 eval { $r->add("a","b","abc"); };
 ok( $@, 'invalid URN detected' );
@@ -51,6 +54,9 @@ ok( $@, 'invalid JSON detected' );
 
 eval { $r = SeeAlso::Response->new("a",["b"],["c","d"],["uri:doz"]); };
 ok( $@, 'invalid array sizes detected' );
+
+$r = SeeAlso::Response->new( ["foo"] );
+ok( $r->query() =~ /ARRAY/, 'query made string' );
 
 use SeeAlso::Identifier;
 my $id = SeeAlso::Identifier->new( 'normalized' => sub { lc shift; } );
