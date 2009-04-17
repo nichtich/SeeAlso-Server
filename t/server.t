@@ -2,15 +2,16 @@
 
 use strict;
 
-use Test::More tests => 21;
-
-use CGI;
-my $cgi = CGI->new();
+use Test::More tests => 23;
 
 use SeeAlso::Server;
 use SeeAlso::Response;
+use CGI;
 
-my $s = SeeAlso::Server->new( cgi=>$cgi );
+sub UCnormalizedID { my $id = shift; return SeeAlso::Response->new( uc($id->normalized()) ); }
+my $cgi;
+
+my $s = SeeAlso::Server->new( cgi => CGI->new() );
 my $r = SeeAlso::Response->new();
 
 open XML, "t/listFormats200.xml";
@@ -42,7 +43,7 @@ close XML;
 
 
 use SeeAlso::Source;
-$s = SeeAlso::Server->new( cgi=>$cgi );
+$s = SeeAlso::Server->new( cgi => CGI->new() );
 my $source = SeeAlso::Source->new();
 my $identifier = SeeAlso::Identifier->new();
 my $http = $s->query($source, $identifier, 'seealso');
@@ -107,11 +108,21 @@ $s = SeeAlso::Server->new( formats => { "uc" => { type => "text/plain", method =
 $http = $s->query( $source, new SeeAlso::Identifier("abc"), "uc" );
 ok ( $http eq "UC:ABC", "additional unAPI format" );
 
+# function as identifier validator
+$cgi = CGI->new;
+$cgi->param('format'=>'seealso');
+$cgi->param('id'=>'8');
+$s = SeeAlso::Server->new( cgi => $cgi );
+$http = $s->query( \&UCnormalizedID, sub { return $_[0] * 2; } );
+ok ( $http =~ /\["16",\[\],\[\],\[\]\]/, "code as id validator (valid)" );
+$http = $s->query( \&UCnormalizedID, sub { return undef; } );
+ok ( $http =~ /\["",\[\],\[\],\[\]\]/, "code as id validator (invalid)" );
+
 # check error handler
 $source = SeeAlso::Source->new( sub { 1 / int(shift->value); } );
 
-$s->query($source, "", "seealso");
-# Argument "" isn\'t numeric 
+$s->query($source, "a", "seealso");
+# Argument "a" isn\'t numeric 
 # Illegal division by zero
 is ( scalar @{ $s->errors() }, 2, "error handler");
 
@@ -125,7 +136,6 @@ is ( scalar @{ $s->errors() }, 1, "error handler");
 
 
 # return empty result with uppercase identifier
-sub qUC { my $id = shift; return SeeAlso::Response->new( uc($id->normalized()) ); }
 $s = SeeAlso::Server->new();
-$http = $s->query( \&qUC, "abc", "seealso" );
+$http = $s->query( \&UCnormalizedID, "abc", "seealso" );
 ok ( $http =~ /\["ABC",\[\],\[\],\[\]\]/, "code as source" );

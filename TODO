@@ -2,6 +2,7 @@ Features, that are planned to be implemented before 1.0 release include:
 
 == Next ==
 - Add showservices.xsl in addition to showservice.xsl (for repositories)
+- simplify SeeAlso::Identifier
 - Finish SeeAlso::Client (including tests and examples, OSDD...)
 - create a SeeAlso::Source from parsing OSDD
 - Add multiple example parameters (see pnd2gso)

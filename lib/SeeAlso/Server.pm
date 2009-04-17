@@ -91,7 +91,7 @@ Send HTTP "Expires" header for caching (see the setExpires method for details).
 
 =item debug
 
-set debug level. By default (0) format=debug adds debugging information
+Debug level. By default (0) format=debug adds debugging information
 as JavaScript comment in the JSON response. You can force this with
 C<debug = 1> and prohibit with C<debug = -1>.
 
@@ -162,6 +162,152 @@ sub new {
     $self->logger($params{logger}) if defined $params{logger};
 
     return $self;
+}
+
+=head2 query ( $source [, $identifier [, $format [, $callback ] ] ] )
+
+Perform a query by a given source, identifier, format and (optional)
+callback parameter. Returns a full HTTP message with HTTP headers.
+Missing parameters are tried to get from the server's L<CGI> object.
+
+This is what the method actually does:
+The source (of type L<SeeAlso::Source>) is queried for the
+identifier (of type L<SeeAlso::Identifier> or a plain string or function).
+Depending on the response (of type L<SeeAlso::Response>) and the requested
+format ('seealso' or 'opensearchdescription' for valid responses)
+the right HTTP response is returned. This can be either a
+list of formats in unAPI Response format (XML), or a list
+of links in OpenSearch Suggestions Response format (JSON),
+or an OpenSearch Description Document (XML).
+
+This method catches all warnings and errors that may occur in the query 
+method and appends them to the error list that can be accessed by the
+errors method. The error list is cleaned before each call of query.
+
+=cut
+
+sub query {
+    my ($self, $source, $identifier, $format, $callback) = @_;
+    my $cgi = $self->{cgi};
+    my $http = "";
+
+    if (ref($source) eq "CODE") {
+        $source = new SeeAlso::Source( $source );
+    }
+    croak('First parameter must be a SeeAlso::Source object!')
+        unless defined $source and UNIVERSAL::isa($source, 'SeeAlso::Source');
+
+    if (ref($identifier) eq "CODE") {
+        $identifier = &$identifier( $cgi->param('id') );
+        # TODO: if hash returned, use it as ...
+        if (defined ($identifier) and not ref($identifier)) {
+            $identifier = SeeAlso::Identifier->new( "$identifier" );
+        } else {
+            $identifier = SeeAlso::Identifier->new( valid => sub { return 0; } );
+        }
+    } elsif (defined $identifier) {
+        $identifier = SeeAlso::Identifier->new( $identifier )
+            unless UNIVERSAL::isa($identifier,"SeeAlso::Identifier");
+    } else {
+        $identifier = SeeAlso::Identifier->new( $cgi->param('id') );
+    }
+
+    $format = $cgi->param('format') unless defined $format;
+    $format = "" unless defined $format;
+    $callback = $cgi->param('callback') unless defined $callback;
+    $callback = "" unless defined $callback;
+
+    if ($format eq 'opensearchdescription') {
+        $http = $self->openSearchDescription( $source );
+        if ($http) {
+            $http = $cgi->header( -status => 200, -type => 'application/opensearchdescription+xml; charset: utf-8' ) . $http;
+            return $http;
+        }
+    }
+
+    # If everything is ok up to here, we should definitely return some valid stuff
+    $format = "seealso" if ( $format eq "debug" && $self->{debug} == -1 ); 
+    $format = "debug" if ( $format eq "seealso" && $self->{debug} == 1 ); 
+
+    $self->{errors} = (); # clean error list
+    my $response;
+    my $status = 200;
+
+    if (not $identifier->valid()) {
+        $self->errors( "invalid identifier" );
+        $response = SeeAlso::Response->new();
+    } elsif ($format eq "seealso" or $format eq "debug" or !$self->{formats}{$format}) {
+        eval {
+            local $SIG{'__WARN__'} = sub {
+                $self->errors(shift);
+            };
+            $response = $source->query( $identifier );
+        };
+        if ($@) {
+            $self->errors( $@ );
+            undef $response;
+        } else {
+            if (defined $response && !UNIVERSAL::isa($response, 'SeeAlso::Response')) {
+                $self->errors( ref($source) . "->query must return a SeeAlso::Response object but it did return '" . ref($response) . "'");
+                undef $response;
+            }
+        }
+
+        $response = SeeAlso::Response->new() unless defined $response;
+
+        if ($callback && !($callback =~ /^[a-zA-Z0-9\._\[\]]+$/)) {
+            $self->errors( "Invalid callback name specified" );
+            undef $callback;
+            $status = 400;
+        }
+    } else {
+        $response = SeeAlso::Response->new( $identifier );
+    }
+
+    if ( $self->{logger} ) {
+        # TODO: if you override the description, this is not taken!
+        my $service = $source->description( "ShortName" );
+        eval {
+            $self->{logger}->log( $cgi, $response, $service )
+            || $self->errors("Logging failed");
+        };
+        $self->errors( $@ ) if $@;
+    }
+
+    if ( $format eq "seealso" ) {
+        my %headers =  (-status => $status, -type => 'text/javascript; charset: utf-8');
+        $headers{"-expires"} = $self->{expires} if ($self->{expires});
+        $http .= $cgi->header(%headers);
+        $http .= $response->toJSON($callback);
+    } elsif ( $format eq "debug") {
+        $http .= $cgi->header( -status => $status, -type => 'text/javascript; charset: utf-8' );
+        $http .= "/*\n";
+
+        use Class::ISA;
+        my %vars = ( Server => $self, Source => $source, Identifier => $identifier, Response => $response );
+        foreach my $var (keys %vars) {
+            $http .= "$var is a " .
+                join(", ", map { $_ . " " . $_->VERSION; }
+                Class::ISA::self_and_super_path(ref($vars{$var})))
+            . "\n"
+        }
+        $http .= "\n";
+        $http .= "HTTP response status code is $status\n";
+        $http .= "\nInternally the following errors occured:\n- "
+              . join("\n- ", @{ $self->errors() }) . "\n" if $self->errors();
+        $http .= "*/\n";
+        $http .= $response->toJSON($callback) . "\n";
+    } else {
+        # TODO is this properly logged?
+        # TODO: put 'seealso' as format method in the array
+        my $f = $self->{formats}{$format};
+        if ($f) {
+            $http = $f->{method}($identifier); # TODO: what if this fails?!
+        } else {
+            $http = $self->listFormats($response);
+        }
+    }
+    return $http;
 }
 
 =head2 logger ( [ $logger ] )
@@ -253,140 +399,6 @@ sub listFormats {
     push @xml, "</formats>\n";
 
     return $http . join("\n", @xml);
-}
-
-=head2 query ( $source [, $identifier [, $format [, $callback ] ] ] )
-
-Perform a query by a given source, identifier, format and (optional)
-callback parameter. Returns a full HTTP message with HTTP headers.
-Missing parameters are tried to get from the server's L<CGI> object.
-
-This is what the method actually does:
-The source (of type L<SeeAlso::Source>) is queried for the
-identifier (of type L<SeeAlso::Identifier> or a plain string).
-Depending on the response (of type L<SeeAlso::Response>) and the requested
-format ('seealso' or 'opensearchdescription' for valid responses)
-the right HTTP response is returned. This can be either a
-list of formats in unAPI Response format (XML), or a list
-of links in OpenSearch Suggestions Response format (JSON),
-or an OpenSearch Description Document (XML).
-
-This method catches all warnings and errors that may occur in the query 
-method and appends them to the error list that can be accessed by the
-errors method. The error list is cleaned before each call of query.
-
-=cut
-
-sub query {
-    my ($self, $source, $identifier, $format, $callback) = @_;
-    my $cgi = $self->{cgi};
-    my $http = "";
-
-    if (ref($source) eq "CODE") {
-        $source = new SeeAlso::Source( $source );
-    }
-    croak('First parameter must be a SeeAlso::Source object!')
-        unless defined $source and UNIVERSAL::isa($source, 'SeeAlso::Source');
-
-    if (defined $identifier) {
-        $identifier = SeeAlso::Identifier->new( $identifier )
-            unless UNIVERSAL::isa($identifier,"SeeAlso::Identifier");
-    } else {
-        $identifier = SeeAlso::Identifier->new( $cgi->param('id') );
-    }
-
-    $format = $cgi->param('format') unless defined $format;
-    $format = "" unless defined $format;
-    $callback = $cgi->param('callback') unless defined $callback;
-    $callback = "" unless defined $callback;
-
-    if ($format eq 'opensearchdescription') {
-        $http = $self->openSearchDescription( $source );
-        if ($http) {
-            $http = $cgi->header( -status => 200, -type => 'application/opensearchdescription+xml; charset: utf-8' ) . $http;
-            return $http;
-        }
-    }
-
-    # If everything is ok up to here, we should definitely return some valid stuff
-    $format = "seealso" if ( $format eq "debug" && $self->{debug} == -1 ); 
-    $format = "debug" if ( $format eq "seealso" && $self->{debug} == 1 ); 
-
-    $self->{errors} = (); # clean error list
-    my $response;
-    my $status = 200;
-    if ($format eq "seealso" or $format eq "debug" or !$self->{formats}{$format}) {
-        eval {
-            local $SIG{'__WARN__'} = sub {
-                $self->errors(shift);
-            };
-            $response = $source->query($identifier);
-        };
-        if ($@) {
-            $self->errors( $@ );
-            undef $response;
-        } else {
-            if (defined $response && !UNIVERSAL::isa($response, 'SeeAlso::Response')) {
-                $self->errors ( ref($source) . "->query must return a SeeAlso::Response object but it did return '" . ref($response) . "'");
-                undef $response;
-            }
-        }
-
-        $response = SeeAlso::Response->new() unless defined $response;
-
-        if ($callback && !($callback =~ /^[a-zA-Z0-9\._\[\]]+$/)) {
-            $self->errors( "Invalid callback name specified" );
-            undef $callback;
-            $status = 400;
-        }
-    } else {
-        $response = SeeAlso::Response->new( $identifier );
-    }
-
-    if ( $self->{logger} ) {
-        # TODO: if you override the description, this is not taken!
-        my $service = $source->description( "ShortName" );
-        eval {
-            $self->{logger}->log( $cgi, $response, $service )
-            || $self->errors("Logging failed");
-        };
-        $self->errors( $@ ) if $@;
-    }
-
-    if ( $format eq "seealso" ) {
-        my %headers =  (-status => $status, -type => 'text/javascript; charset: utf-8');
-        $headers{"-expires"} = $self->{expires} if ($self->{expires});
-        $http .= $cgi->header(%headers);
-        $http .= $response->toJSON($callback);
-    } elsif ( $format eq "debug") {
-        $http .= $cgi->header( -status => $status, -type => 'text/javascript; charset: utf-8' );
-        $http .= "/*\n";
-
-        use Class::ISA;
-        my %vars = ( Server => $self, Source => $source, Identifier => $identifier, Response => $response );
-        foreach my $var (keys %vars) {
-            $http .= "$var is a " .
-                join(", ", map { $_ . " " . $_->VERSION; }
-                Class::ISA::self_and_super_path(ref($vars{$var})))
-            . "\n"
-        }
-        $http .= "\n";
-        $http .= "HTTP response status code is $status\n";
-        $http .= "\nInternally the following errors occured:\n- "
-              . join("\n- ", @{ $self->errors() }) . "\n" if $self->errors();
-        $http .= "*/\n";
-        $http .= $response->toJSON($callback) . "\n";
-    } else {
-        # TODO is this properly logged?
-        # TODO: put 'seealso' as format method in the array
-        my $f = $self->{formats}{$format};
-        if ($f) {
-            $http = $f->{method}($identifier); # TODO: what if this fails?!
-        } else {
-            $http = $self->listFormats($response);
-        }
-    }
-    return $http;
 }
 
 =head2 errors ( [ $message ] )

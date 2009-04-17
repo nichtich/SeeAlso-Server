@@ -10,7 +10,7 @@ SeeAlso::Identifier - an identifier passed to a SeeAlso-Server
 =cut
 
 use Carp;
-our $VERSION = "0.42";
+our $VERSION = "0.43";
 
 =head1 DESCRIPTION
 
@@ -138,7 +138,7 @@ sub new {
         if defined $valid and ref($valid) ne "CODE";
 
     my $self = bless {
-        value => "",
+        value => undef,
         mValid => $valid,
         mNormalized => $normalized,
         mIndexed => $indexed,
@@ -161,7 +161,11 @@ sub value {
         $self->{value} = $value;
     }
 
-    return $self->{value};
+    if (not defined $self->{value}) {
+        return $self->valid() ? "" : undef;
+    } else {
+        return $self->{value};
+    }
 }
 
 =head2 normalized ( )
