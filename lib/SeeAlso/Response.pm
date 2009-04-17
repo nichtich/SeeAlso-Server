@@ -184,6 +184,38 @@ sub toJSON {
     return $callback ? "$callback($jsonstring);" : $jsonstring;
 }
 
+=head2 toN3 ( )
+
+Return the repsonse in RDF/N3. This method is experimental and 
+only supports specific response types.
+
+=cut
+
+sub toN3 {
+    my ($self) = @_;
+    return "" unless $self->size();
+
+    my @triples;
+    for(my $i=0; $i<$self->size(); $i++) {
+        my $literal = $self->{completions}->[$i];
+        my $predicate = $self->{descriptions}->[$i];
+        my $object = $self->{urls}->[$i];
+        # TODO: check whether URI, replace namespace prefixes etc.
+        if ($object) {
+            push @triples, "  <$predicate> <$object> ";
+            # TODO: add <$object> rdfs:label '$literal'
+        } else {
+            # TODO: escape literal
+            # push @triples, "  <$predicate> "$literal" ";
+            # TODO: if no predicate is given, use rdfs:label
+        }
+    }
+    my $n3 = "<" . $self->query() . ">";
+    $n3 .= "\n" if (@triples > 1); 
+    $n3 .= join(";\n",@triples) . ".\n";
+    return $n3;
+}
+
 =head2 fromJSON ( $jsonstring )
 
 Set this response by parsing JSON format. You can use this method as

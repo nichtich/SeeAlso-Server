@@ -50,6 +50,8 @@
   <xsl:variable name="name">
     <xsl:apply-templates select="$osd/osd:OpenSearchDescription" mode="name"/>
   </xsl:variable>
+  <xsl:variable name="formats" select="/formats/format[not(@name='opensearchdescription')]"/>
+  <xsl:variable name="moreformats" select="$formats[not(@name='seealso')]"/>
 
   <!-- locate the other files -->
   <xsl:variable name="xsltpi" select="/processing-instruction('xml-stylesheet')"/>
@@ -81,36 +83,36 @@
         </xsl:if>
         <script src="{$clientbase}seealso.js" type="text/javascript" ></script>
         <style type="text/css">
-          body, h1, h2, th, td { font-family: sans-serif; }
-          table { border-collapse:collapse; }
-          td, th { border: 1px solid #666; padding: 4px; }
-          th { text-align: left; vertical-align: top; background: #c3ff72; color: #333; }
-          td { background: #d0ffa0; }
-          h2, h2 a { color: #96c458; margin: 1em 0em 0.5em 0em; font-size: 1em; } 
-          h1 { color: #96c458; border-bottom: 1px solid #96c458; }
-          p { padding-bottom: 0.5em; padding-left: 0.5em; font-size: small; }
-          pre, .code {
-            background: #ddd; 
-            border: 1px solid #666;
-            padding: 4px;
-          }
-          table, .code, p { margin: 0em 0.5em 0em; }
-          table { margin-bottom: 0.5em; }
+body, h1, h2, th, td { font-family: sans-serif; }
+table { border-collapse:collapse; }
+td, th { border: 1px solid #666; padding: 4px; }
+th { text-align: left; vertical-align: top; background: #c3ff72; color: #333; }
+td { background: #d0ffa0; }
+h2, h2 a { color: #96c458; margin: 1em 0em 0.5em 0em; font-size: 1em; } 
+h1 { color: #96c458; border-bottom: 1px solid #96c458; }
+p { padding-bottom: 0.5em; padding-left: 0.5em; font-size: small; }
+pre, .code {
+  background: #ddd; 
+  border: 1px solid #666;
+  padding: 4px;
+}
+table, .code, p { margin: 0em 0.5em 0em; }
+table { margin-bottom: 0.5em; }
 
-          #display-styles {
-            margin-top: 0.5em;
-          }
-          #display {
-            background: #fff;
-            padding: 4px;
-          }
-          .footer {
-            border-top: 1px solid #96c458;
-            font-size: small;
-            color: #666;
-            margin-top: 1em;
-            padding: 0.5em;
-          }
+#display-styles {
+  margin-top: 0.5em;
+}
+#display {
+  background: #fff;
+  padding: 4px;
+}
+.footer {
+  border-top: 1px solid #96c458;
+  font-size: small;
+  color: #666;
+  margin-top: 1em;
+  padding: 0.5em;
+}
 /* xmlverbatim.css */
 .xmlverb-default          { color: #333333; background-color: #ffffff;
                             font-family: monospace }
@@ -130,39 +132,58 @@
           var service = new SeeAlsoService("<xsl:value-of select="$seealso-query-base"/>");
           var view = new SeeAlsoUL();
           var currentResponse;
+          var currentFormat = "seealso";
           var displayElement;
           function toggleFullResponse(sign) {
               var identifier = document.getElementById('identifier').value;
-              var url = service.url + "?format=debug&amp;id=" + identifier;
-              var iframe = document.getElementById('fullresponse');
+              var url = service.url;
+              url += url.indexOf('?') == -1 ? '?' : '&amp;';
+              url += "format=debug&amp;id=" + identifier;
+              var iframe = document.getElementById('response-debug-iframe');
+              var shortresponse = document.getElementById('response');
               if (iframe.style.display == "none") {
                   iframe.style.display = "";
+                  shortresponse.style.display = "none";
                   iframe.src = url;
               } else {
                   iframe.style.display = "none";
+                  shortresponse.style.display = "";
               }
               sign.firstChild.data = sign.firstChild.data == "+" ? "-" : "+";
           }
+          function makeurl(identifier, format) {
+
+          }
           function lookup() {
               var identifier = document.getElementById('identifier').value;
+              var format = currentFormat;
+
+              /* construct the query URL */
               var url = service.url;
               url += url.indexOf('?') == -1 ? '?' : '&amp;';
-              url += "format=seealso&amp;id=" + identifier;
+              url += "format=" + format + "&amp;id=" + identifier;
               var a = document.getElementById('query-url');
               a.setAttribute("href",url);
               a.innerHTML = "";
               a.appendChild(document.createTextNode(url));
-              document.getElementById('response').style.display = "";
-              document.getElementById('fullresponse').style.display = "none";
-              url += "&amp;callback=?";
-              service.query( identifier, function(response) {
-                  currentResponse = response;
-                  var json = response.toJSON();
-                  var r = document.getElementById('response');
-                  r.innerHTML = "";
-                  r.appendChild(document.createTextNode(json));
-                  if (displayElement) view.display(displayElement,response);
-              });
+
+              if (format == "seealso") {
+                  document.getElementById('response').style.display = "";
+                  document.getElementById('response-debug-iframe').style.display = "none";
+                  url += "&amp;callback=?";
+                  service.query( identifier, function(response) {
+                      currentResponse = response;
+                      var json = response.toJSON();
+                      var r = document.getElementById('response');
+                      r.innerHTML = "";
+                      r.appendChild(document.createTextNode(json));
+                      if (displayElement) view.display(displayElement,response);
+                  });
+              } else {
+                  var identifier = document.getElementById('identifier').value;
+                  var iframe = document.getElementById('response-other-iframe');
+                  iframe.src = url;
+              }
           }
           function changeView(select) {
               var viewName = select.options[select.options.selectedIndex].value;
@@ -172,7 +193,7 @@
           }
           function init() {
               displayElement = document.getElementById('display');
-              lookup();
+              selectFormat("seealso");
               var displaystyles = document.getElementById('display-styles');
               for(var viewName in collection.views) {
                   var option = document.createElement("option");
@@ -183,6 +204,21 @@
                   displaystyles.appendChild(option);
               }
               displaystyles.style.display = "block";
+          }
+          function selectFormat(format) {
+              if (format=="seealso") {
+                  document.getElementById('displayrow').style.display="";
+                  document.getElementById('seealso-response').style.display="";
+                  document.getElementById('other-response').style.display="none";
+              } else {
+                  document.getElementById('displayrow').style.display="none";
+                  document.getElementById('seealso-response').style.display="none";
+                  document.getElementById('other-response').style.display="";
+              }
+              document.getElementById('format-'+currentFormat).style.fontWeight = "normal";
+              document.getElementById('format-'+format).style.fontWeight = "bold";
+              currentFormat = format;
+              lookup();
           }
          </script> 
       </head>
@@ -218,10 +254,10 @@
           </xsl:otherwise>
         </xsl:choose>
         <xsl:if test="name(/*[1]) = 'formats'">
-        <h2 id='formats' name='formats'>unAPI format list</h2>
-        <div class="code">
-          <xsl:apply-templates select="/" mode="xmlverb" />
-        </div>
+          <h2 id='formats' name='formats'>unAPI format list</h2>
+          <div class="code">
+            <xsl:apply-templates select="/" mode="xmlverb" />
+          </div>
         </xsl:if>
         <div class="footer">This document has automatically been generated based 
         on the services' <a href="{$osdurl}">OpenSearch description document</a>
@@ -284,6 +320,23 @@
       <th>URL template</th>
       <td><xsl:value-of select="$osd/osd:Url[@type='text/javascript'][1]/@template"/></td>
     </tr>
+    <xsl:if test="$moreformats">
+      <tr>
+        <th>unAPI formats</th>
+        <td>
+          <xsl:for-each select="$formats">
+            <xsl:if test="position() &gt; 1"><br/></xsl:if>
+            <xsl:if test="@docs">
+              <a href="{@docs}"><xsl:value-of select="@name"/></a>
+            </xsl:if>
+            <xsl:if test="not(@docs)">
+              <xsl:value-of select="@name"/>
+            </xsl:if>
+            <xsl:if test="@type"> (<xsl:value-of select="@type"/>)</xsl:if>
+          </xsl:for-each>
+        </td>
+      </tr>
+    </xsl:if>
     <!-- TODO: add information about additional fields (if any) -->
   </table>  
 </xsl:template>
@@ -294,7 +347,7 @@
   <form>
     <table id='demo'>
       <tr>
-        <th>query</th>
+        <th>query id</th>
         <td>
           <input type="text" id="identifier" onkeyup="lookup();" size="40" value="{/formats/@id}"/>
           <!-- Show the first 3 examples. TODO: show dropdown if more then 3 examples -->
@@ -314,7 +367,19 @@
           </xsl:if>
         </td>
       </tr>
-      <tr></tr>
+      <xsl:if test="$moreformats">
+        <tr>
+          <th>format</th>
+          <td>
+            <xsl:for-each select="$formats">
+              <xsl:if test="position() &gt; 1"> | </xsl:if>
+              <span id="format-{@name}" onclick="selectFormat('{@name}');">
+                <xsl:value-of select="@name"/>
+              </span>
+            </xsl:for-each>
+          </td>
+        </tr>
+      </xsl:if>
       <tr>
         <th>query URL<sup><a href='#qurlnote'>*</a></sup></th>
         <td><a id='query-url' href=''></a></td>
@@ -323,13 +388,18 @@
         <th>
             response
         </th>
-        <td>
+        <td> 
+          <span id="seealso-response">
             <small style="float:right;">[<span onclick="toggleFullResponse(this);">+</span>]</small>
             <pre id='response'></pre>
-            <iframe id="fullresponse" width="90%" name="fullresponse" src="" scrolling="auto" style="display:none;" class="code" />
+            <iframe id="response-debug-iframe" width="90%" name="response-debug-iframe" src="" scrolling="auto" style="display:none;" class="code" />
+          </span>
+          <span id="other-response" display="none">
+            <iframe id="response-other-iframe" width="90%" name="response-other-iframe" src="" scrolling="auto" class="code" />
+          </span>
         </td>
       </tr>
-      <tr>
+      <tr id="displayrow">
         <th>
           display
           <select id='display-styles' style="display:none;" onchange="changeView(this);">

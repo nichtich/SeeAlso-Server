@@ -11,6 +11,7 @@ Features, that are planned to be implemented before 1.0 release include:
 - Caching is needed!
 - add and describe minimal server example (examples/server.pl)
 - add Wikipedia2ISBN example (!)
+- add RDF as export format
 
 == Tests ==
 - Add more Unicode tests from toJSON and fromJSON!

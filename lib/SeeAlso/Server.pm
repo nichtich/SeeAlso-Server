@@ -36,7 +36,6 @@ L<SeeAlso::Identifier> and returns a L<SeeAlso::Response>.
 
   sub query {
       my $identifier = shift;
-      return unless $identifier->valid;
 
       my $response = SeeAlso::Response->new( $identifier );
       $response->add( $label, $description, $uri );
@@ -50,7 +49,14 @@ L<SeeAlso::Identifier> and returns a L<SeeAlso::Response>.
   print $http;
 
 Instead of providing a simple query method, you can also use a
-L<SeeAlso::Source> object.
+L<SeeAlso::Source> object. Identifiers can be validated and normalized 
+with a validation method or a L<SeeAlso::Identifier> object.
+
+  # get responses from a database (not implemented yet)
+  my $source = SeeAlso::Source::DBI->new( $connection, $sqltemplate );
+
+  # automatically convert identifier to uppercase
+  print $server->query( $source, sub { return uc($_[0]); } );
 
 =head1 METHODS
 
@@ -217,6 +223,11 @@ sub query {
     $callback = $cgi->param('callback') unless defined $callback;
     $callback = "" unless defined $callback;
 
+    # If everything is ok up to here, we should definitely return some valid stuff
+    $format = "seealso" if ( $format eq "debug" && $self->{debug} == -1 ); 
+    $format = "debug" if ( $format eq "seealso" && $self->{debug} == 1 ); 
+
+
     if ($format eq 'opensearchdescription') {
         $http = $self->openSearchDescription( $source );
         if ($http) {
@@ -225,9 +236,6 @@ sub query {
         }
     }
 
-    # If everything is ok up to here, we should definitely return some valid stuff
-    $format = "seealso" if ( $format eq "debug" && $self->{debug} == -1 ); 
-    $format = "debug" if ( $format eq "seealso" && $self->{debug} == 1 ); 
 
     $self->{errors} = (); # clean error list
     my $response;
@@ -277,7 +285,7 @@ sub query {
     if ( $format eq "seealso" ) {
         my %headers =  (-status => $status, -type => 'text/javascript; charset: utf-8');
         $headers{"-expires"} = $self->{expires} if ($self->{expires});
-        $http .= $cgi->header(%headers);
+        $http .= $cgi->header( %headers );
         $http .= $response->toJSON($callback);
     } elsif ( $format eq "debug") {
         $http .= $cgi->header( -status => $status, -type => 'text/javascript; charset: utf-8' );
@@ -297,12 +305,15 @@ sub query {
               . join("\n- ", @{ $self->errors() }) . "\n" if $self->errors();
         $http .= "*/\n";
         $http .= $response->toJSON($callback) . "\n";
-    } else {
+    } else { # other unAPI formats
         # TODO is this properly logged?
         # TODO: put 'seealso' as format method in the array
         my $f = $self->{formats}{$format};
         if ($f) {
+            my $type = $f->{type} . "; charset: utf-8";
+            my $header = $cgi->header( -status => $status, -type => $type );
             $http = $f->{method}($identifier); # TODO: what if this fails?!
+            $http = $header . $http; # TODO: omit headers if already in HTTP
         } else {
             $http = $self->listFormats($response);
         }

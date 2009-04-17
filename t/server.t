@@ -2,7 +2,7 @@
 
 use strict;
 
-use Test::More tests => 23;
+use Test::More tests => 24;
 
 use SeeAlso::Server;
 use SeeAlso::Response;
@@ -106,7 +106,7 @@ sub quc {
 }
 $s = SeeAlso::Server->new( formats => { "uc" => { type => "text/plain", method => \&quc } } );
 $http = $s->query( $source, new SeeAlso::Identifier("abc"), "uc" );
-ok ( $http eq "UC:ABC", "additional unAPI format" );
+ok ( $http =~ /UC:ABC/, "additional unAPI format" );
 
 # function as identifier validator
 $cgi = CGI->new;
@@ -117,6 +117,9 @@ $http = $s->query( \&UCnormalizedID, sub { return $_[0] * 2; } );
 ok ( $http =~ /\["16",\[\],\[\],\[\]\]/, "code as id validator (valid)" );
 $http = $s->query( \&UCnormalizedID, sub { return undef; } );
 ok ( $http =~ /\["",\[\],\[\],\[\]\]/, "code as id validator (invalid)" );
+$cgi->param('id'=>'low');
+$http = $s->query( sub { return SeeAlso::Response->new( $_[0] ); }, sub { return uc($_[0]); } );
+ok ( $http =~ /\["LOW",\[\],\[\],\[\]\]/, "code as id validator (valid 2)" );
 
 # check error handler
 $source = SeeAlso::Source->new( sub { 1 / int(shift->value); } );
