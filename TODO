@@ -1,6 +1,7 @@
 Features, that are planned to be implemented before 1.0 release include:
 
 == Next ==
+- update ThingISBN and make it an example script (not a class)
 - Add showservices.xsl in addition to showservice.xsl (for repositories)
 - simplify SeeAlso::Identifier
 - Finish SeeAlso::Client (including tests and examples, OSDD...)
