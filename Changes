@@ -1,3 +1,6 @@
+0.5?             ...
+                 - fixed SeeAlso::Client
+                 - added method SeeAlso::Response::get
 0.55  2009-04-16 - added first version of SeeAlso::Client
                  - changed and enhanced SeeAlso::Identifier::ISBN
                  - minor changes/fixes in SeeAlso::Response, ::Server, ::Source

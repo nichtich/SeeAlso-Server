@@ -20,7 +20,7 @@ use SeeAlso::Identifier;
 use SeeAlso::Response;
 
 use base qw( SeeAlso::Source );
-our $VERSION = "0.20";
+our $VERSION = "0.21";
 our @EXPORT = qw( seealso_request );
 
 =head1 DESCRIPTION
@@ -68,7 +68,7 @@ sub query {
 
     if (defined $json) {
         # TODO: this may croak!
-        my $r = SeeAlso::Response->fromJSON( $json );
+        return SeeAlso::Response->fromJSON( $json );
         # use Data::Dumper;
         # print STDERR Dumper($r) . "\n";;
         # print STDERR $r->toJSON() . "\n";

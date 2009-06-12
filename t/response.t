@@ -2,7 +2,7 @@
 
 use strict;
 
-use Test::More tests => 22;
+use Test::More tests => 29;
 
 use SeeAlso::Response;
 
@@ -20,15 +20,35 @@ $r->add("foo","baz","uri:bar");
 my $json = '["123",["foo"],["baz"],["uri:bar"]]';
 is( $r->toJSON(), $json, 'simple response');
 
+my $list = [ $r->get(0) ];
+is_deeply( $list, ["foo","baz","uri:bar"], 'get method' );
+
 $r->add("faz");
 ok( $r->toJSON() eq '["123",["foo","faz"],["baz",""],["uri:bar",""]]', 'simple response');
 is( $r->size, 2, 'test size' );
 
+$r->add("","","");
+is( $r->size, 2, 'empty triple ignored' );
+
 $r = $r->new("123");
 is( $r->toJSON(), '["123",[],[],[]]', '$obj->new');
 
-$r->add("x","",""); # empty description and URI
+$list = [ $r->get(0) ];
+is_deeply( $list, [ ], 'get method of empty response' );
+
+my ($completion, $description, $url) = $r->get( 0 );
+is( $completion, undef, 'get method of empty response' );
+
+$r->add("x"); # empty description and URI
 is( $r->toJSON(), '["123",["x"],[""],[""]]', '$obj->add');
+
+$list = [ $r->get(0) ];
+is_deeply( $list, ["x","",""], 'get method of partly empty' );
+
+my @list = $r->get(-1);
+is( @list, 0, 'invalid response index' );
+@list = $r->get(99);
+is( @list, 0, 'invalid response index' );
 
 $r = SeeAlso::Response->fromJSON($json);
 is( $r->toJSON(), $json, 'fromJSON');
