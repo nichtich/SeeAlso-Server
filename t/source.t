@@ -2,7 +2,7 @@
 
 use strict;
 
-use Test::More tests => 16;
+use Test::More tests => 18;
 use SeeAlso::Source;
 use SeeAlso::Identifier;
 
@@ -26,6 +26,12 @@ $source = SeeAlso::Source->new();
 $source->description( "ShortName" => "X", "LongName" => "Y" );
 ok ( $source->description("ShortName") eq "X" &&
      $source->description("LongName") eq "Y", "set description (4)" );
+my $about = [ $source->about() ];
+is_deeply( $about, ["X","",""], "about (1)" );
+
+$source = SeeAlso::Source->new( "BaseURL" => "http://example.com", Description => "Hello" );
+$about = [ $source->about() ];
+is_deeply( $about, ["","Hello","http://example.com"], "about (2)" );
 
 $source = SeeAlso::Source->new(
     sub {

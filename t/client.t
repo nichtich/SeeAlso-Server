@@ -9,8 +9,15 @@ require_ok("URI");
 my $c = SeeAlso::Client->new("http://example.com");
 isa_ok( $c, "SeeAlso::Client", "new");
 
-$c = SeeAlso::Client->new("no-url");
-is( $c, undef, "new");
+eval { $c = SeeAlso::Client->new("no-url"); };
+ok( $@, "new with invalid URL");
+
+$c = SeeAlso::Client->new( ShortName => "example", BaseURL => "http://example.com" );
+is( $c->description("BaseURL"), "http://example.com/", "baseURL as description" );
+is( $c->description("ShortName"), "example", "additional description" );
+
+$c = SeeAlso::Client->new( BaseURL => URI->new("http://example.com") );
+is( $c->description("BaseURL"), "http://example.com/", "baseURL as URI in description" );
 
 $c = SeeAlso::Client->new("http://example.com?foo=bar");
 is( $c->baseURL, "http://example.com?foo=bar", "baseURL" );
@@ -25,7 +32,7 @@ is( $q{id}, '+%', "queryURL" );
 # don't croak
 is( SeeAlso::Client::seealso_request("no-url", 123), undef, "seealso_request does not croak");
 
-# TODO test:
+# TODO: more tests:
 # - callback parameter
 # - use at SeeAlso::Source
 # - query a server

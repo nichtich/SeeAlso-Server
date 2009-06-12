@@ -2,10 +2,8 @@ Features, that are planned to be implemented before 1.0 release include:
 
 == Next ==
 - update ThingISBN and make it an example script (not a class)
-- Add showservices.xsl in addition to showservice.xsl (for repositories)
+- Add showservices.xsl (multiple) in addition to showservice.xsl (for collections)
 - simplify SeeAlso::Identifier
-- Finish SeeAlso::Client (including tests and examples, OSDD...)
-- create a SeeAlso::Source from parsing OSDD
 - Add multiple example parameters (see pnd2gso)
 - Add description of multiple formats in OSDD
 - Print errors to error logfile in SeeAlso::Server
@@ -13,6 +11,10 @@ Features, that are planned to be implemented before 1.0 release include:
 - add and describe minimal server example (examples/server.pl)
 - add Wikipedia2ISBN example (!)
 - add RDF as export format
+- add SeeAlso::Collection (also as SeeAlso::Source)
+    returns description() as response or list of members
+- Finish SeeAlso::Client (including tests and examples, OSDD...)
+-- Parse OSDD for SeeAlso::Client
 
 == Tests ==
 - Add more Unicode tests from toJSON and fromJSON!
@@ -20,6 +22,7 @@ Features, that are planned to be implemented before 1.0 release include:
 - (See L<TAP::Harness> and L<Test::Harness>)
 - Add test of SeeAlso::Source::DBI with SQLite
 - Add a management class for multiple services
+-- SeeAlso::Collection
 
 = Redesign =
 - Create unAPI::Server to base on

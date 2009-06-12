@@ -4,7 +4,7 @@ use strict;
 use Carp qw(croak);
 use SeeAlso::Response;
 
-our $VERSION = "0.54";
+our $VERSION = "0.56";
 
 =head1 NAME
 
@@ -17,9 +17,9 @@ SeeAlso::Source - a source of OpenSearch Suggestions reponses
   ...
   $source->description( "key" => "value" ... );
  ...
-  $source->
+  $response = $source->query( $identifier );
 
-=head2 new ( [ $query_method [, @description ] ] )
+=head2 new ( [ $query_method ] [, %description ] ] )
 
 Create a new source. You can provide a query method (mQuery). The query method
 gets a L<SeeAlso::Identifier> object and must return a L<SeeAlso::Response>.
@@ -30,15 +30,23 @@ the mQuery method.
 =cut
 
 sub new {
-    my ($class, $query, @description) = @_;
+    my $class = shift;
+    my ($query_method, %description);
+
+    if (@_ % 2) {
+        ($query_method, %description) = @_;
+    } else {
+        %description = @_;
+    }
 
     croak("parameter to SeeAlso::Source->new must be a method")
-        if defined $query and ref($query) ne "CODE";
+        if defined $query_method and ref($query_method) ne "CODE";
 
     my $self = bless {
-        mQuery => $query || undef
+        mQuery => $query_method || undef
     }, $class;
-    $self->description( @description ) if @description;
+
+    $self->description( %description ) if %description;
 
     return $self;
 }
@@ -113,6 +121,27 @@ sub description {
         my %hash;
         return \%hash;
     }
+}
+
+=head2 about ( )
+
+Return ShortName, Description, and BaseURL from the description of this
+Source. Undefined fields are returned as empty string.
+
+=cut
+
+sub about {
+    my $self = shift;
+
+    my $name        = $self->description("ShortName");
+    my $description = $self->description("Description");
+    my $url         = $self->description("BaseURL");
+
+    $name = "" unless defined $name;
+    $description = "" unless defined $description;
+    $url = "" unless defined $url;
+
+    return ($name, $description, $url); 
 }
 
 =head2 query ( $identifier )

@@ -20,7 +20,7 @@ use SeeAlso::Identifier;
 use SeeAlso::Response;
 
 use base qw( SeeAlso::Source );
-our $VERSION = "0.21";
+our $VERSION = "0.22";
 our @EXPORT = qw( seealso_request );
 
 =head1 DESCRIPTION
@@ -30,31 +30,45 @@ as L<SeeAlso::Source> to proxy another SeeAlso server.
 
 =head1 METHODS
 
-=head2 new ( $baseurl )
+=head2 new ( [ BaseURL => ] $BaseURL, [ %description ] ] )
 
-Creates a new SeeAlso client. You must specify a base URL as string
-or L<URI> object. If the URL is not valid, this method returns undef.
+Creates a new SeeAlso client. You must specify a BaseURL as string
+or L<URI> object or this method will croak:
+
+  $client = new SeeAlso::Client( $BaseURL );
+  $client = new SeeAlso::Client( BaseURL => $BaseURL );
 
 =cut
 
 sub new {
     my $class = shift;
-    my $baseurl = shift;
+    my (%description, $baseurl);
+
+    if (@_ % 2) {
+        ($baseurl, %description) = @_;
+    } else {
+        %description = @_;
+        $baseurl = $description{BaseURL};
+    }
+
+    croak "Please specify a baseurl" unless defined $baseurl;
 
     my $self = bless {
-        'baseurl' => "",
         'is_simple' => 0 # unknown or no
     }, $class;
 
-    eval { $self->baseURL($baseurl || "") };
-    return $@ ? undef : $self;
+    $self->description( %description );
+    $self->baseURL( $baseurl );
+
+    return $self;
 }
 
 =head2 query ( $identifier )
 
 Given an identifier (either a L<SeeAlso::Identifier> object or just a 
-plain string) queries the SeeAlso Server that is specified with its 
-base URL and returns a L<SeeAlso::Response> object on success.
+plain string) queries the SeeAlso Server of this client and returns a
+L<SeeAlso::Response> object on success. On failure this method just 
+croaks.
 
 =cut
 
@@ -67,40 +81,41 @@ sub query {
     my $json = get($url);
 
     if (defined $json) {
-        # TODO: this may croak!
-        return SeeAlso::Response->fromJSON( $json );
-        # use Data::Dumper;
-        # print STDERR Dumper($r) . "\n";;
-        # print STDERR $r->toJSON() . "\n";
+        return SeeAlso::Response->fromJSON( $json ); # may also croak
     } else {
-        # TODO: croak?
-        # print STDERR "no json!\n";
+        croak("Failed to query $url");
     }
 }
 
 =head2 baseURL ( [ $url ] )
 
-Get or set the base URL of the SeeAlso server to query by this client. You can
-specify a string or a L<URI>/L<URI::http>/L<URI::https> object. If the URL 
-contains a 'format' parameter, it is treated as a SeeAlso Simple server
-(plain JSON response), otherwise it is a SeeAlso Full server (unAPI support 
-and OpenSearch description). This method may croak on invalid URLs.
+Get or set the base URL of the SeeAlso server to query by this client.
+
+You can specify a string or a L<URI>/L<URI::http>/L<URI::https> object.
+If the URL contains a 'format' parameter, it is treated as a SeeAlso Simple
+server (plain JSON response), otherwise it is a SeeAlso Full server (unAPI
+support and OpenSearch description). This method may croak on invalid URLs.
+
+Returns the URL as string.
 
 =cut
 
 sub baseURL {
     my ($self, $url) = @_;
-    if (defined $url) {
-        $url = URI->new( $url ) unless UNIVERSAL::isa( $url, "URI" );
-        croak("Not an URL")
-            unless $url->scheme and $url->scheme =~ /^http[s]?$/;
-        my %query = $url->query_form();
-        croak("URL must not contain id or callback parameter")
-            if defined $query{'id'} or defined $query{'callback'};
-        $self->{is_simple} = defined $query{'format'};
-        $self->{baseurl} = $url;
-    }
-    return $self->{baseurl}->canonical();
+    return $self->description("BaseURL") unless defined $url;
+
+    $url = URI->new( $url ) unless UNIVERSAL::isa( $url, "URI" );
+    croak("Not an URL")
+        unless defined $url and $url->scheme and $url->scheme =~ /^http[s]?$/;
+    my %query = $url->query_form();
+    croak("URL must not contain id or callback parameter")
+        if defined $query{'id'} or defined $query{'callback'};
+    $self->{is_simple} = defined $query{'format'};
+    $self->{baseurl} = $url;
+    $url = $url->canonical()->as_string();
+    $self->description("BaseURL",$url);
+
+    return $url;
 }
 
 =head2 queryURL ( $identifier [, $callback ] )
@@ -134,7 +149,7 @@ sub queryURL {
     return $url->canonical();
 }
 
-=head1 ADDITIONAL FUNCTIONS
+=head1 FUNCTIONS
 
 =head2 seealso_request ( $baseurl, $identifier )
 
@@ -143,7 +158,8 @@ This is almost equivalent to
 
   SeeAlso::Client->new($baseurl)->query($identifier)
 
-but in contrast seealso_request never croaks on errors but may return undef.
+but in contrast seealso_request never croaks on errors (but may return undef).
+This method is exportet by default.
 
 =cut
 
