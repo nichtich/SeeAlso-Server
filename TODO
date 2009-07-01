@@ -16,6 +16,18 @@ Features, that are planned to be implemented before 1.0 release include:
     returns description() as response or list of members
 - Finish SeeAlso::Client (including tests and examples, OSDD...)
 -- Parse OSDD for SeeAlso::Client
+- fix: --(Thomas Berger):
+
+openSearchDescription darf nicht callback={callback} enthalten,
+weil "callback" kein Standardparameter ist, sondern nur "extension".
+Es muesste sich reparieren lassen als
+
+callback={seealso:callback?}
+
+("?" wg. optimaler Parameter), wobei "seealso" dann nach meinem
+Verstaendnis ein in der XML-Datei deklarierter Namespace ist, etwa
+
+xmlns:seealso="http://ws.gbv.de/seealso/schema/
 
 == Tests ==
 - Add more Unicode tests from toJSON and fromJSON!
