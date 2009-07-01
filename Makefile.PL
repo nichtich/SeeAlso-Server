@@ -13,10 +13,14 @@ use ExtUtils::MakeMaker;
         'JSON::XS' => '2.0',
         'CGI' => '3.0',
         'Carp' => '1.01',
-	'URI' => '1.35',
+        'URI' => '1.35',
         'DBI' => '1.54',
+        'Data::Validate::URI' => '0.05', 
         'Date::Parse' => '2.27',
         'Business::ISBN' => '2.02',
+        'Getopt::Long' => '0',
+        'Pod::Usage' => '0',
+        'Text::CSV' => '0'
     },
     dist            => {
         COMPRESS => 'gzip -9f',
@@ -25,5 +29,6 @@ use ExtUtils::MakeMaker;
     depend          => {
         Makefile => '$(VERSION_FROM)'
     },
+    EXE_FILES       => [ 'client/seealso' ],
 #    clean           => { FILES => 'xyz-*' },
 );

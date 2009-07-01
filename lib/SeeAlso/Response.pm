@@ -10,6 +10,8 @@ SeeAlso::Response - SeeAlso Simple Response
 =cut
 
 use JSON::XS qw(encode_json);
+use Text::CSV;
+use Data::Validate::URI qw(is_uri);
 use Carp;
 
 our $VERSION = "0.56";
@@ -181,22 +183,20 @@ sub query {
     return $self->{query};
 }
 
-=head2 toJSON ( [ $callback ] )
+=head2 toJSON ( [ $callback [, $json ] ] )
 
 Return the response in JSON format and a non-mandatory callback wrapped
 around. The method will croak if you supply a callback name that does
 not match C<^[a-z][a-z0-9._\[\]]*$>.
 
 The encoding is not changed, so please only feed response objects with
-UTF-8 strings to get JSON in UTF-8.
+UTF-8 strings to get JSON in UTF-8. Optionally you can pass a L<JSON>
+object to do JSON encoding of your choice.
 
 =cut
 
 sub toJSON {
-    my ($self, $callback) = @_;
-
-    croak ("Invalid callback name")
-        if ( $callback and !($callback =~ /^[a-z][a-z0-9._\[\]]*$/i));
+    my ($self, $callback, $json) = @_;
 
     my $response = [
         $self->{query},
@@ -205,57 +205,7 @@ sub toJSON {
         $self->{urls}
     ];
 
-    # TODO: change this behaviour (no UTF-8)
-    my $jsonstring = JSON::XS->new->utf8(0)->encode($response); 
-
-    return $callback ? "$callback($jsonstring);" : $jsonstring;
-}
-
-=head2 toRDF ( )
-
-Returns the response as RDF triples. This only works if the response query is
-an URI (the triple subject) and all description elements are URIs (the triple 
-subject). If for an entry both label and uri are specified, the label is ignored.
-
-This method is not implemented yet and a fromRDF is also missing.
-
-=cut
-
-#sub toRDF ( ) {
-#    my ($self) = @_;
-#    # return [] unless $self->size();
-#    return []
-#}
-
-=head2 toN3 ( )
-
-Return the repsonse in RDF/N3. This method is experimental and 
-only supports specific response types.
-
-=cut
-
-sub toN3 {
-    my ($self) = @_;
-    return "" unless $self->size();
-    # TODO: rewrite using toRDF
-
-    my @triples;
-    for(my $i=0; $i<$self->size(); $i++) {
-        my ($literal, $predicate, $object) = $self->get($i);
-        # TODO: check whether URI, replace namespace prefixes etc.
-        if ($object) {
-            push @triples, "  <$predicate> <$object> ";
-            # TODO: add <$object> rdfs:label '$literal'
-        } else {
-            # TODO: escape literal
-            # push @triples, "  <$predicate> "$literal" ";
-            # TODO: if no predicate is given, use rdfs:label
-        }
-    }
-    my $n3 = "<" . $self->query() . ">";
-    $n3 .= "\n" if (@triples > 1); 
-    $n3 .= join(";\n",@triples) . ".\n";
-    return $n3;
+    return _JSON( $response, $callback, $json );
 }
 
 =head2 fromJSON ( $jsonstring )
@@ -283,6 +233,164 @@ sub fromJSON {
         return SeeAlso::Response->new(@{$json});
     }
 }
+
+=head2 toCSV ( )
+
+Returns the response in CSV format with one label, description, uri triple
+per line. The response query is omitted. Please note that newlines in values
+are allowed so better use a clever CSV parser!
+
+=cut
+
+sub toCSV {
+    my ($self, $headers) = @_;
+    my $csv = Text::CSV->new( { binary => 1, always_quote => 1 } );
+    my @lines;
+    for(my $i=0; $i<$self->size(); $i++) {
+        my $status = $csv->combine ( $self->get($i) ); # TODO: handle error status
+        push @lines, $csv->string();
+    }    
+    return join ("\n", @lines);
+}
+
+=head2 toRDF ( )
+
+Returns the response as RDF triples in JSON/RDF structure.
+Parts of the result that cannot be interpreted as valid RDF are omitted.
+
+=cut
+
+sub toRDF ( ) {
+    my ($self) = @_;
+    my $subject = $self->query();
+    return { } unless is_uri($subject);
+    my $values = { };
+
+    for(my $i=0; $i<$self->size(); $i++) {
+        my ($label, $predicate, $object) = $self->get($i);
+        next unless is_uri($predicate); # TODO: use rdfs:label as default?
+
+        if ($object) {
+            next unless is_uri($object);
+            $object = { "value" => $object, 'type' => 'uri' };
+        } else {
+            $object = { "value" => $label, 'type' => 'literal' };
+        }
+
+        if ($values->{$predicate}) {
+            push @{ $values->{$predicate} }, $object;
+        } else {
+            $values->{$predicate} = [ $object ];
+        }
+    }
+
+    return {
+        $subject => $values
+    };
+}
+
+=head2 toRDFJSON ( )
+
+Returns the response as RDF triples in JSON/RDF format.
+
+=cut
+
+sub toRDFJSON {
+    my ($self, $callback, $json) = @_;
+    return _JSON( $self->toRDF(), $callback, $json );
+}
+
+
+=head2 toN3 ( )
+
+Return the repsonse in RDF/N3 (including pretty print).
+
+=cut
+
+sub toN3 {
+    my ($self) = @_;
+    return "" unless $self->size();
+    my $rdf = $self->toRDF();
+    my ($subject, $values) = %$rdf;
+    return "" unless $subject && %$values;
+    my @lines;
+
+    foreach my $predicate (keys %$values) {
+        my @objects = @{$values->{$predicate}};
+        if ($predicate eq 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type') {
+            $predicate = 'a';
+        } elsif ($predicate eq 'http://www.w3.org/2002/07/owl#sameAs') {
+            $predicate = '=';
+        } else {
+            $predicate =  "<$predicate>";
+        }
+        @objects = map {
+            my $object = $_;
+            if ($object->{type} eq 'uri') {
+                '<' . $object->{value} . '>';
+            } else {
+                _escape( $object->{value} );
+            }
+        } @objects;
+        if (@objects > 1) {  
+            push @lines, (" $predicate\n    " . join(" ,\n    ", @objects) );
+        } else {
+            push @lines, " $predicate " . $objects[0];
+        }
+    }
+
+    my $n3 = "<$subject>";
+    if (@lines > 1) {
+        return "$n3\n " . join(" ;\n ",@lines) . " .";
+    } else {
+        return $n3 . $lines[0] . " .";
+    }
+}
+
+=head1 INTERNAL FUNCTIONS
+
+=cut
+
+my %ESCAPED = ( 
+    "\t" => 't', 
+    "\n" => 'n', 
+    "\r" => 'r', 
+    "\"" => '"',
+    "\\" => '\\', 
+);
+ 
+=head2 _escape ( $string )
+
+Escape a specific characters in a UTF-8 string for Turtle syntax / Notation 3
+
+=cut
+
+sub _escape {
+    local $_ = $_[0];
+    s/([\t\n\r\"\\])/\\$ESCAPED{$1}/sg;
+    return '"' . $_  . '"';
+}
+
+=head2 _JSON ( $object [, $callback [, $JSON ] ] )
+
+Encode an object as JSON string, possibly wrapped by callback method.
+
+=cut
+
+sub _JSON {
+    my ($object, $callback, $JSON) = @_;
+
+    croak ("Invalid callback name")
+        if ( $callback and !($callback =~ /^[a-z][a-z0-9._\[\]]*$/i));
+
+    # TODO: change this behaviour (no UTF-8) ?
+    $JSON = JSON::XS->new->utf8(0) unless $JSON;
+
+    my $jsonstring = $JSON->encode($object); 
+
+    return $callback ? "$callback($jsonstring);" : $jsonstring;
+}
+
 
 1;
 

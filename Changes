@@ -1,6 +1,6 @@
-0.5?             ...
+0.56  2009-06-01 - added a simple command line client and updated XSL client
                  - fixed SeeAlso::Client
-                 - added method SeeAlso::Response::get
+                 - added several methods to SeeAlso::Response (get, toRDF...)
 0.55  2009-04-16 - added first version of SeeAlso::Client
                  - changed and enhanced SeeAlso::Identifier::ISBN
                  - minor changes/fixes in SeeAlso::Response, ::Server, ::Source

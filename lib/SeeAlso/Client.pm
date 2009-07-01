@@ -14,7 +14,7 @@ use Carp qw(croak);
 use JSON::XS;
 use LWP::Simple qw(get);
 use URI;
-# use CGI qw(-oldstyle_urls);
+use Data::Validate::URI qw(is_web_uri);
 
 use SeeAlso::Identifier;
 use SeeAlso::Response;
@@ -26,7 +26,16 @@ our @EXPORT = qw( seealso_request );
 =head1 DESCRIPTION
 
 This class can be used to query a SeeAlso server. It can also be used
-as L<SeeAlso::Source> to proxy another SeeAlso server.
+as L<SeeAlso::Source> to proxy another SeeAlso server, for instance to
+wrap a SeeAlso Simple server as a SeeAlso Full server.
+
+=head1 SYNOPSIS
+
+  $response = seealso_request ( $baseurl, $identifier );
+  print $response->toJSON() . "\n" if ($response);
+
+  $client = SeeAlso::Client->new( $baseurl, ShortName => "myClient" );
+  $response = $client->query( $identifier );
 
 =head1 METHODS
 
@@ -105,10 +114,11 @@ sub baseURL {
     return $self->description("BaseURL") unless defined $url;
 
     $url = URI->new( $url ) unless UNIVERSAL::isa( $url, "URI" );
-    croak("Not an URL")
-        unless defined $url and $url->scheme and $url->scheme =~ /^http[s]?$/;
+    croak("The specified URL is not valid")
+        unless defined $url and is_web_uri($url->as_string());
+
     my %query = $url->query_form();
-    croak("URL must not contain id or callback parameter")
+    croak("The specified URL must not contain id or callback parameter")
         if defined $query{'id'} or defined $query{'callback'};
     $self->{is_simple} = defined $query{'format'};
     $self->{baseurl} = $url;
@@ -147,6 +157,29 @@ sub queryURL {
     $url->query_form( %query );
 
     return $url->canonical();
+}
+
+=head2 getFormats
+
+Try to retrieve a list of formats via unAPI (experimental).
+
+=cut
+
+sub getFormats {
+    my ($self) = @_;
+    return $self->{formats} if exists $self->{formats};
+
+    my $formats = {};
+    my $url = $self->baseURL();
+    my $xml = get($url);
+    if ($xml) {
+        # dump parser (not really XML)
+        my %matches = ( $xml =~ m/<format name="([^"]+)" type="([^"]+)"/gm );
+        $formats = { 
+            map { $_, { type => $matches{$_} } } (keys %matches)
+        };
+    }
+    $self->{formats} = $formats;
 }
 
 =head1 FUNCTIONS

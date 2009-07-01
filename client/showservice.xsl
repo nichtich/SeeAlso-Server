@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
   SeeAlso service display and test page.
-  Version 0.8.7
+  Version 0.8.8
 
   Usage: Put this file (showservice.xsl) in a directory together with 
   seealso.js, xmlverbatim.xsl and favicon.ico (optional)
@@ -84,17 +84,17 @@
         <script src="{$clientbase}seealso.js" type="text/javascript" ></script>
         <style type="text/css">
 body, h1, h2, th, td { font-family: sans-serif; }
-table { border-collapse:collapse; }
-td, th { border: 1px solid #666; padding: 4px; }
-th { text-align: left; vertical-align: top; background: #c3ff72; color: #333; }
-td { background: #d0ffa0; }
+table { border-collapse:collapse; background: #d0ffa0; font-size: small; }
+td, th { border: none; padding: 4px; }
+th { text-align: right; vertical-align: top; }
 h2, h2 a { color: #96c458; margin: 1em 0em 0.5em 0em; font-size: 1em; } 
-h1 { color: #96c458; border-bottom: 1px solid #96c458; }
+h1 { color: #96c458; border-bottom: 1px solid #96c458; font-size: 1.5em; }
 p { padding-bottom: 0.5em; padding-left: 0.5em; font-size: small; }
 pre, .code {
   background: #ddd; 
   border: 1px solid #666;
   padding: 4px;
+  margin: 0;
 }
 table, .code, p { margin: 0em 0.5em 0em; }
 table { margin-bottom: 0.5em; }
@@ -218,6 +218,11 @@ table { margin-bottom: 0.5em; }
               document.getElementById('format-'+currentFormat).style.fontWeight = "normal";
               document.getElementById('format-'+format).style.fontWeight = "bold";
               currentFormat = format;
+              lookup();
+          }
+          function changeExample(select) {
+              var value = select.options[select.options.selectedIndex].value;
+              document.getElementById("identifier").value = value;
               lookup();
           }
          </script> 
@@ -347,23 +352,31 @@ table { margin-bottom: 0.5em; }
   <form>
     <table id='demo'>
       <tr>
-        <th>query id</th>
+        <th>query</th>
         <td>
           <input type="text" id="identifier" onkeyup="lookup();" size="40" value="{/formats/@id}"/>
-          <!-- Show the first 3 examples. TODO: show dropdown if more then 3 examples -->
           <xsl:if test="$osd and $examples">
-            <xsl:text> (try: </xsl:text>
-            <xsl:for-each select="$examples">
-              <xsl:if test="position() &gt; 1 and position() &lt; 4">, </xsl:if>
-              <xsl:if test="position() &lt; 4">
-                <!-- TODO: @searchTerms may contain bad characters -->
-                <tt style="text-decoration:underline" onclick='document.getElementById("identifier").value="{@searchTerms}";lookup();'>
+            <xsl:text> for instance </xsl:text>
+            <xsl:if test="count($examples) &gt;= 3">
+              <select name="examples" onchange="changeExample(this);">
+                <option value="" />
+                <xsl:for-each select="$examples">
+                  <option value="{@searchTerms}">
                     <xsl:value-of select="@searchTerms"/>
-                </tt>
-              </xsl:if>
-              <xsl:if test="position() = 4"> ...</xsl:if>
-            </xsl:for-each>
-            <xsl:text>)</xsl:text>
+                  </option>
+                </xsl:for-each>
+              </select>
+            </xsl:if>
+            <xsl:if test="count($examples) &lt; 3">
+              <xsl:for-each select="$examples">
+                <xsl:if test="position() &gt; 1 and position() &lt; 4">, </xsl:if>
+                <xsl:if test="position() &lt; 4">
+                  <tt style="text-decoration:underline" onclick='document.getElementById("identifier").value="{@searchTerms}";lookup();'>
+                     <xsl:value-of select="@searchTerms"/>
+                  </tt>
+                </xsl:if>
+              </xsl:for-each>
+            </xsl:if>
           </xsl:if>
         </td>
       </tr>
@@ -394,7 +407,7 @@ table { margin-bottom: 0.5em; }
             <pre id='response'></pre>
             <iframe id="response-debug-iframe" width="90%" name="response-debug-iframe" src="" scrolling="auto" style="display:none;" class="code" />
           </span>
-          <span id="other-response" display="none">
+          <span id="other-response" style="display:none">
             <iframe id="response-other-iframe" width="90%" name="response-other-iframe" src="" scrolling="auto" class="code" />
           </span>
         </td>

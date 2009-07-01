@@ -43,4 +43,5 @@ t/critique.t
 client/showservice.xsl
 client/seealso.js 
 client/xmlverbatim.xsl
+client/seealso
 

@@ -1,6 +1,7 @@
 Features, that are planned to be implemented before 1.0 release include:
 
 == Next ==
+- add example of wrapper SeeAlso simple to SeeAlso full (via Client)
 - update ThingISBN and make it an example script (not a class)
 - Add showservices.xsl (multiple) in addition to showservice.xsl (for collections)
 - simplify SeeAlso::Identifier

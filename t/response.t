@@ -2,7 +2,7 @@
 
 use strict;
 
-use Test::More tests => 29;
+use Test::More tests => 36;
 
 use SeeAlso::Response;
 
@@ -16,19 +16,25 @@ $r = SeeAlso::Response->new("123");
 is( $r->toJSON(), '["123",[],[],[]]', 'empty response with query');
 is( $r->query(), "123", 'query' );
 
-$r->add("foo","baz","uri:bar");
-my $json = '["123",["foo"],["baz"],["uri:bar"]]';
-is( $r->toJSON(), $json, 'simple response');
+$r->add("foo","urn:baz","uri:bar");
+my $json = '["123",["foo"],["urn:baz"],["uri:bar"]]';
+my $csv = '"foo","urn:baz","uri:bar"';
+is( $r->toJSON(), $json, 'simple response (JSON)');
+is( $r->toCSV(), $csv, 'simple response (CSV)');
 
 my $list = [ $r->get(0) ];
-is_deeply( $list, ["foo","baz","uri:bar"], 'get method' );
+is_deeply( $list, ["foo","urn:baz","uri:bar"], 'get method' );
 
 $r->add("faz");
-ok( $r->toJSON() eq '["123",["foo","faz"],["baz",""],["uri:bar",""]]', 'simple response');
+ok( $r->toJSON() eq '["123",["foo","faz"],["urn:baz",""],["uri:bar",""]]', 'simple response');
 is( $r->size, 2, 'test size' );
 
 $r->add("","","");
 is( $r->size, 2, 'empty triple ignored' );
+
+$r->set("urn:xxx");
+my $n3 = '<urn:xxx> <urn:baz> <uri:bar> .';
+is( $r->toN3(), $n3, 'simple response (N3)');
 
 $r = $r->new("123");
 is( $r->toJSON(), '["123",[],[],[]]', '$obj->new');
@@ -39,11 +45,15 @@ is_deeply( $list, [ ], 'get method of empty response' );
 my ($completion, $description, $url) = $r->get( 0 );
 is( $completion, undef, 'get method of empty response' );
 
-$r->add("x"); # empty description and URI
-is( $r->toJSON(), '["123",["x"],[""],[""]]', '$obj->add');
+$r->add('"'); # empty description and URI
+is( $r->toJSON(), '["123",["\""],[""],[""]]', '$obj->add');
+$csv = '"""","",""';
+$n3 = '';
+is( $r->toCSV(), $csv, 'empty description and URI (CSV)');
+is( $r->toN3(), $n3, 'empty description and URI (N3)');
 
 $list = [ $r->get(0) ];
-is_deeply( $list, ["x","",""], 'get method of partly empty' );
+is_deeply( $list, ["\"","",""], 'get method of partly empty' );
 
 my @list = $r->get(-1);
 is( @list, 0, 'invalid response index' );
@@ -77,6 +87,21 @@ ok( $@, 'invalid array sizes detected' );
 
 $r = SeeAlso::Response->new( ["foo"] );
 ok( $r->query() =~ /ARRAY/, 'query made string' );
+
+$r = SeeAlso::Response->new("urn:subject");
+$r->add("","urn:predicate","urn:object");
+is( $r->toN3(), '<urn:subject> <urn:predicate> <urn:object> .', "toN3 (1)");
+
+$r->add("","urn:predicate","urn:object2");
+is( $r->toN3(), "<urn:subject> <urn:predicate>\n    <urn:object> ,\n    <urn:object2> .", "toN3 (2)");
+
+$r->add("hello\"world","rdfs:label","");
+my $n3_1 = '  <rdfs:label> "hello\"world"';
+my $n3_2 = "  <urn:predicate>\n    <urn:object> ,\n    <urn:object2>";
+my $n3_a = "<urn:subject>\n$n3_2 ;\n$n3_1 .";
+my $n3_b = "<urn:subject>\n$n3_1 ;\n$n3_2 .";
+ok( $r->toN3() eq $n3_a || $r->toN3() eq $n3_b, "toN3 (3)");
+
 
 use SeeAlso::Identifier;
 my $id = SeeAlso::Identifier->new( 'normalized' => sub { lc shift; } );

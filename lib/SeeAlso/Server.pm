@@ -18,7 +18,7 @@ use SeeAlso::Response;
 use SeeAlso::Source;
 
 use base qw( Exporter );
-our $VERSION = "0.55";
+our $VERSION = "0.56";
 
 =head1 DESCRIPTION
 
@@ -370,25 +370,20 @@ sub listFormats {
     my ($self, $response) = @_;
 
     my $status = 200;
+    my $id = $response->query();
     if ($response->query() ne "") {
         $status = $response->size ? 300 : 404;
     }
 
-    my $http = $self->{cgi}->header( -status => $status, -type => 'application/xml; charset: utf-8' );
-    my @xml = ("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+    my $headers = $self->{cgi}->header( -status => $status, -type => 'application/xml; charset: utf-8' );
+    $headers .= '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
 
     if ($self->{xslt}) {
-        push @xml, "<?xml-stylesheet type=\"text/xsl\" href=\"" . xmlencode($self->{xslt}) . "\"?>";
-        push @xml, "<?seealso-query-base " . xmlencode($self->baseURL) . "?>";
+        $headers .= "<?xml-stylesheet type=\"text/xsl\" href=\"" . xmlencode($self->{xslt}) . "\"?>\n";
+        $headers .= "<?seealso-query-base " . xmlencode($self->baseURL) . "?>\n";
     }
     if ($self->{clientbase}) {
-        push @xml, "<?seealso-client-base " . xmlencode($self->{clientbase}) . "?>";
-    }
-
-    if ($response->query() ne "") {
-        push @xml, "<formats id=\"" . xmlencode($response->query()) . "\">";
-    } else {
-        push @xml, "<formats>";
+        $headers .= "<?seealso-client-base " . xmlencode($self->{clientbase}) . "?>\n";
     }
 
     my %formats = %{$self->{formats}};
@@ -400,16 +395,34 @@ sub listFormats {
         };
     }
 
-    foreach my $name (sort({$b cmp $a} keys(%formats))) {
-        my $format = $formats{$name};
+    return _unapiListFormats( \%formats, $id, $headers );
+}
+
+# $formats: hash reference
+# $id : scalar (optional)
+# $headers : scalar (optional, use undef to disable)
+sub _unapiListFormats { # TODO: move this to HTTP::unAPI or such
+    my ($formats, $id, $headers) = @_;
+
+    $headers = '<?xml version="1.0" encoding="UTF-8"?>' unless defined $headers;
+    my @xml;
+
+    if ($id ne "") {
+        push @xml, '<formats id="' . xmlencode($id) . '">';
+    } else {
+        push @xml, '<formats>';
+    }
+
+    foreach my $name (sort({$b cmp $a} keys(%$formats))) {
+        my $format = $formats->{$name};
         my $fstr = "<format name=\"" . xmlencode($name) . "\" type=\"" . xmlencode($format->{type}) . "\"";
         $fstr .= " docs=\"" . xmlencode($format->{docs}) . "\"" if defined $format->{docs};
         push @xml, $fstr . " />";
     }
 
-    push @xml, "</formats>\n";
+    push @xml, '</formats>';    
 
-    return $http . join("\n", @xml);
+    return $headers . join("\n", @xml) . "\n";
 }
 
 =head2 errors ( [ $message ] )
