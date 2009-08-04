@@ -1,6 +1,7 @@
 #!perl -Tw
 
 use strict;
+use warnings;
 use Test::More qw(no_plan);
 use Test::Exception;
 
@@ -98,18 +99,31 @@ sub parse {
     return $value =~ /^(gvk:ppn:)?([0-9]*[0-9x])$/i ? lc($2) : '';
 }
 
+sub canonical {
+    my $self = shift;
+    return $self->value ne '' ? 'gvk:ppn:' . $self->value : '';
+}
+
 sub hash {
     my $self = shift;
-    return '' unless $self->valid;
+    return '' if $self->value eq '';
     return substr($self->value,0,length($self->value)-1);
 }
 
-sub canonical {
-    my $self = shift;
-    return '' unless $self->valid;
-    return 'gvk:ppn:' . $self->value;
-}
 
 ----
 
-$ppnFactory = SeeAlso::Factory
+my $ppnFactory = SeeAlso::Identifier::Factory
+    type => 'PPN',
+    parse => sub { 
+        my $value = shift; 
+        $value =~ /^(gvk:ppn:)?([0-9]*[0-9x])$/i ? lc($2) : '';
+    },
+    canonical => sub {
+        my $value = shift; 
+        return $value ne '' ? 'gvk:ppn:' . $value : '';
+    },
+    hash => sub {
+        my $value = shift; 
+        return $value ne '' ? substr($value,0,length($value)-1) : '';
+    };

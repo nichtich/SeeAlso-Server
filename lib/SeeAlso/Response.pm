@@ -14,7 +14,7 @@ use Text::CSV;
 use Data::Validate::URI qw(is_uri);
 use Carp;
 
-our $VERSION = "0.56";
+our $VERSION = "0.57";
 
 =head1 DESCRIPTION
 
@@ -176,7 +176,7 @@ sub query {
     if (@_) {
         my $query = shift;
         if (UNIVERSAL::isa( $query, 'SeeAlso::Identifier' )) {
-            $query = $query->normalized() 
+            $query = $query->canonical; 
         }
         $self->{query} = defined $query ? "$query" : "";
     }

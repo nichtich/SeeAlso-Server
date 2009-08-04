@@ -11,7 +11,7 @@ SeeAlso::Identifier::Factory - Identify and create identifiers
 
 use SeeAlso::Identifier;
 use Carp;
-our $VERSION = '0.10';
+our $VERSION = '0.11';
 
 =head1 SYNOPSIS
 
@@ -134,7 +134,7 @@ sub makeclass {
     my $out = join("\n",@out);
 
     # print $out;# if $print;
-    my $result = eval $out;
+    { no warnings; eval $out; }
     carp $@ if $@;
 
     return $type;
