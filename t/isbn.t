@@ -2,7 +2,7 @@
 
 use strict;
 
-use Test::More tests => 13;
+use Test::More qw(no_plan);
 
 use SeeAlso::Identifier::ISBN;
 
@@ -14,7 +14,8 @@ ok( $isbn->value eq '978-0-596-52724-2', 'ISBN-10' );
 
 $isbn->value('0-8044-2957-x');
 ok ( $isbn->value eq '978-0-8044-2957-3', "value" );
-ok ( $isbn->normalized eq 'urn:isbn:9780804429573', "URI" );
+is ( $isbn->normalized , 'urn:isbn:9780804429573', "URI (normalized)" );
+is ( $isbn->canonical , 'urn:isbn:9780804429573', "URI (canonical)" );
 
 # invalid ISBN-10
 $isbn = SeeAlso::Identifier::ISBN->new('1234567891');

@@ -14,7 +14,7 @@ use Business::ISBN;
 use Carp;
 
 use base qw( SeeAlso::Identifier );
-our $VERSION = "0.6";
+our $VERSION = "0.61";
 
 =head1 DESCRIPTION
 
@@ -75,7 +75,7 @@ sub value {
     return $self->{value}->as_string if $self->valid;
 }
 
-=head2 normalized ( )
+=head2 canonical ( )
 
 Returns a Uniform Resource Identifier (URI) for this ISBN if the ISBN is valid.
 
@@ -89,7 +89,7 @@ Instead of RFC 3187 you could also use "http://purl.org/isbn/".
 
 =cut
 
-sub normalized {
+sub canonical {
     my $self = shift;
     return "urn:isbn:" . $self->{value}->isbn if $self->valid;
 }

@@ -20,7 +20,8 @@ use ExtUtils::MakeMaker;
         'Business::ISBN' => '2.02',
         'Getopt::Long' => '0',
         'Pod::Usage' => '0',
-        'Text::CSV' => '0'
+        'Text::CSV' => '0',
+        'Test::Exception' => '0.27',
     },
     dist            => {
         COMPRESS => 'gzip -9f',

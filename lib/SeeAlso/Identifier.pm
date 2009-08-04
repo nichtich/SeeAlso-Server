@@ -5,18 +5,18 @@ use warnings;
 
 =head1 NAME
 
-SeeAlso::Identifier - an identifier passed to a SeeAlso-Server
+SeeAlso::Identifier - An identifier passed to a SeeAlso-Server
 
 =cut
 
 use Carp;
-our $VERSION = "0.43";
+our $VERSION = "0.45";
 
 =head1 DESCRIPTION
 
 The query to a SeeAlso (and other unAPI) server is just an identifier.
 By default an identifier is just a string but identifiers may also have
-special properties like checksums and normalized forms.
+special properties like checksums and canonical forms.
 
 L<SeeAlso::Identifier> models identifiers that are passed to and
 processed by a L<SeeAlso::Server> and a L<SeeAlso::Source>. To
@@ -48,13 +48,6 @@ this example)
 
 The canonical form whith hyphem and uppercase X: '0002-936X'
 
-=item indexed 
-
-The form that is used for indexing. This could be '0002936X'
-or '0002936' because hyphen and check digit do not contain
-information. You could also store the ISSN in the 32 bit
-integer number '2996' instead of a string.
-
 =item valid
 
 The ISSN is checked by testing for invalid or missing
@@ -68,6 +61,16 @@ If you provide a normalizing method C<n> then this method
 should behave like a normalizing is expected. That is for
 every possible input C<s> the condition C<n(s) == n(n(s))>
 must be true.
+
+=cut
+
+use overload (
+    '""' => sub { $_[0]->canonical },
+    '==' => sub { $_[0]->hash eq $_[1]->hash },
+    '!=' => sub { $_[0]->hash ne $_[1]->hash },
+    'eq' => sub { $_[0]->hash eq $_[1]->hash },
+    'ne' => sub { $_[0]->hash ne $_[1]->hash }
+);
 
 =head1 METHODS
 
@@ -127,21 +130,19 @@ sub new {
 
     my %params = @_;
     my $normalized = $params{normalized};
-    my $indexed = $params{indexed};
-    my $valid = $params{valid};
+    my $valid = $params{valid} || $params{parse};
+
+    # TODO: we don't need this:
 
     croak("normalized must be a method")
         if defined $normalized and ref($normalized) ne "CODE";
-    croak("indexed must be a method")
-        if defined $indexed and ref($indexed) ne "CODE";
     croak("valid must be a method")
         if defined $valid and ref($valid) ne "CODE";
 
     my $self = bless {
-        value => undef,
+        value => '',
         mValid => $valid,
         mNormalized => $normalized,
-        mIndexed => $indexed,
     }, $class;
 
     return $self;
@@ -149,33 +150,32 @@ sub new {
 
 =head2 value ( [ $value ] )
 
-Get and/or set the value of this identifier.
+Get and/or set the value of this identifier. If you specify a defined 
+value, it will be passed to the 'parse' function and used as new value.
 
 =cut
 
 sub value {
-    my $self = shift;
-    my $value = shift;
+    my ($self, $value) = @_;
 
     if (defined $value) {
-        $self->{value} = $value;
+        my $v = $self->parse( $value );
+        $self->{value} = defined $v ? "$v" : "";
     }
 
-    if (not defined $self->{value}) {
-        return $self->valid() ? "" : undef;
-    } else {
-        return $self->{value};
-    }
+    return $self->{value};
 }
 
-=head2 normalized ( )
+=head2 canonical ()
 
-Return a normalized representation of this identifier.
-By default this is what the value method returns.
+Returns a normalized version of the identifier. For most identifiers the
+normalized version should be an absolute URI. The default implementation
+of this method just returns the full value, so if the 'value' method already
+does normalization, you do not have to implement 'canonical'.
 
 =cut
 
-sub normalized {
+sub canonical {
     my $self = shift;
     if (defined $self->{mNormalized}) {
         return &{$self->{mNormalized}}($self->{value});
@@ -184,38 +184,63 @@ sub normalized {
     }
 }
 
-=head2 indexed ( )
+=head2 normalized () 
 
-Return the index value of this identifier.
-By default this is the normalized form but you may
-extend the identifier to use some kind of hash value.
+Alias for canonical. Do not override this method but 'canonical' if needed.
 
 =cut
 
-sub indexed {
+sub normalized { return $_[0]->canonical; }
+
+=head2 hash ()
+
+Return a compact form of this identifier that can be used for indexing. 
+A usual compact form is the local part without namespace prefix or a 
+hash value. The default implementation of this method just returns the 
+full value of the identifier.
+
+=cut
+
+sub hash {
     my $self = shift;
-    if (defined $self->{mIndexed}) {
-        return &{$self->{mIndexed}}($self->{value});
-    } else {
-        return $self->normalized();
-    }
+    return $self->canonical;
 }
 
-=head2 valid ( )
+=head2 indexed ()
 
-Returns whether this identifier is valid. By default
-all non empty identifiers (everything but '' and undef)
-are valid.
+Alias for hash. Do not override this method but 'hash' if needed.
+
+=cut
+
+sub indexed { return $_[0]->hash; }
+
+=head2 valid ()
+
+Returns whether this identifier is valid. By default all non-empty
+identifiers (everything but '' and undef) are valid but you can add 
+additional checks. For most applications is is recommended to implement
+validation in the parse method instead, so invalid identifiers cannot be
+created.
 
 =cut
 
 sub valid {
     my $self = shift;
-    if (defined $self->{mValid}) {
-        return &{$self->{mValid}}($self->{value});
-    } else {
-        return defined $self->{value} && $self->{value} ne "";
-    }
+    return (defined $self->{value} and $self->{value} ne '');
+}
+
+=head2 parse ( $string )
+
+Parses a string to an identifier value of this class. This function
+should always return a string. Override this method in derived classes.
+
+=cut
+
+sub parse {
+    my $s = shift;
+    $s = shift if ref($s) and defined $_[0];
+    $s = defined $s ? "$s" : '';
+    return $s;
 }
 
 1;

@@ -8,9 +8,10 @@ Changes
 lib/SeeAlso/Client.pm
 lib/SeeAlso/Server.pm
 lib/SeeAlso/Identifier.pm
+lib/SeeAlso/Identifier/Factory.pm
+lib/SeeAlso/Identifier/ISBN.pm
 lib/SeeAlso/Identifier/GND.pm
 lib/SeeAlso/Identifier/ISIL.pm
-lib/SeeAlso/Identifier/ISBN.pm
 lib/SeeAlso/Response.pm
 lib/SeeAlso/Source.pm
 lib/SeeAlso/Source/DBI.pm
@@ -31,6 +32,7 @@ t/listFormats200noosd.xml
 t/listFormats404.xml
 t/listFormats300.xml
 t/identifier.t
+t/factory.t
 t/gnd.t
 t/client.t
 t/isil.t
