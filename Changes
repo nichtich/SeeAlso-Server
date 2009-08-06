@@ -1,6 +1,6 @@
-0.57  2009-??-?? - ...
-                 - rewrote SeeAlso::Identifier::ISBN
+0.57  2009-08-06 - rewrote SeeAlso::Identifier
                  - added SeeAlso::Identifier::Factory
+                 - rewrote SeeAlso::Identifier::ISBN
 0.56  2009-06-01 - added a simple command line client and updated XSL client
                  - fixed SeeAlso::Client
                  - added several methods to SeeAlso::Response (get, toRDF...)
