@@ -2,7 +2,6 @@ package SeeAlso::Identifier::ISBN;
 
 use strict;
 use warnings;
-use utf8;
 
 =head1 NAME
 
@@ -14,70 +13,72 @@ use Business::ISBN;
 use Carp;
 
 use base qw( SeeAlso::Identifier );
-our $VERSION = "0.61";
+our $VERSION = "0.62";
+
+=head1 SYNOPSIS
+
+  my $isbn = new SeeAlso::Identifier::ISBN "";
+
+  print "invalid" unless $isbn; # $isbn is defined but false !
+
+  $isbn->value( '0-8044-2957-x' );
+  $isbn->value; # '' or ISBN-13 without hyphens (9780804429573)
+  $isbn; # ISBN-13 as URI (urn:isbn:9780804429573)
+
+  $isbn->hash; # long int between 0 and 1999999999 (or '')
+  $isbn->hash( 59652724 ); # set by hash
+
+  $isbn->canonical; # urn:isbn:9780596527242
 
 =head1 DESCRIPTION
 
 This module handles International Standard Book Numbers as identifiers.
 Unlike L<Business::ISBN> the constructor of SeeAlso::Identifier::ISBN 
-always returns an defined object. The 'valid' method derived from 
-L<SeeAlso::Identifier> returns whether the ISBN is valid. The methods
-'value', 'normalized', 'indexed' and 'int32' can be used on valid ISBNs 
-to get different representations. 'value' and 'int32' can also be used 
-to set the ISBN. ISBN-10 are converted to ISBN-13.
+always returns an defined identifier with all methods provided by
+L<SeeAlso::Identifier>. As canonical form the URN representation of 
+ISBN-13 without hyphens is used - that means all ISBN-10 are converted
+to ISBN-13. As hashed form of an ISBN, a 32 Bit integer can be calculated.
+
+Please note that '0' is a valid value representing ISBN-10 0-00-000000-0
+and ISBN-13 978-0-00-000000-2 although it is mostly used errorously in
+practise.
 
 =head1 METHODS
 
-=head2 new ( [ $value ] )
+=head2 parse ( $value )
 
-Create a new ISBN identifier.
-
-=cut
-
-sub new {
-    my $class = shift;
-    my $self = bless {
-        value => undef
-    }, $class;
-    $self->value( shift );
-    return $self;
-}
-
-=head2 value ( [ $value ] )
-
-Get and/or set the value of the ISBN. Returns undef or the valid
-ISBN-13 value with hyphens. Validity and positition of hyphens are
-determined with L<Business::ISBN>.
+Get and/or set the value of the ISBN. Returns an empty string or the valid
+ISBN-13 without hyphens as determinded by L<Business::ISBN>. You can also 
+use this method as function.
 
 =cut
 
-sub value {
-    my $self = shift;
+sub parse {
     my $value = shift;
+    $value = shift if ref($value) and scalar @_;
 
-    if (defined $value) {
+    if (defined $value and not UNIVERSAL::isa( $value, 'Business::ISBN' ) ) {
         $value =~ s/^urn:isbn://i;
-        $self->{value} = Business::ISBN->new( $value );
-        return unless defined $self->{value};
-
-        my $error = $self->{value}->error;
-        if ( $error != Business::ISBN::GOOD_ISBN && 
-             $error != Business::ISBN::INVALID_GROUP_CODE &&
-             $error != Business::ISBN::INVALID_PUBLISHER_CODE ) {
-            undef $self->{value};
-            return;
-        }
-
-        $self->{value} = $self->{value}->as_isbn13
-            unless ref($self->{value}) eq "Business::ISBN13";
+        $value = Business::ISBN->new( $value );
     }
 
-    return $self->{value}->as_string if $self->valid;
+    return '' unless defined $value;
+
+    my $status = $value->error;
+    if ( $status != Business::ISBN::GOOD_ISBN && 
+         $status != Business::ISBN::INVALID_GROUP_CODE &&
+         $status != Business::ISBN::INVALID_PUBLISHER_CODE ) {
+         return '';
+    }
+
+    $value = $value->as_isbn13 unless ref($value) eq 'Business::ISBN13';
+
+    return $value->as_string([]);
 }
 
-=head2 canonical ( )
+=head2 canonical
 
-Returns a Uniform Resource Identifier (URI) for this ISBN if the ISBN is valid.
+Returns a Uniform Resource Identifier (URI) for this ISBN (or an empty string).
 
 This is an URI according to RFC 3187 ("urn:isbn:..."). Unfortunately RFC 3187
 is broken, because it does not oblige normalization - this method does: first 
@@ -90,57 +91,38 @@ Instead of RFC 3187 you could also use "http://purl.org/isbn/".
 =cut
 
 sub canonical {
-    my $self = shift;
-    return "urn:isbn:" . $self->{value}->isbn if $self->valid;
+    return ${$_[0]} eq '' ? '' : 'urn:isbn:' . ${$_[0]};
 }
 
-=head2 indexed ( )
+=head2 hash ( [ $value ] )
 
-Return the valid ISBN-13 without hyphens or undef. This variant is
-usual because it is always 13 characters. An even more performant
-format of the ISBN is a long integer value as returned by C<int32>.
-
-=cut
-
-sub indexed {
-    my $self = shift;
-    return $self->{value}->isbn if $self->valid; 
-}
-
-=head2 int32 ( [ $value ] )
-
-Returns or sets a space-efficient representation of the ISBN as integer.
+Returns or sets a space-efficient representation of the ISBN as long integer.
 An ISBN-13 always starts with '978' or '979' and ends with a check digit.
-This makes 2,000,000,000 which fits in a 32 bit (signed or unsigned) 
-integer value. The integer value is calculated from an ISBN-13 by removing
-the check digit and subtracting 978,000,000,000.
-
-Please note that '0' is a valid value representing ISBN-13 978-0-00-000000-2 
-and ISBN-10 0-00-000000-0, but in practise it is only used erroneously. This
-methods uses '0' as equal to undefined, so int32() for an invalid ISBN returns
-'0' and int32(0) sets the ISBN to undefined.
+This makes 2,000,000,000 possible ISBN which fits in a 32 bit (signed or 
+unsigned) integer value. The integer value is calculated from the ISBN-13 by
+removing the check digit and subtracting 978,000,000,000.
 
 =cut
 
-sub int32 {
+sub hash {
     my $self = shift;
-    my $value = shift;
-    my $int = 0;
 
-    if (defined $value) {
-        $int = int($value);
-        if (!$int || $int < 0 || $int >= 2000000000) {
-            $self->value("");
-            return 0;
-        } else {
-            my $isbn = Business::ISBN->new( ($int+978000000000) . "X" );
-            $isbn->fix_checksum;
-            $self->value( $isbn->isbn );
-            return $int;
+    # TODO: support use as constructor and as function
+
+    if ( scalar @_ ) {
+        my $value = shift;
+        $value = defined $value ? "$value" : "";
+        $value = '' if not $value =~ /^[0-9]+$/ or $value >= 2000000000;
+        if ( $value eq "" ) {
+            $$self = '';
+            return '';
         }
+        my $isbn = Business::ISBN13->new( ($value+978000000000) . "X" );
+        $isbn->fix_checksum;
+        $self->value( $isbn );
+        return $value;
     } else {
-        my $int = $self->indexed || return 0;
-        return substr($int, 2, 10 ) - 8000000000;
+        return $$self eq '' ? '' : substr($$self, 2, 10 ) - 8000000000;
     }
 }
 

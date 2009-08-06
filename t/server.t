@@ -2,7 +2,7 @@
 
 use strict;
 
-use Test::More tests => 24;
+use Test::More qw(no_plan);
 
 use SeeAlso::Server;
 use SeeAlso::Response;
@@ -58,7 +58,7 @@ $source = SeeAlso::Source->new(
 $identifier = SeeAlso::Identifier->new("xyz");
 
 $http = $s->query($source, $identifier, 'seealso');
-ok ( $http =~ /^Status: 200[^\[]+\["xyz",\[\],\[\],\[\]\]$/m, 'No results' );
+like( $http , qr/^Status: 200[^\[]+\["xyz",\[\],\[\],\[\]\]$/m, 'No results' );
 
 $http = $s->query($source, $identifier, 'foo');
 ok ( $http eq $xml404, 'Result but not right format');
@@ -114,12 +114,12 @@ $cgi->param('format'=>'seealso');
 $cgi->param('id'=>'8');
 $s = SeeAlso::Server->new( cgi => $cgi );
 $http = $s->query( \&UCnormalizedID, sub { return $_[0] * 2; } );
-ok ( $http =~ /\["16",\[\],\[\],\[\]\]/, "code as id validator (valid)" );
+like( $http, qr/\["16",\[\],\[\],\[\]\]/, "code as id validator (valid)" );
 $http = $s->query( \&UCnormalizedID, sub { return undef; } );
-ok ( $http =~ /\["",\[\],\[\],\[\]\]/, "code as id validator (invalid)" );
+like( $http, qr/\["",\[\],\[\],\[\]\]/, "code as id validator (invalid)" );
 $cgi->param('id'=>'low');
 $http = $s->query( sub { return SeeAlso::Response->new( $_[0] ); }, sub { return uc($_[0]); } );
-ok ( $http =~ /\["LOW",\[\],\[\],\[\]\]/, "code as id validator (valid 2)" );
+like( $http, qr/\["LOW",\[\],\[\],\[\]\]/, "code as id validator (valid 2)" );
 
 # check error handler
 $source = SeeAlso::Source->new( sub { 1 / int(shift->value); } );

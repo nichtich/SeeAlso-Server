@@ -104,10 +104,11 @@ ok( $r->toN3() eq $n3_a || $r->toN3() eq $n3_b, "toN3 (3)");
 
 
 use SeeAlso::Identifier;
-my $id = SeeAlso::Identifier->new( 'normalized' => sub { lc shift; } );
-$id->value("Hallo");
+my $id = SeeAlso::Identifier->new("Hallo");
 $r = SeeAlso::Response->new( $id );
-is( $r->toJSON(), '["hallo",[],[],[]]', 'SeeAlso::Identifier as parameter');
+is( $r->toJSON(), '["Hallo",[],[],[]]', 'SeeAlso::Identifier as parameter');
+
+__END__
 
 my $utf8 = "a\x{cc}\x{88}"; # small a umlaut
 

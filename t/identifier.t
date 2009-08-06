@@ -1,49 +1,39 @@
 #!perl -Tw
 
 use strict;
+use Test::More qw(no_plan);
 
-use Test::More tests => 26;
+# TODO: allow URIs in 'value', 'parse', and 'new'
 
-use SeeAlso::Identifier;
+use_ok('SeeAlso::Identifier');
 
-my $id = SeeAlso::Identifier->new();
-ok( !$id->normalized() && !$id->indexed() && !$id->value() && !$id->valid(), "empty identifier" );
+my $id = new SeeAlso::Identifier;
+ok( ! $id, 'empty identifier (1)' );
+ok( ! $id->valid, 'empty identifier (2)' );
+is( $id, '', 'empty identifier (3)' );
+is( $id->value, '', 'empty identifier (4)' );
+is( $id->canonical, '', 'empty identifier (5)' );
+is( $id->hash, '', 'empty identifier (6)' );
 
 $id = SeeAlso::Identifier->new("0");
-ok( $id->normalized() eq "0" && $id->indexed() eq "0" && $id->value() eq "0" && $id->valid(), "identifier = '0'" );
+ok( $id->normalized eq "0" && $id->indexed eq "0" && $id->value eq "0" && $id->valid, "identifier = '0'" );
+if ( $id ) { ok(1, "0 is an id"); } else { ok(0, "0 should be an id"); }
 
 $id = SeeAlso::Identifier->new("xy");
-ok( $id->normalized() eq "xy" && $id->indexed() eq "xy" && $id->value() eq "xy" && $id->valid(), "identifier = 'xy'" );
-
+is( $id->normalized, "xy", 'normalized()' );
+ok( $id, 'bool' );
+ok( $id->valid, 'valid()' );
 is( $id->canonical, 'xy', 'canonical()' );
 is( $id->indexed, 'xy', 'indexed()' );
 is( $id->hash, 'xy', 'hash()' );
 is( "$id", 'xy', '"" (overload)' );
 
-my $s = \*STDOUT;
-$id = SeeAlso::Identifier->new( $s );
-ok( $id->normalized eq $s && $id->indexed() eq $s && $id->value() eq $s && $id->valid(), "non-string identifier" );
-
-$id = SeeAlso::Identifier->new( 'valid' => sub { return 1; } );
-ok( $id->value eq "" , "undefined value with handler" );
-
-# lowercase alpha only
-sub lcalpha {
-   my $v = shift;
-   $v =~ s/[^a-zA-Z]//g;
-   return lc($v);
-}
-$id = SeeAlso::Identifier->new(
-  'valid' => sub {
-     my $v = shift;
-     return $v =~ /^[a-zA-Z]+$/;
-  },
-  'normalized' => \&lcalpha
-);
-$id->value("AbC");
-
-ok( $id->valid , "extension: valid");
-ok( $id->normalized eq "abc" && $id->indexed eq "abc", "extension: normalized and indexed" );
+my $undef;
+$id->value( $undef );
+is( $id->value, '', 'set to undef' );
+$id->value( [1,2,3] ); # will be stringified
+like( $id, qr/^ARRAY/, 'set value' );
+ok( $id, 'non-string identifier' );
 
 ok( SeeAlso::Identifier->new('A') == SeeAlso::Identifier->new('A'), '== (overload)' );
 ok( SeeAlso::Identifier->new('A') eq SeeAlso::Identifier->new('A'), 'eq (overload)' );
@@ -52,7 +42,7 @@ ok( SeeAlso::Identifier->new('A') ne SeeAlso::Identifier->new('B'), 'ne (overloa
 
 is( $id->parse('abc'), 'abc', 'parse as method' );
 is( SeeAlso::Identifier::parse('xyz'), 'xyz', 'parse as function' );
-
+is( SeeAlso::Identifier::parse( undef ), '', 'parse as function (with undef)' );
 
 ### Example of a derived class
 
@@ -113,10 +103,6 @@ urn:issn
 sub parse 
 is_valid_checksum( $string )
 
-sub compact {
-    return $$self
-}
-
 =item indexed 
 
 The form that is used for indexing. This could be '0002936X'
@@ -130,12 +116,14 @@ package SeeAlso::Identifier::VIAF;
 use base qw(SeeAlso::Identifier);
 
 sub parse {
-    my ($self, $value) = @_;
-    $value =~ s/^\s+|\s+$//g;                                         
-    return $2 if $value =~ /^(http:\/\/viaf.org\/)?([0-9]+)/;        
+    my $value = shift;
+    return '' unless $value =~ /^\s*(http:\/\/viaf.org\/)?([0-9]+)\s*$/;
+    return "http://viaf.org/$2";
 }
 
-sub canonical {
-    return 'http://viaf.org/' . $_[0]->value if $_[0]->value ne '';
-    return '';
+# return local id only
+sub hash {
+    return $_[0] eq '' ? substr( $_[0], 16 ) : '';
 }
+
+    prefix => 'http://viaf.org/'

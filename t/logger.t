@@ -1,14 +1,12 @@
 #!perl -Tw
 
-use lib "./lib";
 use strict;
 
-use Test::More tests => 12;
+use Test::More qw(no_plan);
 use File::Temp;
 use CGI;
 use Data::Dumper;
 use SeeAlso::Logger;
-
 
 my $logger = SeeAlso::Logger->new();
 ok ( ! $logger->{privacy} , "default setting" );
@@ -61,10 +59,14 @@ $cgi->param('id','456');
 $server->query( $source );
 
 $logline = finish_tmpfile($fh);
+
+# print "$logline\n";
+
 @fields = split("\t",$logline);
 ok( $fields[3] eq "testsource", "service name (2)");
 ok( $fields[4] eq "456", "search term");
 ok( $fields[5] == 1 && $fields[6] == 1, "valid and size (2)");
+
 
 #### next: filter method
 

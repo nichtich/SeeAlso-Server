@@ -49,57 +49,43 @@ our @EXPORT_OK = qw( sigel2isil );
 
 =head1 METHODS
 
-=head2 new ( [ $value ] )
-
-Create a new ISIL and optionally set its value..
-
-=cut
-
-sub new {
-    my $class = shift;
-    my $self = bless { }, $class;
-    $self->value( shift || "" );
-    return $self;
-}
-
-=head2 value ( [ $value ] )
+=head2 parse ( [ $value ] )
 
 Get and/or set the value of the ISIL. The ISIL must consist of a
 prefix and a local library identifier seperated by hypen-minus (-).
 Additionally it can be preceeded by "ISIL ".
 
-The method returns undef or the valid, normalized ISIL.
+The method returns '' or the valid, normalized ISIL.
 
 =cut
 
-sub value {
+sub parse {
     my $self = shift;
     my $value = shift;
 
     if (defined $value) {
-        $self->{value} = undef;
         $value =~ s/^\s+|\s+$//g;
         $value =~ s/^ISIL |^info:isil\///i;
 
         # ISIL too long
-        return unless length($value) <= 16;
+        return '' unless length($value) <= 16;
 
         # Does not look like an ISIL
-        return unless $value =~ /^([A-Z0-9]+)-(.+)$/;
+        return '' unless $value =~ /^([A-Z0-9]+)-(.+)$/;
 
         my ($prefix, $local) = ($1, $2);
 
         # Invalid prefix
-        return unless ($prefix =~ /^[A-Z]{2}$/ or 
-                       $prefix =~ /^[A-Z0-9]([A-Z0-9]{1-3})?$/);
+        return '' unless ($prefix =~ /^[A-Z]{2}$/ or 
+                          $prefix =~ /^[A-Z0-9]([A-Z0-9]{1-3})?$/);
 
         # Invalid characters in local library identifier
-        return unless ($local =~ /^[a-zA-Z0-9:\/-]+$/);
-
-        $self->{value} = $value;
+        return '' unless ($local =~ /^[a-zA-Z0-9:\/-]+$/);
+    } else {
+        $value = '';
     }
 
-   return $self->{value};
+    return $value;
 }
 
 
@@ -110,8 +96,7 @@ Returns the ISIL prefix.
 =cut
 
 sub prefix {
-    my $self = shift;
-    return $1 if (defined $self->{value} and $self->value =~ /^([A-Z0-9]+)-(.+)$/);
+    return ${$_[0]} =~ /^([A-Z0-9]+)-(.+)$/ ? $1 : '';
 }
 
 =head2 local ( )
@@ -121,34 +106,30 @@ Returns the ISIL local library identifier.
 =cut
 
 sub local {
-    my $self = shift;
-    return $2 if (defined $self->{value} and $self->value =~ /^([A-Z0-9]+)-(.+)$/);
+    return ${$_[0]} =~ /^([A-Z0-9]+)-(.+)$/ ? $2 : '';
 }
 
-=head2 normalized ( )
+=head2 canonical ( )
 
-Returns a normalized form as info URI or the empty string. Please 
-note that because of lower/uppercase differences, two ISIL variants
+Because of lower/uppercase differences, two ISIL variants
 that only differ in case, may not be normalized to the same string.
-The 'indexed' method returns an all-upercase representation of ISIL.
+The 'canonical' method returns an all-upercase representation of ISIL.
 
 =cut
 
-sub normalized {
-    my $self = shift;
-    return $self->valid ? "info:isil/" . $self->{value} : "";
+sub canonical {
+    return ${$_[0]} eq '' ? '' : 'info:isil/' . uc(${$_[0]});
 }
 
-=head2 indexed ( )
+=head2 hash ( )
 
 Returns a version of ISIL to be used for indexing. This is an
 uppercase string because two ISIL must not differ only in case.
 
 =cut
 
-sub indexed {
-    my $self = shift;
-    return $self->valid ? uc($self->{value}) : "";
+sub hash {
+    return ${$_[0]} eq '' ? '' : uc(${$_[0]});
 }
 
 =head1 UTILITY FUNCTIONS

@@ -39,7 +39,7 @@ L<SeeAlso::Identifier> and returns a L<SeeAlso::Response>.
 
       my $response = SeeAlso::Response->new( $identifier );
       $response->add( $label, $description, $uri );
-      
+
       return $response;
   }
 
@@ -203,20 +203,13 @@ sub query {
     croak('First parameter must be a SeeAlso::Source object!')
         unless defined $source and UNIVERSAL::isa($source, 'SeeAlso::Source');
 
-    if (ref($identifier) eq "CODE") {
+    if ( ref($identifier) eq 'CODE' ) {
         $identifier = &$identifier( $cgi->param('id') );
-        # TODO: if hash returned, use it as ...
-        if (defined ($identifier) and not ref($identifier)) {
-            $identifier = SeeAlso::Identifier->new( "$identifier" );
-        } else {
-            $identifier = SeeAlso::Identifier->new( valid => sub { return 0; } );
-        }
-    } elsif (defined $identifier) {
-        $identifier = SeeAlso::Identifier->new( $identifier )
-            unless UNIVERSAL::isa($identifier,"SeeAlso::Identifier");
-    } else {
-        $identifier = SeeAlso::Identifier->new( $cgi->param('id') );
+    } elsif (not defined $identifier) {
+        $identifier = $cgi->param('id');
     }
+    $identifier = new SeeAlso::Identifier( $identifier )
+        unless UNIVERSAL::isa( $identifier, 'SeeAlso::Identifier' );
 
     $format = $cgi->param('format') unless defined $format;
     $format = "" unless defined $format;
@@ -227,7 +220,6 @@ sub query {
     $format = "seealso" if ( $format eq "debug" && $self->{debug} == -1 ); 
     $format = "debug" if ( $format eq "seealso" && $self->{debug} == 1 ); 
 
-
     if ($format eq 'opensearchdescription') {
         $http = $self->openSearchDescription( $source );
         if ($http) {
@@ -236,14 +228,13 @@ sub query {
         }
     }
 
-
     $self->{errors} = (); # clean error list
     my $response;
     my $status = 200;
 
-    if (not $identifier->valid()) {
+    if ( not $identifier ) {
         $self->errors( "invalid identifier" );
-        $response = SeeAlso::Response->new();
+        $response = SeeAlso::Response->new;
     } elsif ($format eq "seealso" or $format eq "debug" or !$self->{formats}{$format}) {
         eval {
             local $SIG{'__WARN__'} = sub {
@@ -271,6 +262,7 @@ sub query {
     } else {
         $response = SeeAlso::Response->new( $identifier );
     }
+
 
     if ( $self->{logger} ) {
         # TODO: if you override the description, this is not taken!

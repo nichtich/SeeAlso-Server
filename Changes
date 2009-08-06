@@ -1,4 +1,5 @@
-0.5?  2009-??-?? - ...
+0.57  2009-??-?? - ...
+                 - rewrote SeeAlso::Identifier::ISBN
                  - added SeeAlso::Identifier::Factory
 0.56  2009-06-01 - added a simple command line client and updated XSL client
                  - fixed SeeAlso::Client

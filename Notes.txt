@@ -1,0 +1,102 @@
+__END__
+
+additional methods to the constructor: These are a
+method to check whether the identifier is valid or not, a method
+to create a normalized form of an identifier, and a method to
+create an index entry of an identifier.
+
+The concept is best explained with an example: The International
+Standard Serial Number (ISSN) is used to identify periodical
+publications. The format of the ISSN is an eight digit number,
+divided by a hyphen into two four-digit numbers. The last digit
+is a check digit which may be 0-9 or an X. In practise the hyphen
+may be missing and the check digit may also be provided lowercase.
+
+When used as an identifier, the different forms of an ISSN as
+used in the model of L<SeeAlso::Identifier> are:
+
+=over
+
+=item value
+
+The string value as provided, for instance 'ISSN 0002-936X',
+'0002-936x', '0002936x' (which all refer to the same ISSN in
+this example)
+
+=item normalized
+
+The canonical form whith hyphem and uppercase X: '0002-936X'
+
+=item valid
+
+The ISSN is checked by testing for invalid or missing
+characters and the check digit is computed.
+
+=back
+
+The constructor C<new> contains an example.
+
+If you provide a normalizing method C<n> then this method
+should behave like a normalizing is expected. That is for
+every possible input C<s> the condition C<n(s) == n(n(s))>
+must be true.
+
+=item valid
+
+A method to check whether the identifier is valid.
+
+=item normalized
+
+A method that returns a normalized representation of the identifier.
+
+=item indexed
+
+A method that returns an indexed representation of the identifier.
+
+=back
+
+The methods C<valid>, C<normalized>, and C<indexed> get the
+identifier's value as parameter when called.
+
+For instance the following code fragment creates an identifier
+that contains of letters only and is normalized to lowercase:
+
+  sub lcalpha {
+    my $v = shift;
+    $v =~ s/[^a-zA-Z]//g;
+    return lc($v);
+  }
+  $id = SeeAlso::Identifier->new(
+    'valid' => sub {
+      my $v = shift;
+      return $v =~ /^[a-zA-Z]+$/;
+    },
+    'normalized' => \&lcalpha
+  );
+  $id->value("AbC");
+
+=cut
+
+# examples: lowercase-string
+# Unicode NKFC-string
+
+$factory = new Identifier::Factory 
+    parse => sub { },
+    canonical => sub { },
+    hash => sub { }
+    class => 'PPN';
+
+or 
+
+$factory = new Identifier::Factory(
+ (   class => ) [
+        ... try each until one returns a non empty string
+    ]
+    parse => sub { },
+)
+
+$factory = new Identifier::Factory(
+    {
+        prefix => class map
+    }
+)

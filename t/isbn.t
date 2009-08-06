@@ -5,17 +5,37 @@ use strict;
 use Test::More qw(no_plan);
 
 use SeeAlso::Identifier::ISBN;
+use Business::ISBN;
 
 my $isbn = SeeAlso::Identifier::ISBN->new("978-0-596-52724-2");
-ok ( $isbn->valid );
+isa_ok( $isbn, 'SeeAlso::Identifier::ISBN' );
+ok ( $isbn, 'new ISBN' );
 
-$isbn->value('0596527241');
-ok( $isbn->value eq '978-0-596-52724-2', 'ISBN-10' );
+my @equal = (
+    'urn:nbn:9780596527242', 'URN:NBN:0596527241',
+    '978-0-596-52724-2', '0596527241',
+    Business::ISBN->new('0596527241')
+);
 
-$isbn->value('0-8044-2957-x');
-ok ( $isbn->value eq '978-0-8044-2957-3', "value" );
-is ( $isbn->normalized , 'urn:isbn:9780804429573', "URI (normalized)" );
-is ( $isbn->canonical , 'urn:isbn:9780804429573', "URI (canonical)" );
+for(my $i=0; $i<@equal; $i++) {
+    my $v = $equal[$i];
+    $isbn->value( $v );
+    ok( $isbn->valid, "valid value: $v" );
+    is( $isbn, SeeAlso::Identifier::ISBN->new( $equal[0] ), "equal: $v" );
+}
+
+my %values = (
+    '0-8044-2957-x' => 'urn:isbn:9780804429573'
+);
+
+foreach my $from (keys %values) {
+    $isbn = new SeeAlso::Identifier::ISBN( $from );
+    ok ( $isbn, "valid value: $from" );
+    is ( $isbn->normalized, $values{$from}, "URI (normalized)" );
+    is ( $isbn->canonical, $values{$from}, "URI (canonical)" );
+}
+
+is( SeeAlso::Identifier::ISBN->new('0-8044-2957-x')->value, '9780804429573', 'value' );
 
 # invalid ISBN-10
 $isbn = SeeAlso::Identifier::ISBN->new('1234567891');
@@ -38,14 +58,23 @@ ok( $isbn->valid, 'additional spaces' );
 $isbn->value('urn:isbn:9780596527242');
 ok( $isbn->valid , 'urn:isbn' );
 
+is( $isbn->hash, 59652724, 'get hash');
 
-is( $isbn->int32, 59652724, 'get int32');
+my @invalid = (-1, 2000000000, '', undef, "abc");
+foreach (@invalid) {
+    $isbn->hash($_);
+    ok( !$isbn, "invalid hash: " . (defined $_ ? $_ : 'undef') );
+}
 
-$isbn->int32(-1);
-ok( !$isbn->valid, "invalid int32" );
-
-$isbn->int32(2000000000);
-ok( !$isbn->valid, "invalid int32" );
-
-$isbn->int32(1999999999);
-ok( $isbn->valid, "valid int32" );
+my %valid = (
+    0 => 'urn:isbn:9780000000002',
+    999999999 => 'urn:isbn:9789999999991',
+    1999999999 => 'urn:isbn:9799999999990',
+    59652724 => 'urn:isbn:9780596527242'
+);
+foreach my $hash (keys %valid) {
+    $isbn->hash( $hash );
+    ok( $isbn, "valid hash: $hash" );
+    is( $hash, $isbn->hash, "valid hash: $hash" );
+    is( $isbn, $valid{$hash}, "hash $hash = $isbn" );
+}
