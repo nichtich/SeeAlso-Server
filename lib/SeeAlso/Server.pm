@@ -18,7 +18,7 @@ use SeeAlso::Response;
 use SeeAlso::Source;
 
 use base qw( Exporter );
-our $VERSION = "0.57";
+our $VERSION = "0.58";
 
 =head1 DESCRIPTION
 
@@ -144,7 +144,7 @@ sub new {
         clientbase => $params{clientbase} || undef,
         debug => $params{debug} || 0,
         formats => { 'seealso' => { type => 'text/javascript' } },
-        errors => undef,
+        errors => [],
     }, $class;
 
     $self->setExpires($params{expires}) if $params{expires};
@@ -228,7 +228,7 @@ sub query {
         }
     }
 
-    $self->{errors} = (); # clean error list
+    $self->{errors} = []; # clean error list
     my $response;
     my $status = 200;
 
@@ -427,11 +427,11 @@ last query. You can also add an error message but this is only useful interally.
 sub errors {
     my $self = shift;
     my $message = shift;
-    if (defined $message) {
+    if ( defined $message ) {
         chomp $message;
         push @{ $self->{errors} }, $message;
     }
-    return $self->{errors};
+    return @{ $self->{errors} };
 }
 
 =head2 openSearchDescription ( [ $source ] )

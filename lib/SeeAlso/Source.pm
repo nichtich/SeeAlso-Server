@@ -19,36 +19,109 @@ SeeAlso::Source - a source of OpenSearch Suggestions reponses
  ...
   $response = $source->query( $identifier );
 
-=head2 new ( [ $query_method ] [, %description ] ] )
+=head2 new ( [ $query_callback ] [, %description ] ] )
 
-Create a new source. You can provide a query method (mQuery). The query method
-gets a L<SeeAlso::Identifier> object and must return a L<SeeAlso::Response>.
-The optional @description parameter is passed to the description method. Instead
+Create a new source. You can provide a query method (query_callback). The query
+callback gets a L<SeeAlso::Identifier> object and must return a L<SeeAlso::Response>.
+The optional %description parameter is passed to the description method. Instead
 of providing a query method by parameter you can also derive a subclass and define
-the mQuery method.
+the 'query_callback' method. Caching can be enabled by caching => $cache.
 
 =cut
 
 sub new {
     my $class = shift;
-    my ($query_method, %description);
+    my ($query_callback, %description);
 
     if (@_ % 2) {
-        ($query_method, %description) = @_;
+        ($query_callback, %description) = @_;
     } else {
         %description = @_;
     }
 
-    croak("parameter to SeeAlso::Source->new must be a method")
-        if defined $query_method and ref($query_method) ne "CODE";
+    croak('parameter to SeeAlso::Source->new must be a method')
+        if defined $query_callback and ref($query_callback) ne "CODE";
 
     my $self = bless {
-        mQuery => $query_method || undef
+        query_callback => $query_callback
     }, $class;
+
+    if ( $description{cache} ) {
+        $self->cache( $description{cache} );
+        delete $description{cache};
+    }
 
     $self->description( %description ) if %description;
 
     return $self;
+}
+
+=head2 cache ( [ $cache ] )
+
+Get or set a cache for this source. The parameter must be a L<Cache> object
+or undef - the latter disables caching and is the default. Returns the cache 
+object or undef.
+
+=cut
+
+sub cache {
+    my $self = shift;
+    return $self->{cache} unless @_;
+    my $cache = shift;
+
+    croak 'Cache must be a Cache object' 
+        unless (UNIVERSAL::isa( $cache, 'Cache' ) or not defined $cache);
+
+    return $self->{cache} = $cache;
+}
+
+=head2 query ( $identifier [, force => 1 ] )
+
+Given an identifier (either a L<SeeAlso::Identifier> object or just
+a plain string) returns a L<SeeAlso::Response> object by calling the
+query callback method or fetching the response from the cache unless
+the $force parameter is specified.
+
+=cut
+
+sub query {
+    my ($self, $identifier, %params) = @_;
+
+    $identifier = SeeAlso::Identifier->new( $identifier )
+        unless UNIVERSAL::isa( $identifier, 'SeeAlso::Identifier' );
+
+    my $key = $identifier->hash;
+  
+    if ( $self->{cache} and not $params{force} ) {
+        my $response = $self->{cache}->thaw( $key );
+        return $response if defined $response;
+    }
+
+    my $response = $self->query_callback( $identifier );
+
+    $response = SeeAlso::Response->new( $identifier )
+        unless UNIVERSAL::isa( $response, 'SeeAlso::Response' );
+        
+    $self->{cache}->freeze( $key, $response )
+        if $self->{cache};
+
+    return $response;
+}
+
+=head2 query_callback ( $identifier )
+
+Internal core method that maps a L<SeeAlso::Identifier> to a
+L<SeeAlso::Response>. Clients should not call this metod but the
+'query' method that includes type-checking and caching. Subclasses
+should overwrite this method instead of the 'query' method. 
+
+=cut
+
+sub query_callback {
+    my ($self, $identifier) = @_;
+    return $self->{query_callback} ?
+           $self->{query_callback}->( $identifier ) :
+           SeeAlso::Response->new( $identifier );
 }
 
 =head2 description ( [ $key ] | $key => $value, $key => $value, ... )
@@ -142,31 +215,6 @@ sub about {
     $url = "" unless defined $url;
 
     return ($name, $description, $url); 
-}
-
-=head2 query ( $identifier )
-
-Given an identifier (either a L<SeeAlso::Identifier> object or just a
-plain string) returns a L<SeeAlso::Response> object by calling the
-query method.
-
-=cut
-
-sub query {
-    my $self = shift;
-    my $identifier = shift;
-    my $response;
-
-    $identifier = SeeAlso::Identifier->new($identifier)
-        unless UNIVERSAL::isa($identifier,"SeeAlso::Identifier");
-
-    if ( $self->{mQuery} ) {
-        $response = &{$self->{mQuery}}($identifier);
-    } else {
-        $response = $self->mQuery($identifier);
-    }
-
-    return $response;
 }
 
 1;

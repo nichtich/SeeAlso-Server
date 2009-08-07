@@ -2,7 +2,7 @@
 
 use strict;
 
-use Test::More tests => 18;
+use Test::More qw(no_plan);
 use SeeAlso::Source;
 use SeeAlso::Identifier;
 
@@ -11,21 +11,22 @@ use Data::Dumper;
 my ($source, $response);
 
 $source = SeeAlso::Source->new();
-ok ( ! %{ $source->description() }, "no description" );
-ok ( ! defined $source->description("ShortName") , "no description (2)" );
+ok( ! %{ $source->description() }, "no description" );
+ok( ! defined $source->description("ShortName") , "no description (2)" );
 
 $source->description("ShortName","Foo");
-ok ( $source->description("ShortName") eq "Foo", "set description" );
-ok ( ! defined $source->description("XXX") , "not a description value" );
+is( $source->description("ShortName") , "Foo", "set description" );
+ok( ! defined $source->description("XXX") , "not a description value" );
 $source->description("LongName","Foobar");
-ok ( $source->description("LongName") eq "Foobar", "set description (2)" );
+is( $source->description("LongName"), "Foobar", "set description (2)" );
 $source->description("ShortName","doz");
-ok ( $source->description("ShortName") eq "doz", "set description (3)" );
+is( $source->description("ShortName"), "doz", "set description (3)" );
 
-$source = SeeAlso::Source->new();
+$source = SeeAlso::Source->new;
 $source->description( "ShortName" => "X", "LongName" => "Y" );
-ok ( $source->description("ShortName") eq "X" &&
-     $source->description("LongName") eq "Y", "set description (4)" );
+is( $source->description("ShortName"), "X", "set description (4)" );
+is( $source->description("LongName"), "Y", "set description (5)" );
+
 my $about = [ $source->about() ];
 is_deeply( $about, ["X","",""], "about (1)" );
 
@@ -62,4 +63,24 @@ my $descr = $source->description();
 is( $descr->{ShortName}, "Test", "ShortName (2)");
 is( $descr->{LongName}, "Test source", "LongName (2)");
 
-
+### Caching
+my $cache = eval { use Cache::Memory; Cache::Memory->new; };
+if ($cache) {
+    my $value = 1;
+    my $query_method = sub {
+        my $id = shift;
+        my $r = SeeAlso::Response->new( $id );
+        $r->add( $value );
+        $value++;
+        return $r;
+    };
+    $source = new SeeAlso::Source( $query_method, cache => $cache );
+    is( $source->query('0'), '["0",["1"],[""],[""]]', 'cache (1)' );
+    is( $source->query('0'), '["0",["1"],[""],[""]]', 'cache (2)' );
+    is( $source->query('0', force => 1 ), '["0",["2"],[""],[""]]', 'cache (3)' );
+    is( $source->query('0'), '["0",["2"],[""],[""]]', 'cache (4)' );
+    $cache->clear;
+    is( $source->query('0'), '["0",["3"],[""],[""]]', 'cache (5)' );
+} else {
+    diag('Test of caching skipped, please install Cache::Memory!');
+}

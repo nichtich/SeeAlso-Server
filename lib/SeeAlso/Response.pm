@@ -10,11 +10,16 @@ SeeAlso::Response - SeeAlso Simple Response
 =cut
 
 use JSON::XS qw(encode_json);
-use Text::CSV;
 use Data::Validate::URI qw(is_uri);
+use Text::CSV;
 use Carp;
 
-our $VERSION = "0.57";
+our $VERSION = '0.58';
+
+use overload ( 
+    '""'   => sub { $_[0]->as_string },
+    'bool' => sub { $_[0]->size or $_[0]->query }
+);
 
 =head1 DESCRIPTION
 
@@ -41,13 +46,12 @@ sub new {
 
     my $class = ref($this) || $this;
     my $self = bless {
-        'query' => "",
         'labels' => [],
         'descriptions' => [],
         'urls' => []
     }, $class;
 
-    $self->set(@_);
+    $self->set( @_ );
 
     return $self;
 }
@@ -133,7 +137,7 @@ sub add {
     return $self;
 }
 
-=head2 size ( )
+=head2 size
 
 Get the number of entries in this response.
 
@@ -164,21 +168,20 @@ sub get {
     return ($label, $description, $url);
 }
 
-=head2 query ( [ $query ] )
+=head2 query ( [ $identifier ] )
 
-Get and/or set query parameter. If the query is a L<SeeAlso::Identifier>
-it will be normalized, otherwise it will be converted to a string.
+Get and/or set query parameter which must be or will converted to a 
+L<SeeAlso::Identifier> object.
 
 =cut
 
 sub query {
     my $self = shift;
-    if (@_) {
+    if ( scalar @_ ) {
         my $query = shift;
-        if (UNIVERSAL::isa( $query, 'SeeAlso::Identifier' )) {
-            $query = $query->canonical; 
-        }
-        $self->{query} = defined $query ? "$query" : "";
+        $query = SeeAlso::Identifier->new( $query )
+            unless UNIVERSAL::isa( $query, 'SeeAlso::Identifier' );
+        $self->{query} = $query;
     }
     return $self->{query};
 }
@@ -199,13 +202,26 @@ sub toJSON {
     my ($self, $callback, $json) = @_;
 
     my $response = [
-        $self->{query},
+        $self->{query}->as_string,
         $self->{labels},
         $self->{descriptions},
         $self->{urls}
     ];
 
     return _JSON( $response, $callback, $json );
+}
+
+=head2 as_string 
+
+Returns a string representation of the response with is the default JSON 
+form as returned by the toJSON method. Responses are also converted to 
+plain strings automatically by overloading. This means you can use responses
+as plain strings in most Perl constructs.
+
+=cut
+
+sub as_string {
+    return $_[0]->toJSON;
 }
 
 =head2 fromJSON ( $jsonstring )
@@ -227,10 +243,10 @@ sub fromJSON {
         unless ref($json) eq "ARRAY" and @{$json} == 4;
 
     if (ref($self)) { # call as method
-        $self->set(@{$json});
+        $self->set( @{$json} );
         return $self;
     } else { # call as constructor
-        return SeeAlso::Response->new(@{$json});
+        return SeeAlso::Response->new( @{$json} );
     }
 }
 
@@ -262,8 +278,8 @@ Parts of the result that cannot be interpreted as valid RDF are omitted.
 
 sub toRDF ( ) {
     my ($self) = @_;
-    my $subject = $self->query();
-    return { } unless is_uri($subject);
+    my $subject = $self->query;
+    return { } unless is_uri( $subject->as_string );
     my $values = { };
 
     for(my $i=0; $i<$self->size(); $i++) {

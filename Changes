@@ -1,3 +1,5 @@
+0.58  2009-08-.. - Added support of Caching
+                 - some refactoring
 0.57  2009-08-06 - rewrote SeeAlso::Identifier
                  - added SeeAlso::Identifier::Factory
                  - rewrote SeeAlso::Identifier::ISBN

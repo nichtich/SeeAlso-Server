@@ -21,6 +21,7 @@ use ExtUtils::MakeMaker;
         'Getopt::Long' => '0',
         'Pod::Usage' => '0',
         'Text::CSV' => '0',
+        'Cache' => '2.04',
         'Test::Exception' => '0.27',
     },
     dist            => {

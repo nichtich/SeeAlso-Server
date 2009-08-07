@@ -3,11 +3,9 @@ Features, that are planned to be implemented before 1.0 release include:
 == Next ==
 - add example of wrapper SeeAlso simple to SeeAlso full (via Client)
 - update ThingISBN and make it an example script (not a class)
-- Add showservices.xsl (multiple) in addition to showservice.xsl (for collections)
 - Add multiple example parameters (see pnd2gso)
 - Add description of multiple formats in OSDD
 - Print errors to error logfile in SeeAlso::Server
-- Caching is needed!
 - add and describe minimal server example (examples/server.pl)
 - add Wikipedia2ISBN example (!)
 - add RDF as export format
@@ -15,6 +13,7 @@ Features, that are planned to be implemented before 1.0 release include:
     returns description() as response or list of members
 - Finish SeeAlso::Client (including tests and examples, OSDD...)
 -- Parse OSDD for SeeAlso::Client
+- Add showservices.xsl (multiple) in addition to showservice.xsl (for collections)
 - fix: --(Thomas Berger):
 
 openSearchDescription darf nicht callback={callback} enthalten,
@@ -54,7 +53,6 @@ xmlns:seealso="http://ws.gbv.de/seealso/schema/
 - Support WADL and WSDL in addition to OpenSearch Description
 - Run as a real server (on a port of your choice) : better performance?
 - Add SeeAlso::Source::Union and example (with: use threads;)
-- Add SeeAlso::Source::Cache and example (maybe with DBI)
 - Add an example of a multilangual source with equal identifiers: LibraryThing?
 - More Unicode (UTF-8) testing and hints
 - restrict access of cgi server by referrer, IP, etc. (better in .htaccess ?)
