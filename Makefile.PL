@@ -15,6 +15,7 @@ use ExtUtils::MakeMaker;
         'Carp' => '1.01',
         'URI' => '1.35',
         'DBI' => '1.54',
+		'DBI::Const::GetInfoType' => '2.0',
         'Data::Validate::URI' => '0.05', 
         'Date::Parse' => '2.27',
         'Business::ISBN' => '2.02',
@@ -23,6 +24,7 @@ use ExtUtils::MakeMaker;
         'Text::CSV' => '0',
         'Cache' => '2.04',
         'Test::Exception' => '0.27',
+		'LWP::Simple'	=> '0'
     },
     dist            => {
         COMPRESS => 'gzip -9f',

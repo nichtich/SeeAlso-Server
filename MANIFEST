@@ -14,15 +14,12 @@ lib/SeeAlso/Identifier/GND.pm
 lib/SeeAlso/Identifier/ISIL.pm
 lib/SeeAlso/Response.pm
 lib/SeeAlso/Source.pm
-lib/SeeAlso/Source/DBI.pm
-lib/SeeAlso/Source/ThingISBN.pm
+lib/SeeAlso/DBI.pm
 lib/SeeAlso/Logger.pm
 
 examples/README
 examples/cgi-test.pl
 examples/yahoo.pl
-examples/i2lt.pl
-examples/i2ltconf.pl
 
 t/response.t
 t/pod.t
@@ -38,12 +35,11 @@ t/client.t
 t/isil.t
 t/isbn.t
 t/source.t
-t/thingisbn.t
-t/dbisource.t
+t/dbi.t
 t/critique.t
+t/cache.t
 
 client/showservice.xsl
 client/seealso.js 
 client/xmlverbatim.xsl
 client/seealso
-

@@ -60,7 +60,6 @@ The method returns '' or the valid, normalized ISIL.
 =cut
 
 sub parse {
-    my $self = shift;
     my $value = shift;
 
     if (defined $value) {
@@ -89,25 +88,6 @@ sub parse {
 }
 
 
-=head2 prefix ( )
-
-Returns the ISIL prefix.
-
-=cut
-
-sub prefix {
-    return ${$_[0]} =~ /^([A-Z0-9]+)-(.+)$/ ? $1 : '';
-}
-
-=head2 local ( )
-
-Returns the ISIL local library identifier.
-
-=cut
-
-sub local {
-    return ${$_[0]} =~ /^([A-Z0-9]+)-(.+)$/ ? $2 : '';
-}
 
 =head2 canonical ( )
 
@@ -130,6 +110,26 @@ uppercase string because two ISIL must not differ only in case.
 
 sub hash {
     return ${$_[0]} eq '' ? '' : uc(${$_[0]});
+}
+
+=head2 prefix
+
+Returns the ISIL prefix.
+
+=cut
+
+sub prefix {
+    return ${$_[0]} =~ /^([A-Z0-9]+)-(.+)$/ ? $1 : '';
+}
+
+=head2 local
+
+Returns the local library identifier.
+
+=cut
+
+sub local {
+    return ${$_[0]} =~ /^([A-Z0-9]+)-(.+)$/ ? $2 : '';
 }
 
 =head1 UTILITY FUNCTIONS

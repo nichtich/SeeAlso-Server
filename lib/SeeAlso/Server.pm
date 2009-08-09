@@ -17,8 +17,7 @@ use SeeAlso::Identifier;
 use SeeAlso::Response;
 use SeeAlso::Source;
 
-use base qw( Exporter );
-our $VERSION = "0.58";
+our $VERSION = '0.571';
 
 =head1 DESCRIPTION
 

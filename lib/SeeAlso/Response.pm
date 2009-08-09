@@ -12,6 +12,7 @@ SeeAlso::Response - SeeAlso Simple Response
 use JSON::XS qw(encode_json);
 use Data::Validate::URI qw(is_uri);
 use Text::CSV;
+use SeeAlso::Identifier;
 use Carp;
 
 our $VERSION = '0.58';
@@ -71,7 +72,7 @@ sub set {
     $self->query( $query );
 
     if (defined $labels) {
-        croak ("bad arguments to SeeAlso::Response->new")
+        croak ("four parameters expected in SeeAlso::Response->new")
             unless ref($labels) eq "ARRAY"
                 and defined $descriptions and ref($descriptions) eq "ARRAY"
                 and defined $urls and ref($urls) eq "ARRAY";
@@ -160,7 +161,7 @@ Get a specific triple of label, description, and url
 sub get {
     my ($self, $index) = @_;
     return unless defined $index and $index >= 0 and $index < $self->size();
-    
+
     my $label =  $self->{labels}->[$index];
     my $description = $self->{descriptions}->[$index];
     my $url =         $self->{urls}->[$index];
@@ -185,6 +186,14 @@ sub query {
     }
     return $self->{query};
 }
+
+=head2 identifier
+
+Alias for the query method.
+
+=cut
+
+*identifier = *query;
 
 =head2 toJSON ( [ $callback [, $json ] ] )
 

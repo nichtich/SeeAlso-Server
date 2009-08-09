@@ -80,10 +80,13 @@ use places like pg_service.conf (Postgres) or my.cfg (MySQL).
 =cut
 
 sub new {
-    my ($class, %options) = @_;
+    my ($class, %params) = @_;
 
     my $self = bless {
     }, $class;
+
+    # DBI::db
+    # 
 
     return $self;
 }

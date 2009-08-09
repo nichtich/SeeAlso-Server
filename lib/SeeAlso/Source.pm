@@ -4,59 +4,77 @@ use strict;
 use Carp qw(croak);
 use SeeAlso::Response;
 
-our $VERSION = "0.56";
+our $VERSION = '0.562';
 
 =head1 NAME
 
-SeeAlso::Source - a source of OpenSearch Suggestions reponses
+SeeAlso::Source - Provides OpenSearch Suggestions reponses
 
 =head1 SYNOPSIS
 
-  my $source = SeeAlso::Source->new();
-  my $source = SeeAlso::Source->new( sub { ... } );
+  $source = SeeAlso::Source->new;
+  $source = SeeAlso::Source->new( sub { ... } );
+  $source = SeeAlso::Source->new( QueryMethod => sub { ... } );
   ...
-  $source->description( "key" => "value" ... );
- ...
+  $source->description( "ShortName" => "My source" ... );
+  ...
   $response = $source->query( $identifier );
 
-=head2 new ( [ $query_callback ] [, %description ] ] )
+=head2 new ( [ $callback ] [ $cache ] [ %parameters ] )
 
-Create a new source. You can provide a query method (query_callback). The query
-callback gets a L<SeeAlso::Identifier> object and must return a L<SeeAlso::Response>.
-The optional %description parameter is passed to the description method. Instead
-of providing a query method by parameter you can also derive a subclass and define
-the 'query_callback' method. Caching can be enabled by caching => $cache.
+Create a new source. If the first parameter is a code reference or another
+L<SeeAlso::Source> parameter, it is used as C<callback> parameter. If the
+first or second parameter is a L<Cache> object, it is used as C<cache>
+parameter. Other parameters are passed to the C<description> method.
 
 =cut
 
 sub new {
     my $class = shift;
-    my ($query_callback, %description);
+    my ($callback, $cache);
 
-    if (@_ % 2) {
-        ($query_callback, %description) = @_;
-    } else {
-        %description = @_;
-    }
+    $callback = shift
+        if ref($_[0]) eq 'CODE' or UNIVERSAL::isa($_[0],'SeeAlso::Source');
+    $cache = shift if UNIVERSAL::isa($_[0], 'Cache');
 
-    croak('parameter to SeeAlso::Source->new must be a method')
-        if defined $query_callback and ref($query_callback) ne "CODE";
+    my (%params) = @_;
+    my $self = bless { }, $class;
 
-    my $self = bless {
-        query_callback => $query_callback
-    }, $class;
+    $callback = $params{callback} unless defined $callback;
+    $cache = $params{cache} unless defined $cache;
 
-    if ( $description{cache} ) {
-        $self->cache( $description{cache} );
-        delete $description{cache};
-    }
-
-    $self->description( %description ) if %description;
+    $self->callback( $callback ) if $callback;
+    $self->cache( $cache ) if $cache;
+    $self->description( %params ) if %params;
 
     return $self;
 }
 
-=head2 cache ( [ $cache ] )
+=head2 callback ( [ $code | $source | undef ] )
+
+Get or set a callback method or callback source.
+
+=cut
+
+sub callback {
+    my $self = shift;
+
+    if ( scalar @_ ) {
+        my $callback = $_[0];
+
+        croak('callback parameter must be a code reference or SeeAlso::Source')
+            if defined $callback and ref( $callback ) ne 'CODE'
+               and not UNIVERSAL::isa( $callback, 'SeeAlso::Source' );
+
+        $self->{callback} = $callback;
+    }
+
+    return undef unless defined $self->{callback};
+    return $self->{callback} if ref($self->{callback}) eq 'CODE';
+    return sub { $self->{callback}->query( $_[0] ) };
+}
+
+=head2 cache ( [ $cache | undef ] )
 
 Get or set a cache for this source. The parameter must be a L<Cache> object
 or undef - the latter disables caching and is the default. Returns the cache 
@@ -66,13 +84,16 @@ object or undef.
 
 sub cache {
     my $self = shift;
-    return $self->{cache} unless @_;
-    my $cache = shift;
 
-    croak 'Cache must be a Cache object' 
-        unless (UNIVERSAL::isa( $cache, 'Cache' ) or not defined $cache);
+    if ( scalar @_ ) {
+        croak 'Cache must be a Cache object' 
+            unless not defined $_[0]
+                   or UNIVERSAL::isa( $_[0], 'Cache' )
+                   or UNIVERSAL::isa( $_[0], 'SeeAlso::Source' );
+        $self->{cache} = $_[0];
+    }
 
-    return $self->{cache} = $cache;
+    return $self->{cache};
 }
 
 =head2 query ( $identifier [, force => 1 ] )
@@ -91,19 +112,29 @@ sub query {
         unless UNIVERSAL::isa( $identifier, 'SeeAlso::Identifier' );
 
     my $key = $identifier->hash;
-  
+
     if ( $self->{cache} and not $params{force} ) {
-        my $response = $self->{cache}->thaw( $key );
-        return $response if defined $response;
+        if ( UNIVERSAL::isa( $self->{cache}, 'Cache' ) ) {
+            my $response = $self->{cache}->thaw( $key );
+            return $response if defined $response;
+        } else {
+            my $response = $self->{cache}->query( $identifier );
+            return $response if $response->size;
+        }
     }
 
     my $response = $self->query_callback( $identifier );
 
     $response = SeeAlso::Response->new( $identifier )
         unless UNIVERSAL::isa( $response, 'SeeAlso::Response' );
-        
-    $self->{cache}->freeze( $key, $response )
-        if $self->{cache};
+
+    if ( $self->{cache} ) {
+        if ( UNIVERSAL::isa( $self->{cache}, 'Cache' ) ) {
+            $self->{cache}->freeze( $key, $response );
+        } else {
+            $self->{cache}->store( $response );
+        }
+    }
 
     return $response;
 }
@@ -113,14 +144,14 @@ sub query {
 Internal core method that maps a L<SeeAlso::Identifier> to a
 L<SeeAlso::Response>. Clients should not call this metod but the
 'query' method that includes type-checking and caching. Subclasses
-should overwrite this method instead of the 'query' method. 
+should overwrite this method instead of the 'query' method.
 
 =cut
 
 sub query_callback {
     my ($self, $identifier) = @_;
-    return $self->{query_callback} ?
-           $self->{query_callback}->( $identifier ) :
+    return $self->{callback} ?
+           $self->callback->( $identifier ) :
            SeeAlso::Response->new( $identifier );
 }
 

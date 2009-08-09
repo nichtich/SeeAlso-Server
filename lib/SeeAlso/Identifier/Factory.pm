@@ -116,8 +116,7 @@ sub makeclass {
     push @out, '  our @ISA = qw(SeeAlso::Identifier);';
     if ($parse) {
         push @out, '  sub parse {';
-        push @out, '    my ($self, $value) = @_;';
-        push @out, '    $value = $parse->( $value );';
+        push @out, '    my $value = $parse->( shift );';
         push @out, '    return defined $value ? "$value" : "";';
         push @out, '  }';
     }

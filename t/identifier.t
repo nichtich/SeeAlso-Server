@@ -40,7 +40,6 @@ ok( SeeAlso::Identifier->new('A') eq SeeAlso::Identifier->new('A'), 'eq (overloa
 ok( SeeAlso::Identifier->new('A') != SeeAlso::Identifier->new('B'), '!= (overload)' );
 ok( SeeAlso::Identifier->new('A') ne SeeAlso::Identifier->new('B'), 'ne (overload)' );
 
-is( $id->parse('abc'), 'abc', 'parse as method' );
 is( SeeAlso::Identifier::parse('xyz'), 'xyz', 'parse as function' );
 is( SeeAlso::Identifier::parse( undef ), '', 'parse as function (with undef)' );
 
@@ -52,7 +51,7 @@ is( SeeAlso::Identifier::parse( undef ), '', 'parse as function (with undef)' );
     use base qw(SeeAlso::Identifier);
 
     sub parse {
-        my ($self, $value) = @_;
+        my $value = shift;
         return $value =~ /^(gvk:ppn:)?([0-9]*[0-9x])$/i ? lc($2) : '';
     }
 

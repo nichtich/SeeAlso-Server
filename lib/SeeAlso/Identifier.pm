@@ -5,24 +5,137 @@ use warnings;
 
 =head1 NAME
 
-SeeAlso::Identifier - An identifier passed to a SeeAlso-Server
+SeeAlso::Identifier - Controlled identifier that can be normalized and hashed
 
 =cut
 
-use Carp;
-our $VERSION = '0.46';
+our $VERSION = '0.48';
 
 =head1 DESCRIPTION
 
-The query to a SeeAlso (and other unAPI) server is just an identifier.
-By default an identifier is just a string but identifiers may also have
-special properties like checksums and canonical forms.
+SeeAlso::Identifier models identifiers that can be represent in three forms:
+literal (plain string), canonical (normalized) and condensed (hashed). Every
+identifier is a string value with the empty string as default. Particular kinds
+of identifiers can be created by deriving a subclass of SeeAlso::Identifier or
+with a L<SeeAlso::Identifier::Factory>.
 
-B<SeeAlso::Identifier> models identifiers that are passed to and
-processed by a L<SeeAlso::Server> and a L<SeeAlso::Source>. To
-model more complex identifiers you can either derive a subclass of
-SeeAlso::Identifier or create a new identifier class with
-L<SeeAlso::Identifier::Factory>.
+The design of SeeAlso::Identifier is build upon the assumption that identifiers
+should not encode "semantic" or "intelligent" information but provide a clear
+mapping to entities.
+
+=head1 SYNOPSIS
+
+  my $id = new SeeAlso::Identifier("abc");
+
+  if ( $id ) {   # same as if ( $id->valid )
+      $id->value("xyz");  # set a new value
+      $id->set("xyz");    # set a new value
+  }
+
+  $str = $id->as_string;  # "xyz"
+  $str = "$id";           # "xyz"
+
+  # get the plain literal value
+  $str = $id->value;
+  $str = $id->get;
+
+  # get the canonical hashed value
+  $str = $id->canonical;
+  $str = $id->normalized;
+
+  # cat the condensed hash value
+  $str = $id->hash;
+  $str = $id->indexed;
+  $str = $id->condensed;
+
+  $parsed = SeeAlso::Identifier::parse("XYZ");
+  $parsed = $id->parse("XYZ");
+
+=head1 DEFINING PARTICULAR IDENTIFIER TYPES
+
+SeeAlso::Identifier is just a base class for special identifier types. For
+particular kinds of identifiers you should write a subclass are create it
+with L<SeeAlso::Identifier::Factory>. Defining a particular type of identifier
+is limited to overriding one or more of the following methods and functions:
+
+=over
+
+=item * parse
+
+=item * canonical
+
+=item * hash
+
+=back
+
+For most cases one or more of this methods is enough to define the whole
+identifier logic. In some cases you may also want to override one or more
+of the following methods:
+
+=over
+
+=item * as_string
+
+=item * valid
+
+=item * cmp
+
+=back
+
+The other methods, including the constructor C<new> should not be redefined.
+
+=head2 EXAMPLES
+
+If there already is a module at CPAN: Reuse it!
+Otherwise: implement logic
+
+=head3 Library of Congress Control Number (LCCN)
+
+See also <Business::LCCN>.
+
+  package LCCN;
+
+  use base qw(SeeAlso::Identifier);
+
+  # TODO
+        prefix => "info:lccn/",
+        parse => sub { "$1$2" if $_[0] =~ /^(n) ?([0-9]+)$/ },
+        indexed => sub { "$1 $2" if $_[0] =~ /^(n) ?([0-9]+)$/ },
+        # => LC|n 50034328 
+
+  sub parse {
+      my $value = shift;
+
+      $value =~ s/^\s+|\s+$//g; # trim whitespace
+
+      # permalink or info-URI form or LC|...
+      $value =~ s{^(http://lccn.loc.gov/|info:lccn/|LC\|)}{};
+
+      # normalize documented at http://www.loc.gov/marc/lccn-namespace.html
+      # and http://lccn.loc.gov/lccnperm-faq.html
+
+        # TODO: this is from Business::LCCN
+      my $string = join '', $self->prefix, $self->year_encoded, $self->serial;
+       $string =~ s/[\s-]//g;
+  }
+
+  sub canonical { # append URI namespace
+      my $lccn = shift;
+      return 'info:lccn:/' . $lccn->value;
+  }
+
+  sub hash { # remove 'n'
+      my $lccn = shift;
+      return $lccn ? substr($lccn,1) : '';
+  }
+
+=head2 VIAF Identifier
+
+The Virtual International Authority File (VIAF) ...
+
+        prefix => "http://viaf.org/",
+        parse => sub { $1 if $_[0] =~ /^([0-9]+)$/; },
+        indexed => sub { $_[0]; } # TODO: this does not work!
 
 =cut
 
@@ -34,13 +147,37 @@ use overload (
     fallback => 1
 );
 
+=head1 FUNCTIONS
+
+=head2 parse ( $value )
+
+Parses a value to an identifier value and returns the value as string.
+This function called whenever you set the value of an identifier. In
+SeeAlso::Identifier it just stringifies values (undef becomes the empty
+string) but particular identifier types should do more checking. A typical
+implementation of a particular parse function uses this template:
+
+    sub parse {
+        my $value = shift;
+        $value = do_some_filter_and_checking( $value );
+        return defined $value ? "$value" : "";
+    }';
+
+=cut
+
+sub parse {
+    my $value = shift;
+    return defined $value ? "$value" : "";
+}
+
 =head1 METHODS
 
 =head2 new ( [ $value ] )
 
-Creates a new identifier. A value will be used to set the identifier value
-with the 'value' method with C<undef> as default value. This implies that
-the 'parse' method is called for every new identifier.
+Create a new identifier. In initialization the identifier value is set using
+the C<value> method with C<undef> as default value. This implieas a call of
+the C<parse> method for every new identifier. You should not override this
+constructor methods in subclasses of SeeAlso::Identifier.
 
 =cut
 
@@ -57,15 +194,16 @@ sub new {
 =head2 value ( [ $value ] )
 
 Get (and optionally set) the value of this identifier. If you provide a value
-(including undef), it will be passed to the 'parse' function and stringified 
-afterwards to be used as the new identifier value.
+(including undef), it will be passed to the C<parse> function and stringified
+to be used as the new identifier value. You should not override this methods
+in subclasses of SeeAlso::Identifier but the C<parse> function instead.
 
 =cut
 
 sub value {
     my $self = shift;
     if ( scalar @_ ) {
-        my $value = $self->parse( $_[0] );
+        my $value = eval ref($self).'::parse($_[0])';
         $$self = defined $value ? "$value" : "";
     }
     return $$self;
@@ -84,28 +222,6 @@ sub canonical {
     return ${$_[0]};
 }
 
-=head2 normalized
-
-Alias for the 'canonical' method. Do not override this method but 'canonical'!
-
-=cut
-
-sub normalized { 
-    return $_[0]->canonical;
-}
-
-=head2 as_string
-
-Returns an identifier object as plain string which is the canonical form.
-Identifiers are also converted to plain strings automatically by overloading.
-This means you can use identifiers as plain strings in most Perl constructs.
-
-=cut
-
-sub as_string {
-    return $_[0]->canonical;
-}
-
 =head2 hash
 
 Return a compact form of this identifier that can be used for indexing. 
@@ -117,16 +233,6 @@ of the identifier.
 
 sub hash {
     return $_[0]->canonical;
-}
-
-=head2 indexed
-
-Alias for the 'hash' method. Do not override this method but 'hash'!
-
-=cut
-
-sub indexed { 
-    return $_[0]->hash; 
 }
 
 =head2 valid
@@ -143,35 +249,10 @@ sub valid {
     return ${$_[0]} ne '';
 }
 
-=head2 parse ( $value )
-
-Parses a value to an identifier value of this class. This method should always
-return a string - but the return value is stringified anyway. In most cases 
-this and/or the 'canonical' method are the only methods to override in a
-subclass of SeeAlso::Identifier.
-
-This method can also be used as function. To allow the same in you subclasses' implementation, use the template:
-
-sub parse {
-    my $value = shift;
-    $value = shift if ref($value) and scalar @_;
-
-    # ... further processing of $value (validating and cleaning) ...
-
-    return defined $value ? "$value" : "";
-}
-
-=cut
-
-sub parse {
-    my $value = shift;
-    $value = shift if ref($value) and scalar @_;
-    return defined $value ? "$value" : "";
-}
 
 =head2 cmp ( $identifier )
 
-Compare two identifiers. If the supplied value is not an identifier, it
+Compares two identifiers. If the supplied value is not an identifier, it
 will be converted first. By default the canonical values are compared.
 
 =cut
@@ -185,11 +266,69 @@ sub cmp {
     return $self->canonical cmp $second->canonical;
 }
 
+=head2 as_string
+
+Return an identifier object as plain string which is the canonical form.
+Identifiers are also converted to plain strings automatically by overloading.
+This means you can use identifiers as plain strings in most Perl constructs.
+
+=cut
+
+sub as_string {
+    return $_[0]->canonical;
+}
+
+=head1 ALIAS METHODS
+
+The following method names can be used as alias for the core method names.
+When you derive a subclass, you should not override this methods but the
+corresponding core methods.
+
+=over
+
+=item normalized
+
+Alias for C<canonical>
+
+=item condensed
+
+Alias for C<hash>
+
+=item indexed
+
+Alias for C<hash>
+
+=item get
+
+Alias for C<value> but without parameter.
+
+=item set
+
+Alias for C<value> with C<undef> as default value.
+
+=back
+
+=cut
+
+sub normalized { return $_[0]->canonical; }
+
+sub indexed { return $_[0]->hash; }
+
+sub condensed { return $_[0]->hash; }
+
+sub get { return $_[0]->value; }
+
+sub set {
+    my $self = shift;
+    return $self->value( scalar @_ ? @_ : undef );
+}
+
 1;
 
-=head2 SEE ALSO
+=head1 SEE ALSO
 
-See L<URI> for the more specific Uniform Resource Identifiers.
+See L<URI> for an implementation of Uniform Resource Identifiers which
+is more specific than SeeAlso::Identifier.
 
 =head1 AUTHOR
 
@@ -197,7 +336,7 @@ Jakob Voss C<< <jakob.voss@gbv.de> >>
 
 =head1 LICENSE
 
-Copyright (C) 2009 by Verbundzentrale Goettingen (VZG) and Jakob Voss
+Copyright (C) 2009 by Jakob Voss
 
 This library is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself, either Perl version 5.8.8 or, at

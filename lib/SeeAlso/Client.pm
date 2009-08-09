@@ -2,7 +2,6 @@ package SeeAlso::Client;
 
 use strict;
 use warnings;
-use utf8;
 
 =head1 NAME
 
