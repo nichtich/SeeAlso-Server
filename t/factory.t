@@ -84,8 +84,13 @@ is( $id, 'abc', 'dynamically created identifier type: canonical' );
 is( $id->hash, 'AB', 'dynamically created identifier type: hash' );
 
 
-
-# ...
+$id = SeeAlso::Identifier::Factory->new(
+    type => 'GVKPPN', 
+    parse => sub { lc($_[0]) if $_[0] =~ /^(gvk:ppn:)?([0-9]*[0-9x])$/i },
+    canonical => sub { 'gvk:ppn:'.$_[0] if $_[0] },
+    hash => sub { substr($_[0],0,length($_[0])-1) if $_[0] } 
+)->create('123');
+isa_ok( $id, 'GVKPPN' );
 
 __END__
 

@@ -15,7 +15,6 @@ use ExtUtils::MakeMaker;
         'Carp' => '1.01',
         'URI' => '1.35',
         'DBI' => '1.54',
-		'DBI::Const::GetInfoType' => '2.0',
         'Data::Validate::URI' => '0.05', 
         'Date::Parse' => '2.27',
         'Business::ISBN' => '2.02',
