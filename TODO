@@ -1,7 +1,10 @@
 Features, that are planned to be implemented before 1.0 release include:
 
 == Next ==
-- rewrite/fix DBI!
+- rewrite/fix DBI and include tests
+-- read configuration from file (constructor)
+-- bulk_insert etc.
+-- seeealso-dbi: insert, delete, create, update etc.
 - document RDF and other formats
 - modify SeeAlso::Response to better access (see i2w.pl)
 - move osd to SeeAlso::Source ?
