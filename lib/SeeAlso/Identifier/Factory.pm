@@ -11,22 +11,34 @@ SeeAlso::Identifier::Factory - Identify and create identifiers
 
 use SeeAlso::Identifier;
 use Carp;
-our $VERSION = '0.11';
+our $VERSION = '0.20';
+
+=head1 DESCRIPTION
+
+A SeeAlso::Identifier::Factory object is given a string (via its method
+C<create>) and returns a well-defined L<SeeAlso::Identifier> object. A
+factory is useful to parse a string that may be an identifier of several
+identifier kinds. 
+
+The factory knows a list of identifier types (subclasses of 
+SeeAlso::Identifier); the first type that successfully parses the provided
+string value is used to create the identifier object. If no type works,
+an empty identifier of the first type is returned.
 
 =head1 SYNOPSIS
 
-  $factory->create("...");
+  $identifier = $factory->create( $could_be_an_identifier_string );
 
 =head1 METHODS
 
 =head2 new ( %params )
 
-Create a new Identifier Factory.
+Create a new Identifier Factory. You can either pass an array reference with
+identifier class name or a hash of methods that will be used to create a new
+identifier class:
 
   $factory = new SeeAlso::Identifier::Factory
       type => [qw( class1 class2 ... )]
-
-or
 
   $factory = new SeeAlso::Identifier::Factory
       parse => sub { ... },
@@ -77,7 +89,7 @@ sub new {
 
 =head2 create ( $value )
 
-Create a new L<SeeAlso::Identifier> object.
+Create a new L<SeeAlso::Identifier> object as described above.
 
 =cut
 
@@ -97,9 +109,12 @@ sub create {
     return $self->{type}->[0]->new( $value );
 }
 
-=head1 FUNCTION
+=head1 FUNCTIONS
 
 =head2 makeclass
+
+Dynamically creates a subclass of SeeAlso::Identifier with given name and methods.
+
 =cut
 
 sub makeclass {

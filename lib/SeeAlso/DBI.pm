@@ -19,7 +19,7 @@ our $VERSION = '0.46';
 
    my $dbh   = DBI->connect(...);
    my $source = SeeAlso::DBI->new( dbh => $dbh );
-   OR
+   # OR
    my $source = SeeAlso::DBI->new( dbh => $dbh, dbh_ro => $dbh_ro );
 
 =head1 METHODS
@@ -32,6 +32,8 @@ our $VERSION = '0.46';
 
 Optional table name to be used when no sql strings are supplied.
 The default table name is C<seealso>.
+
+=item usehash
 
 =back
 
@@ -52,6 +54,7 @@ sub new {
     $self->{dbh} = $attr{dbh};
     $self->{dbh_ro} = $attr{dbh_ro};
     $self->{table} = defined $attr{table} ? $attr{table} : 'seealso';
+    $self->{usehash} = defined $attr{usehash} ? $attr{usehash} : 1;
     $self->{sql} = $attr{sql} || $self->_build_sql_strings;
 
     # TODO: check $sql{ fetch | store | create }
@@ -68,14 +71,14 @@ sub new {
 # = sub thaw 
 =head2 query
 
-Fetch from DB
+Fetch from DB, uses the hash value!
 
 =cut
 
 sub query_callback {
     my ($self, $identifier) = @_;
 
-    my $key = $identifier->hash;
+    my $key = $self->{usehash} ? $identifier->hash : $identifier->value;
 
     my $dbh = $self->{dbh_ro} ? $self->{dbh_ro} : $self->{dbh};
     my $sth = $dbh->prepare_cached( $self->{sql}->{fetch} )

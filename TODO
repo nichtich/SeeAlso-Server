@@ -1,14 +1,16 @@
 Features, that are planned to be implemented before 1.0 release include:
 
 == Next ==
+- rewrite/fix DBI!
+- document RDF and other formats
+- modify SeeAlso::Response to better access (see i2w.pl)
+- move osd to SeeAlso::Source ?
 - add example of wrapper SeeAlso simple to SeeAlso full (via Client)
 - update ThingISBN and make it an example script (not a class)
 - Add multiple example parameters (see pnd2gso)
-- Add description of multiple formats in OSDD
 - Print errors to error logfile in SeeAlso::Server
 - add and describe minimal server example (examples/server.pl)
 - add Wikipedia2ISBN example (!)
-- add RDF as export format
 - add SeeAlso::Collection (also as SeeAlso::Source)
     returns description() as response or list of members
 - Finish SeeAlso::Client (including tests and examples, OSDD...)
@@ -22,10 +24,6 @@ Es muesste sich reparieren lassen als
 
 callback={seealso:callback?}
 
-("?" wg. optimaler Parameter), wobei "seealso" dann nach meinem
-Verstaendnis ein in der XML-Datei deklarierter Namespace ist, etwa
-
-xmlns:seealso="http://ws.gbv.de/seealso/schema/
 
 == Tests ==
 - Add more Unicode tests from toJSON and fromJSON!

@@ -14,7 +14,7 @@ SeeAlso::Source - Provides OpenSearch Suggestions reponses
 
   $source = SeeAlso::Source->new;
   $source = SeeAlso::Source->new( sub { ... } );
-  $source = SeeAlso::Source->new( QueryMethod => sub { ... } );
+  $source = SeeAlso::Source->new( callback => sub { ... } );
   ...
   $source->description( "ShortName" => "My source" ... );
   ...

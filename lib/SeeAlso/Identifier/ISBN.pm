@@ -5,7 +5,7 @@ use warnings;
 
 =head1 NAME
 
-SeeAlso::Identifier::ISBN - International Standard Book Number Identifier
+SeeAlso::Identifier::ISBN - International Standard Book Number as Identifier
 
 =cut
 
@@ -13,7 +13,7 @@ use Business::ISBN;
 use Carp;
 
 use base qw( SeeAlso::Identifier );
-our $VERSION = "0.62";
+our $VERSION = "0.70";
 
 =head1 SYNOPSIS
 
@@ -38,10 +38,6 @@ always returns an defined identifier with all methods provided by
 L<SeeAlso::Identifier>. As canonical form the URN representation of 
 ISBN-13 without hyphens is used - that means all ISBN-10 are converted
 to ISBN-13. As hashed form of an ISBN, a 32 Bit integer can be calculated.
-
-Please note that '0' is a valid value representing ISBN-10 0-00-000000-0
-and ISBN-13 978-0-00-000000-2 although it is mostly used errorously in
-practise.
 
 =head1 METHODS
 
@@ -86,8 +82,6 @@ only valid ISBN (with valid checkdigit) are allowed, second all ISBN are
 converted to ISBN-13 notation without hyphens (URIs without defined 
 normalization and valitidy check are pointless).
 
-Instead of RFC 3187 you could also use "http://purl.org/isbn/".
-
 =cut
 
 sub canonical {
@@ -126,7 +120,39 @@ sub hash {
     }
 }
 
+=head2 isbn13
+
+Return the ISBN in ISBN 13 form (or an empty string)
+
+=cut
+
+sub isbn13 {
+    my $self = shift;
+    return $$self;
+}
+
+=head2 isbn10
+
+Return the ISBN in ISBN 10 form if possible (or an empty string)
+
+=cut
+
+sub isbn10 {
+    my $self = shift;
+    return '' if $$self eq '' or not $$self =~ /^978/;
+    my $value = Business::ISBN->new( substr($$self,3) );
+    $value->fix_checksum;
+    return $value->as_string([]);
+}
+
 1;
+
+=head1 NOTES
+
+In theory zero ('0') is a valid ISBN value representing ISBN-10 0-00-000000-0
+= ISBN-13 978-0-00-000000-2. In practise this value is mostly used errorously.
+
+For canonical form instead of RFC 3187 you could also use "http://purl.org/isbn/".
 
 =head1 AUTHOR
 

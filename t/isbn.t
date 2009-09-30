@@ -12,7 +12,7 @@ isa_ok( $isbn, 'SeeAlso::Identifier::ISBN' );
 ok ( $isbn, 'new ISBN' );
 
 my @equal = (
-    'urn:nbn:9780596527242', 'URN:NBN:0596527241',
+    'urn:isbn:9780596527242', 'URN:ISBN:0596527241',
     '978-0-596-52724-2', '0596527241',
     Business::ISBN->new('0596527241')
 );
@@ -23,6 +23,9 @@ for(my $i=0; $i<@equal; $i++) {
     ok( $isbn->valid, "valid value: $v" );
     is( $isbn, SeeAlso::Identifier::ISBN->new( $equal[0] ), "equal: $v" );
 }
+
+is( $isbn->isbn13, '9780596527242', "isbn13" );
+is( $isbn->isbn10, '0596527241', "isbn10" );
 
 my %values = (
     '0-8044-2957-x' => 'urn:isbn:9780804429573'

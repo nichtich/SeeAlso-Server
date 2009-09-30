@@ -1,5 +1,19 @@
 __END__
 
+
+Wikipedia2ISBN
+
+1. Download Wikipedia dump
+2. Parse Wikipedia dump and extract all ISBN
+
+  ./extract-mediawiki-templates.pl dewiki-latest-pages-articles.xml.bz2 dewiki-extracted-templates.gz
+    
+
+3. Put extracted table into a database
+4. Provide a Seealso-Service above
+
+----
+
 additional methods to the constructor: These are a
 method to check whether the identifier is valid or not, a method
 to create a normalized form of an identifier, and a method to

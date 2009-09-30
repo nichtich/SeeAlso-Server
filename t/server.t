@@ -33,14 +33,12 @@ my $xml300 = join('', <XML>);
 ok( $s->listFormats($r) eq $xml300, 'listFormats => 300');
 close XML;
 
-$s = SeeAlso::Server->new( description=>"" );
+$s = SeeAlso::Server->new( formats => { opensearchdescription => 0 } );
 $r = SeeAlso::Response->new();
-
 open XML, "t/listFormats200noosd.xml";
 my $xml200noosd = join('', <XML>);
 ok( $s->listFormats($r) eq $xml200noosd, 'listFormats => 200 without OpenSearch Description');
 close XML;
-
 
 use SeeAlso::Source;
 $s = SeeAlso::Server->new( cgi => CGI->new() );

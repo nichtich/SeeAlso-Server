@@ -17,7 +17,7 @@ use SeeAlso::Identifier;
 use SeeAlso::Response;
 use SeeAlso::Source;
 
-our $VERSION = '0.571';
+our $VERSION = '0.58';
 
 =head1 DESCRIPTION
 
@@ -70,26 +70,6 @@ parameters:
 
 a L<CGI> object. If not specified, a new L<CGI> object is created.
 
-=item xslt
-
-the URL (relative or absolute) of an XSLT script to display the unAPI
-format list. It is recommended to use the XSLT client 'showservice.xsl'
-that is available in the 'client' directory of this package.
-
-=item clientbase
-
-the base URL (relative or absolute) of a directory that contains
-client software to access the service. Only needed for the XSLT 
-script so far.
-
-=item description
-
-By default the openSearchDescription method is used to create the
-self-description of a server based on a L<SeeAlso::Source>. You 
-can disable support of OpenSearch Description by setting this parameter
-to false or override the description by setting this parameter to
-an array reference.
-
 =item expires
 
 Send HTTP "Expires" header for caching (see the setExpires method for details).
@@ -104,18 +84,32 @@ C<debug = 1> and prohibit with C<debug = -1>.
 
 set a L<SeeAlso::Logger> for this server. See the method C<logger> below.
 
+=item xslt
+
+the URL (relative or absolute) of an XSLT script to display the unAPI
+format list. It is recommended to use the XSLT client 'showservice.xsl'
+that is available in the 'client' directory of this package.
+
+=item clientbase
+
+the base URL (relative or absolute) of a directory that contains
+client software to access the service. Only needed for the XSLT 
+script so far.
+
 =item formats
 
 An additional hash of formats (experimental). The structure is:
 
   name => {
      type => "...",
-     docs => "...",         # optional
-     method => \&function
- }
+     docs => "...",        # optional
+     method => \&code,     # either
+     filter => \&code,     # or
+  }
 
 You can use this parameter to provide more formats then 'seealso' and
-'opensearchdescription' via unAPI (these two formats cannot be overwritten).
+'opensearchdescription' via unAPI. By setting a name to false, it will
+not be shown - this way you can disable support of opensearchdescription.
 
 =back
 
@@ -127,17 +121,11 @@ sub new {
     my $cgi = $params{cgi};
     my $logger = $params{logger};
 
-    my $description = 1;
-    if ( exists $params{description} ) {
-        $description = $params{description} || 0;
-    }
-
     croak('Parameter cgi must be a CGI object!')
         if defined $cgi and not UNIVERSAL::isa($cgi, 'CGI');
 
     my $self = bless {
         cgi => $cgi || new CGI,
-        description => $description,
         logger => $logger,
         xslt => $params{xslt} || undef,
         clientbase => $params{clientbase} || undef,
@@ -151,25 +139,64 @@ sub new {
     if ($params{formats}) {
         my %formats = %{$params{formats}};
         foreach my $name (keys %formats) {
-            next if $name eq 'opensearchdescription' or $name eq 'seealso' or $name eq 'debug';
+            next if $name eq 'seealso' or $name eq 'debug';
             my $format = $formats{$name};
-            next unless ref($format) eq 'HASH';
-            next unless defined $format->{type};
-            next unless ref($format->{method}) eq 'CODE';
-            $self->{formats}{$name} = {
-                "type" => $format->{type},
-                "docs" => $format->{docs},
-                "method" => $format->{method}
-            };
+            if (not $format) {
+                $self->{formats}{$name} = 0;
+            } elsif (ref($format) eq 'HASH') {
+                # TODO: enable default format handlers with 
+                next unless defined $format->{type};
+                next unless ref($format->{filter}) eq 'CODE' or 
+                            ref($format->{method}) eq 'CODE';
+                $self->{formats}{$name} = {
+                    "type" => $format->{type},
+                    "docs" => $format->{docs},
+                    "method" => $format->{method},
+                    "filter" => $format->{filter},
+                };
+            } else {
+                # enable default format handlers for known formats
+                if ($name eq 'rdfjson') {
+                    $self->{formats}{'rdfjson'} = {
+                        type => "application/rdf+json",
+                        filter => sub { return $_[0]->toRDFJSON; },
+                    };
+                } elsif ($name eq 'n3') {
+                    $self->{formats}{'n3'} = {
+                        type => "text/n3",
+                        filter => sub { return $_[0]->toN3; },
+                    };
+                # } elsif ($name eq 'rdf') {
+                    #$self->{formats}{'rdf'} = {
+                    #    type => "application/rdf+xml",
+                    #    filter => sub { return $_[0]->toRDFXML; },
+                    #};
+                } elsif ($name eq 'csv') {
+                    $self->{formats}{'csv'} = {
+                        type => "text/csv",
+                        filter => sub { return $_[0]->toCSV; },
+                    };
+                }
+                # TODO: ttl : (text/turtle)
+            }
         }
     }
+
+    # enable by default if not disabled
+    if ( not defined $self->{formats}{opensearchdescription} ) {
+        $self->{formats}{"opensearchdescription"} = {
+            type=>"application/opensearchdescription+xml",
+            docs=>"http://www.opensearch.org/Specifications/OpenSearch/1.1/Draft_3#OpenSearch_description_document"
+        };
+    }
+
 
     $self->logger($params{logger}) if defined $params{logger};
 
     return $self;
 }
 
-=head2 query ( $source [, $identifier [, $format [, $callback ] ] ] )
+=head2 query ( $source [, $identifier | $factory [, $format [, $callback ] ] ] )
 
 Perform a query by a given source, identifier, format and (optional)
 callback parameter. Returns a full HTTP message with HTTP headers.
@@ -199,11 +226,13 @@ sub query {
     if (ref($source) eq "CODE") {
         $source = new SeeAlso::Source( $source );
     }
-    croak('First parameter must be a SeeAlso::Source object!')
+    croak('First parameter must be a SeeAlso::Source or code reference!')
         unless defined $source and UNIVERSAL::isa($source, 'SeeAlso::Source');
 
     if ( ref($identifier) eq 'CODE' ) {
         $identifier = &$identifier( $cgi->param('id') );
+    } elsif (UNIVERSAL::isa( $identifier,'SeeAlso::Identifier::Factory' )) {
+        $identifier = $identifier->create( $cgi->param('id') );
     } elsif (not defined $identifier) {
         $identifier = $cgi->param('id');
     }
@@ -234,7 +263,8 @@ sub query {
     if ( not $identifier ) {
         $self->errors( "invalid identifier" );
         $response = SeeAlso::Response->new;
-    } elsif ($format eq "seealso" or $format eq "debug" or !$self->{formats}{$format}) {
+    } elsif ($format eq "seealso" or $format eq "debug" or !$self->{formats}{$format}
+                                  or $self->{formats}{$format}->{filter} ) {
         eval {
             local $SIG{'__WARN__'} = sub {
                 $self->errors(shift);
@@ -264,7 +294,6 @@ sub query {
 
 
     if ( $self->{logger} ) {
-        # TODO: if you override the description, this is not taken!
         my $service = $source->description( "ShortName" );
         eval {
             $self->{logger}->log( $cgi, $response, $service )
@@ -293,7 +322,7 @@ sub query {
         $http .= "\n";
         $http .= "HTTP response status code is $status\n";
         $http .= "\nInternally the following errors occured:\n- "
-              . join("\n- ", @{ $self->errors() }) . "\n" if $self->errors();
+              . join("\n- ", $self->errors) . "\n" if $self->errors;
         $http .= "*/\n";
         $http .= $response->toJSON($callback) . "\n";
     } else { # other unAPI formats
@@ -303,9 +332,13 @@ sub query {
         if ($f) {
             my $type = $f->{type} . "; charset: utf-8";
             my $header = $cgi->header( -status => $status, -type => $type );
-            $http = $f->{method}($identifier); # TODO: what if this fails?!
+            if ($f->{filter}) {
+                $http = $f->{filter}($response); # TODO: what if this fails?!
+            } else {
+                $http = $f->{method}($identifier); # TODO: what if this fails?!
+            }
             $http = $header . $http; # TODO: omit headers if already in HTTP
-        } else {
+        } else { # unknown format or not defined format
             $http = $self->listFormats($response);
         }
     }
@@ -377,16 +410,7 @@ sub listFormats {
         $headers .= "<?seealso-client-base " . xmlencode($self->{clientbase}) . "?>\n";
     }
 
-    my %formats = %{$self->{formats}};
-
-    if ( $self->{description} ) {
-        $formats{"opensearchdescription"} = {
-            type=>"application/opensearchdescription+xml",
-            docs=>"http://www.opensearch.org/Specifications/OpenSearch/1.1/Draft_3#OpenSearch_description_document"
-        };
-    }
-
-    return _unapiListFormats( \%formats, $id, $headers );
+    return _unapiListFormats( $self->{formats}, $id, $headers );
 }
 
 # $formats: hash reference
@@ -396,8 +420,8 @@ sub _unapiListFormats { # TODO: move this to HTTP::unAPI or such
     my ($formats, $id, $headers) = @_;
 
     $headers = '<?xml version="1.0" encoding="UTF-8"?>' unless defined $headers;
+    
     my @xml;
-
     if ($id ne "") {
         push @xml, '<formats id="' . xmlencode($id) . '">';
     } else {
@@ -406,9 +430,11 @@ sub _unapiListFormats { # TODO: move this to HTTP::unAPI or such
 
     foreach my $name (sort({$b cmp $a} keys(%$formats))) {
         my $format = $formats->{$name};
-        my $fstr = "<format name=\"" . xmlencode($name) . "\" type=\"" . xmlencode($format->{type}) . "\"";
-        $fstr .= " docs=\"" . xmlencode($format->{docs}) . "\"" if defined $format->{docs};
-        push @xml, $fstr . " />";
+        if ( $format && $name ne 'debug' ) {
+            my $fstr = "<format name=\"" . xmlencode($name) . "\" type=\"" . xmlencode($format->{type}) . "\"";
+            $fstr .= " docs=\"" . xmlencode($format->{docs}) . "\"" if defined $format->{docs};
+            push @xml, $fstr . " />";
+        }
     }
 
     push @xml, '</formats>';    
@@ -433,68 +459,59 @@ sub errors {
     return @{ $self->{errors} };
 }
 
-=head2 openSearchDescription ( [ $source ] )
+=head2 openSearchDescription ( $source )
 
-Returns an OpenSearch Description document.
-If you pass a L<SeeAlso::Source> instance,
-additional information will be added.
+Returns an OpenSearch Description document based on the description of the
+passed L<SeeAlso::Source> instance.
 
 =cut
 
 sub openSearchDescription {
-    my $self = shift;
-    my $source = shift;
+    my ($self, $source) = @_;
 
-    my $cgi = $self->{cgi};
     my $baseURL = $self->baseURL;
 
-    return unless $self->{description};
-    if ( ref($self->{description}) eq "ARRAY" ) {
-        $source = SeeAlso::Source->new( sub {} );
-        $source->description( @{$self->{description}} );
-    }
+    return unless $source and UNIVERSAL::isa( $source, "SeeAlso::Source" );
+    my %descr = %{ $source->description };
 
     my @xml = '<?xml version="1.0" encoding="UTF-8"?>';
     push @xml, '<OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:seealso="http://ws.gbv.de/seealso/schema/" >';
 
-    if ($source and UNIVERSAL::isa($source, "SeeAlso::Source")) {
-        my %descr = %{ $source->description() };
+    my $shortName = $descr{"ShortName"}; # TODO: shorten to 16 chars maximum
+    push @xml, "  <ShortName>" . xmlencode( $shortName ) . "</ShortName>"
+        if defined $shortName;
 
-        my $shortName = $descr{"ShortName"}; # TODO: shorten to 16 chars maximum
-        push @xml, "  <ShortName>" . xmlencode( $shortName ) . "</ShortName>"
-            if defined $shortName;
+    my $longName = $descr{"LongName"}; # TODO: shorten to 48 chars maximum
+    push @xml, "  <LongName>" . xmlencode( $longName ) . "</LongName>"
+        if defined $longName;
 
-        my $longName = $descr{"LongName"}; # TODO: shorten to 48 chars maximum
-        push @xml, "  <LongName>" . xmlencode( $longName ) . "</LongName>"
-            if defined $longName;
+    my $description = $descr{"Description"}; # TODO: shorten to 1024 chars maximum
+    push @xml, "  <Description>" . xmlencode( $description ) . "</Description>"
+        if defined $description;
 
-        my $description = $descr{"Description"}; # TODO: shorten to 1024 chars maximum
-        push @xml, "  <Description>" . xmlencode( $description ) . "</Description>"
-            if defined $description;
+    $baseURL = $descr{"BaseURL"}  # overwrites standard
+        if defined $descr{"BaseURL"};
 
-        $baseURL = $descr{"BaseURL"}  # overwrites standard
-            if defined $descr{"BaseURL"};
+    my $modified = $descr{"DateModified"};
+    push @xml, "  <dcterms:modified>" . xmlencode( $modified ) . "</dcterms:modified>"
+        if defined $modified;
 
-        my $modified = $descr{"DateModified"};
-        push @xml, "  <dcterms:modified>" . xmlencode( $modified ) . "</dcterms:modified>"
-            if defined $modified;
+    my $src = $descr{"Source"};
+    push @xml, "  <dc:source>" . xmlencode( $src ) . "</dc:source>"
+        if defined $src;
 
-        my $src = $descr{"Source"};
-        push @xml, "  <dc:source>" . xmlencode( $src ) . "</dc:source>"
-            if defined $src;
-
-        if ($descr{"Examples"}) { # TODO: add more parameters
-            foreach my $example ( @{ $descr{"Examples"} } ) {
-                my $id = $example->{id};
-                my $args = "searchTerms=\"" . xmlencode($id) . "\"";
-                my $response = $example->{response};
-                if (defined $response) {
-                    $args .= " seealso:response=\"" . xmlencode($response) . "\"";
-                }
-                push @xml, "  <Query role=\"example\" $args />";
+    if ($descr{"Examples"}) { # TODO: add more parameters
+        foreach my $example ( @{ $descr{"Examples"} } ) {
+            my $id = $example->{id};
+            my $args = "searchTerms=\"" . xmlencode($id) . "\"";
+            my $response = $example->{response};
+            if (defined $response) {
+                $args .= " seealso:response=\"" . xmlencode($response) . "\"";
             }
+            push @xml, "  <Query role=\"example\" $args />";
         }
     }
+    
     my $template = $baseURL . (($baseURL =~ /\?/) ? '&' : '?')
                  . "id={searchTerms}&format=seealso&callback={callback}";
     push @xml, "  <Url type=\"text/javascript\" template=\"" . xmlencode($template) . "\"/>";

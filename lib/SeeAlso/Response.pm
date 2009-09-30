@@ -278,14 +278,14 @@ sub toCSV {
     return join ("\n", @lines);
 }
 
-=head2 toRDF ( )
+=head2 toRDF
 
 Returns the response as RDF triples in JSON/RDF structure.
 Parts of the result that cannot be interpreted as valid RDF are omitted.
 
 =cut
 
-sub toRDF ( ) {
+sub toRDF {
     my ($self) = @_;
     my $subject = $self->query;
     return { } unless is_uri( $subject->as_string );
@@ -314,7 +314,7 @@ sub toRDF ( ) {
     };
 }
 
-=head2 toRDFJSON ( )
+=head2 toRDFJSON
 
 Returns the response as RDF triples in JSON/RDF format.
 
@@ -322,11 +322,35 @@ Returns the response as RDF triples in JSON/RDF format.
 
 sub toRDFJSON {
     my ($self, $callback, $json) = @_;
-    return _JSON( $self->toRDF(), $callback, $json );
+    return _JSON( $self->toRDF, $callback, $json );
 }
 
+=head2 toRDFXML
 
-=head2 toN3 ( )
+Returns the response as RDF triples in XML/RDF format (not implemented yet).
+
+=cut
+
+sub toRDFXML {
+    my ($self) = @_;
+    my ($subject, $values) = %{$self->toRDF};
+
+    my @xml = ('<?xml version="1.0" encoding="UTF-8"?>');
+    # TODO: $subject => $values
+    push @xml, '<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">';
+    push @xml, '<rdf:Description rdf:about="' . _escape($subject) . '">';
+    foreach my $predicate (%{$values}) {
+        # TODO
+        # <ex:prop rdf:resource="fruit/apple"/>
+        # <ex:prop>$literal</ex:prop>
+    }
+    push @xml, '</rdf:Description>';
+    push @xml, '</rdf:RDF>';
+
+    return join("\n", @xml) . "\n";
+}
+
+=head2 toN3
 
 Return the repsonse in RDF/N3 (including pretty print).
 

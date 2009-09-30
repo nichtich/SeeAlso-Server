@@ -6,7 +6,7 @@ use Test::More qw(no_plan);
 use Test::Exception;
 
 require_ok('SeeAlso::Identifier::Factory');
-
+require_ok('SeeAlso::Server');
 
 #### fixed type (implies including the class)
 
@@ -51,7 +51,6 @@ is( $id, 'hello', 'multiple types (2b)' );
 
 $id = $factory->create();
 isa_ok( $id, 'SeeAlso::Identifier::ISBN', 'multiple types (3)' );
-
 
 #### refuse unknown types
 dies_ok { $factory = new SeeAlso::Identifier::Factory
