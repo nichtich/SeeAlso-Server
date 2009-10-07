@@ -25,7 +25,7 @@ URI representation of a GND number that can be created by prepending
 'http://d-nb.info/gnd/'.
 
 This subclass of L<SeeAlso::Identifier> overrides the constructor
-C<new> and the methods C<valid> and C<normalized>.
+C<new> and the methods C<valid> and C<canonical>.
 
 =cut
 
@@ -101,7 +101,7 @@ sub valid {
     return ((((11 - $sum) % 11) eq $c) or ((11 - (11 - $sum) % 11) eq $c));
 }
 
-=head2 normalized ( )
+=head2 canonical
 
 Return a normalized version of the GND identifier as Uniform
 Resource Identifier (URI) by adding the prefix 'http://d-nb.info/gnd/'.
@@ -109,7 +109,7 @@ If the identifier is not valid, this methods returns an empty string.
 
 =cut
 
-sub normalized {
+sub canonical {
     my $self = shift;
     return $self->valid() ? ("http://d-nb.info/gnd/" . $self->{value}) : "";
 }

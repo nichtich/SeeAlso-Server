@@ -9,7 +9,7 @@ SeeAlso::Identifier - Controlled identifier that can be normalized and hashed
 
 =cut
 
-our $VERSION = '0.48';
+our $VERSION = '0.49';
 
 =head1 DESCRIPTION
 
@@ -20,7 +20,7 @@ of identifiers can be created by deriving a subclass of SeeAlso::Identifier or
 with a L<SeeAlso::Identifier::Factory>.
 
 The design of SeeAlso::Identifier is build upon the assumption that identifiers
-should not encode "semantic" or "intelligent" information but provide a clear
+should not encode "semantic" or "intelligent" information but just provide a clear
 mapping to entities.
 
 =head1 SYNOPSIS
@@ -281,30 +281,31 @@ sub as_string {
 =head1 ALIAS METHODS
 
 The following method names can be used as alias for the core method names.
-When you derive a subclass, you should not override this methods but the
-corresponding core methods.
+When you derive a subclass, Do not override this methods but the corresponding
+core methods!
 
 =over
 
 =item normalized
 
-Alias for C<canonical>
+Alias for C<canonical>. Do not override this method but C<canonical>.
 
 =item condensed
 
-Alias for C<hash>
+Alias for C<hash>. Do not override this method but C<hash>.
 
 =item indexed
 
-Alias for C<hash>
+Alias for C<hash>. Do not override this method but C<hash>.
 
 =item get
 
-Alias for C<value> but without parameter.
+Alias for C<value>. Do not override this method but C<value>.
 
-=item set
+=item set ( [ $value ] )
 
-Alias for C<value> with C<undef> as default value.
+Alias for C<value> with C<undef> as default value. Do not override
+this method but C<value>.
 
 =back
 
@@ -327,8 +328,8 @@ sub set {
 
 =head1 SEE ALSO
 
-See L<URI> for an implementation of Uniform Resource Identifiers which
-is more specific than SeeAlso::Identifier.
+See L<URI> for an implementation of Uniform Resource Identifiers
+which is more specific than SeeAlso::Identifier.
 
 =head1 AUTHOR
 

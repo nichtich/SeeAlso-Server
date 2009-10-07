@@ -43,6 +43,8 @@ Create a new database table access. Required properties include
 Optional table name to be used when no sql strings are supplied.
 The default table name is C<seealso>.
 
+=back
+
 =cut
 
 sub new {
@@ -107,7 +109,9 @@ Create the database table  if a creation statement is given.
 =cut
 
 sub create {
-    # ...
+    my ($self) = @_;
+    # ... TODO ...
+    return;
 }
 
 =head2 clear
@@ -117,7 +121,9 @@ Delete all content in the database if a clear statement is given.
 =cut
 
 sub clear {
-    # ...
+    my ($self) = @_;
+    # ... TODO ...
+    return;
 }
 
 =head2 remove ( $identifier )
@@ -127,7 +133,8 @@ Removes all rows associated with a given identifier.
 =cut
 
 sub remove {
-    # ...
+    my ($self, $identifier) = @_;
+    # ... TODO ...
 }
 
 =head2 update ( $response )
@@ -137,7 +144,8 @@ sub remove {
 =cut
 
 sub update {
-    # ...
+    my ($self, $response) = @_;
+     # ... TODO ...
 }
 
 # bulk_update: better clear and bulk_insert

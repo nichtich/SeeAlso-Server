@@ -39,6 +39,7 @@ $gnd = SeeAlso::Identifier::GND->new("GND 118601121");
 
 foreach my $p (@prefixes) {
     $gnd->value( $p . "118601121" );
-    ok( $gnd->normalized eq "http://d-nb.info/gnd/118601121", "possible prefix '$p'");
+    is( $gnd->normalized, "http://d-nb.info/gnd/118601121", "possible prefix '$p'");
+    is( $gnd->canonical, "http://d-nb.info/gnd/118601121", "canonical value" );
 }
 
