@@ -23,7 +23,8 @@ use ExtUtils::MakeMaker;
         'Text::CSV' => '0',
         'Cache' => '2.04',
         'Test::Exception' => '0.27',
-		'LWP::Simple'	=> '0'
+		'LWP::Simple'	=> '0',
+        'Config::IniFiles' => '2.52',
     },
     dist            => {
         COMPRESS => 'gzip -9f',

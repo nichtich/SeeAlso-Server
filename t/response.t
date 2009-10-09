@@ -30,9 +30,23 @@ is( $r, $json, 'simple response ("")');
 my $list = [ $r->get(0) ];
 is_deeply( $list, ["foo","urn:baz","uri:bar"], 'get method' );
 
+my @labels = $r->labels;
+is_deeply( \@labels, ["foo"], 'labels' );
+my @descriptions = $r->descriptions;
+is_deeply( \@descriptions, ["urn:baz"], 'descriptions' );
+my @uris = $r->uris;
+is_deeply( \@uris, ["uri:bar"], 'uris' );
+
 $r->add("faz");
 ok( $r->toJSON() eq '["123",["foo","faz"],["urn:baz",""],["uri:bar",""]]', 'simple response');
 is( $r->size, 2, 'test size' );
+
+@labels = $r->labels;
+is_deeply( \@labels, ["foo","faz"], 'labels' );
+@descriptions = $r->descriptions;
+is_deeply( \@descriptions, ["urn:baz",""], 'descriptions' );
+@uris = $r->uris;
+is_deeply( \@uris, ["uri:bar",""], 'uris' );
 
 $r->add("","","");
 is( $r->size, 2, 'empty triple ignored' );

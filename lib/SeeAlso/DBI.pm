@@ -9,39 +9,122 @@ SeeAlso::DBI - Store L<SeeAlso::Response> objects in database.
 
 =cut
 
+use DBI;
 use DBI::Const::GetInfoType;
+use Config::IniFiles;
 use Carp qw(croak);
 
 use base qw( SeeAlso::Source );
-our $VERSION = '0.46';
+our $VERSION = '0.47';
 
 =head1 SYNOPSIS
 
-   my $dbh   = DBI->connect(...);
-   my $source = SeeAlso::DBI->new( dbh => $dbh );
-   # OR
-   my $source = SeeAlso::DBI->new( dbh => $dbh, dbh_ro => $dbh_ro );
+   # use database as SeeAlso::Source
+
+   my $dbh = DBI->connect( ... );
+   my $dbi = SeeAlso::DBI->new( dbh => $dbh );
+
+   print SeeAlso::Server->new->query( $dbi );   
 
 =head1 DESCRIPTION
 
-By default a database table accessed with this class stores the 
-four values key, label, description, and uri in each row - but you
-can also use other database schemas. The key is a hashed 
-L<SeeAlso::Identifier> that is used to query results.
+A C<SeeAlso::DBI> object manages a store of L<SeeAlso::Response>
+objects that are stored in a database. By default that database
+must contain a table named C<seealso> with rows named C<hash>, 
+C<label>, C<database>, and C<uri>. A query for identifier C<$id>
+of type L<SeeAlso::Identifier> will result in an SQL query such as
+
+  SELECT label, description, uri FROM seealso WHERE hash=?
+
+With the hashed identifier (C<$id<gt>hash>) used as query parameter.
+By default a database table accessed with this class stores the four
+values hash, label, description, and uri in each row - but you can also
+use other schemas.
 
 =head1 METHODS
 
-=head2 new ( %properties )
+=head2 new ( %parameters )
 
-Create a new database table access. Required properties include
-'dbh'
+Create a new database store. You must specify either a database handle in 
+form or a L<DBI> object with parameter C<dbh> parameter, or a C<dbi>
+parameter that is passed to C<DBI-E<gt>connect>, or a C<config> parameter
+to read setting from the C<[DBI]> section of a configuration file.
+
+  my $dbh = DBI->new( "dbi:mysql:database=$d;host=$host", $user, $password );
+  my $db = SeeAlso::DBI->new( dbh => $dbh );
+
+  my $db = SeeAlso::DBI->new( 
+      dbi => "dbi:mysql:database=$database;host=$host", 
+      user => $user, passwort => $password
+  );
+
+  my $db = SeeAlso::DBI->new( config => "dbiconnect.ini" );
+
+The configuration file must be an INI file that contains a section named
+C<[DBI]>. All values specified in this section are added to the constructor's
+parameter list. Alternatively you directly can pass hash reference instead
+of a file name. A configuration file could look like this (replace uppercase 
+values with real values):
+
+  [DBI]
+  dbi = mysql:database=DBNAME;host=HOST
+  user = USER
+  password = PWD
+
+The following parameters are recognized:
 
 =over
 
+=item config
+
+Configuration file (as filename, GLOB, GLOB reference, IO::File, scalar reference)
+or reference to a hash with parameters that will override the other parameters.
+
+=item dbh
+
+Database Handle of type L<DBI>.
+
+=item dbh_ro
+
+Database Handle of type L<DBI> that will be used for all read access.
+Usefull for master-slave database settings.
+
+=item dbi
+
+Source parameter to create a C<DBI> object. C<"dbi:"> is prepended if
+the parameter does not start with this prefix.
+
+=item user
+
+Username if parameter C<dbi> is given.
+
+=item password
+
+Password if parameter C<dbi> is given.
+
 =item table
 
-Optional table name to be used when no sql strings are supplied.
-The default table name is C<seealso>.
+SQL table name for default SQL statements (default: C<seealso>).
+
+=item select
+
+SQL statement to select rows.
+
+=item delete
+
+SQL statement to delete rows.
+
+=item insert
+
+SQL statement to insert rows.
+
+=item clear
+
+SQL statement to clear the database table.
+
+=item build
+
+Newly create the SQL table with the create statement.
 
 =back
 
@@ -49,28 +132,67 @@ The default table name is C<seealso>.
 
 sub new {
     my ($class, %attr) = @_;
-    my $self = bless { }, $class;
 
-#use Data::Dumper;
-#print Dumper(\%attr) . "\n";
+    if ( $attr{config} ) {
+        my $cfg = $attr{config};
+        if ( ref($cfg) eq 'HASH' ) {
+            foreach my $hash ( keys %{ $cfg } ) {
+                $attr{$hash} = $cfg->{$hash};
+            }
+        } else {
+            my $ini = Config::IniFiles->new( -file => $attr{config} );
+            foreach my $hash ( $ini->Parameters('DBI') ) {
+                $attr{$hash} = $ini->val('DBI',$hash);
+            }
+        }
+    }
+
+    if ( $attr{dbi} ) {
+        $attr{dbi} = 'dbi:' . $attr{dbi} unless $attr{dbi} =~ /^dbi:/i; 
+        $attr{user} = "" unless defined $attr{user};
+        $attr{password} = "" unless defined $attr{password};
+        $attr{dbh} = DBI->connect( $attr{dbi}, $attr{user}, $attr{password} );
+    }
 
     croak('Parameter dbh required') 
         unless UNIVERSAL::isa( $attr{dbh}, 'DBI::db' );
     croak('Parameter dbh_ro must be a DBI object') 
         if defined $attr{dbh_ro} and not UNIVERSAL::isa( $attr{dbh_ro}, 'DBI::db' );
 
+    my $self = bless { }, $class;
+
     $self->{dbh} = $attr{dbh};
     $self->{dbh_ro} = $attr{dbh_ro};
     $self->{table} = defined $attr{table} ? $attr{table} : 'seealso';
-    $self->{sql} = $attr{sql} || $self->_build_sql_strings;
 
-    # TODO: check $sql{ fetch | store | create }
+    # build SQL strings
+    my $table   = $self->{dbh}->quote_identifier( $self->{table} );
+    my $hash    = $self->{dbh}->quote_identifier('hash');
+    my $label   = $self->{dbh}->quote_identifier('label');
+    my $descr   = $self->{dbh}->quote_identifier('description');
+    my $uri     = $self->{dbh}->quote_identifier('uri');
+    my $db_name = $self->{dbh}->get_info( $GetInfoType{SQL_DBMS_NAME} );
+    my $values = "$label, $descr, $uri";
 
-    # TODO: do not automatically create table - only if not exist
-    if ( $attr{create_table} or ($attr{sql} and $attr{sql}->{create}) ) {
-        $self->{dbh}->do( $self->{sql}->{create} )
-            or croak $self->{dbh}->errstr;
+    my %sql = (
+        'select' => "SELECT $values FROM $table WHERE $hash=?",
+        insert   => "INSERT INTO $table ($hash,$values) VALUES (?,?,?,?)",
+        # update  => "UPDATE $table SET $value = ? WHERE $hash=?",
+        'delete' => "DELETE FROM $table WHERE $hash = ?",
+        clear    => "DELETE FROM $table",
+        # get_keys => "SELECT DISTINCT $hash FROM $table",
+        create => "CREATE TABLE IF NOT EXISTS $table ("
+            . " $hash VARCHAR(255), $label TEXT, $descr TEXT, $uri TEXT"
+            . ")", 
+        # TODO: create index:     
+        #  $dbh->do( 'CREATE INDEX '.$table.'_isbn_idx ON '.$table.' (isbn)' );
+    );
+
+    foreach my $c ( qw(select insert delete clear create) ) {
+        $self->{$c} = $attr{$c} ? $attr{$c} : $sql{$c};
     }
+
+    $self->create if $attr{build};
 
     return $self;
 }
@@ -84,12 +206,12 @@ Fetch from DB, uses the hash value!
 sub query_callback {
     my ($self, $identifier) = @_;
 
-    my $key = $identifier->hash;
+    my $hash = $identifier->hash;
 
     my $dbh = $self->{dbh_ro} ? $self->{dbh_ro} : $self->{dbh};
-    my $sth = $dbh->prepare_cached( $self->{sql}->{fetch} )
+    my $sth = $dbh->prepare_cached( $self->{'select'} )
         or croak $dbh->errstr;
-    $sth->execute($key) or croak $sth->errstr;
+    $sth->execute($hash) or croak $sth->errstr;
     my $result = $sth->fetchall_arrayref;
 
     my $response = SeeAlso::Response->new( $identifier );
@@ -104,52 +226,52 @@ sub query_callback {
 
 =head2 create
 
-Create the database table  if a creation statement is given.
+Create the database table.
 
 =cut
 
 sub create {
     my ($self) = @_;
-    # ... TODO ...
+    $self->{dbh}->do( $self->{'create'} ) or croak $self->{dbh}->errstr;
     return;
 }
 
 =head2 clear
 
-Delete all content in the database if a clear statement is given.
+Delete all content in the database.
 
 =cut
 
 sub clear {
     my ($self) = @_;
-    # ... TODO ...
+    $self->{dbh}->do( $self->{'clear'} ) or croak $self->{dbh}->errstr;
     return;
 }
 
-=head2 remove ( $identifier )
+=head2 delete ( $identifier )
 
 Removes all rows associated with a given identifier.
 
 =cut
 
-sub remove {
+sub delete {
     my ($self, $identifier) = @_;
-    # ... TODO ...
+    $self->{dbh}->do( $self->{'delete'}, undef, $identifier->hash ) 
+        or croak $self->{dbh}->errstr;
 }
 
 =head2 update ( $response )
 
-...
+Replace all rows associated with the the identifier of a given response
+with the new response.
 
 =cut
 
 sub update {
     my ($self, $response) = @_;
-     # ... TODO ...
+    $self->delete( $response->identifier );
+    $self->insert( $response );
 }
-
-# bulk_update: better clear and bulk_insert
-# or create a new table and switch afterwards
 
 =head2 insert ( $response )
 
@@ -167,12 +289,12 @@ sub insert {
 
     return 0 unless $response->size;
 
-    my $key = $response->identifier->hash;
+    my $hash = $response->identifier->hash;
     my @rows;
 
     for(my $i=0; $i<$response->size; $i++) {
         my ($label, $description, $uri) = $response->get($i);
-        push @rows, [$key, $label, $description, $uri];
+        push @rows, [$hash, $label, $description, $uri];
     }
 
     return $self->bulk_insert( sub { shift @rows } );
@@ -182,7 +304,7 @@ sub insert {
 
 Add a set of quadrupels to the database. The subroutine $fetch_quadruple_sub
 is called unless without any parameters, until it returns a false value. It
-is expected to return a reference to an array with four values (key, label,
+is expected to return a reference to an array with four values (hash, label,
 description, uri) which will be added to the database. Returns the number
 of affected rows or -1 if the database driver cannot determine this number.
 
@@ -193,64 +315,52 @@ sub bulk_insert {
 
     croak('bulk_insert expects a code reference') unless ref($sub) eq 'CODE';
 
-    my $sth = $self->{dbh}->prepare_cached( $self->{sql}->{store} );
+    my $sth = $self->{dbh}->prepare_cached( $self->{insert} );
     my $tuples = $sth->execute_for_fetch( $sub );
     $sth->finish;
 
     return $tuples;
 }
 
+=head2 bulk_import ( [ file => $file ... ] )
 
-sub _build_sql_strings {
-    my ($self) = @_;
+=cut
 
-    my $table   = $self->{dbh}->quote_identifier( $self->{table} );
-    my $key     = $self->{dbh}->quote_identifier('key');
-    my $label   = $self->{dbh}->quote_identifier('label');
-    my $descr   = $self->{dbh}->quote_identifier('description');
-    my $uri     = $self->{dbh}->quote_identifier('uri');
-    my $db_name = $self->{dbh}->get_info( $GetInfoType{SQL_DBMS_NAME} );
+sub bulk_import {
+    my ($self, %param) = @_;
+    my $file = $param{file};
+    croak 'No file specified' unless defined $file;
 
-    my $values = "$label, $descr, $uri";
+    my $label       = defined $param{label} ? $param{label} : '#2';
+    my $description = defined $param{description} ? $param{description} : '#3';
+    my $uri         = defined $param{uri} ? $param{uri} : '#4';
 
-    my $strings = {
-        fetch   => "SELECT $values FROM $table WHERE $key=?",
-        store   => "INSERT INTO $table ($key,$values) VALUES (?,?,?,?)",
-        # update  => "UPDATE $table SET $value = ? WHERE $key=?",
-        # remove   => "DELETE FROM $table WHERE $key = ?",
-        # clear    => "DELETE FROM $table",
-        # get_keys => "SELECT DISTINCT $key FROM $table",
-        create => "CREATE TABLE IF NOT EXISTS $table ("
-            . " $key VARCHAR(255), $label TEXT, $descr TEXT, $uri TEXT"
-            . ")", 
-        # TODO: create index:     
-        #  $dbh->do( 'CREATE INDEX '.$table.'_isbn_idx ON '.$table.' (isbn)' );
-    };
+    open FILE, $file or croak "Failed to open file $file";
+    binmode FILE, ":utf8";
 
-    # TODO: do not use this duplicate key stmt!
-    if ( $db_name eq 'MySQL' ) {
-        $strings->{store} =
-            "INSERT INTO $table ( $key, $values )"
-          . " VALUES (?,?,?,?)"
-          . " ON DUPLICATE KEY UPDATE $values = VALUES($values)";
-        delete $strings->{update};
-    } elsif ( $db_name eq 'SQLite' ) {
-        $strings->{store} =
-            "INSERT OR REPLACE INTO $table"
-        . " ( $key, $values ) VALUES (?,?,?,?)";
-        delete $strings->{update};
-    } else {
-        # ...
-    }
+    $self->bulk_insert( sub {
+        my $line = readline(*FILE);
+        return unless $line;
+        chomp($line);
+        my @v = split /\t/, $line;
+        my ($l,$d,$u) = ($label,$description,$uri);
 
-    return $strings;
+        no warnings;
+        $l =~ s/#([0-9])/${v[$1-1]}/g;
+        $d =~ s/#([0-9])/${v[$1-1]}/g;
+        $u =~ s/#([0-9])/${v[$1-1]}/g;
+
+        return [ $v[0], $l, $d, $u ];
+    } );
+
+    close FILE;
 }
 
 1;
 
 =head1 SEE ALSO
 
-This package was partly based on L<CHI::Driver::DBI> by Justin DeVuyst
+This package was partly inspired by on L<CHI::Driver::DBI> by Justin DeVuyst
 and Perrin Harkins.
 
 =head1 AUTHOR

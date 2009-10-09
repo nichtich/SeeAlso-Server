@@ -15,7 +15,7 @@ use Text::CSV;
 use SeeAlso::Identifier;
 use Carp;
 
-our $VERSION = '0.58';
+our $VERSION = '0.59';
 
 use overload ( 
     '""'   => sub { $_[0]->as_string },
@@ -29,14 +29,14 @@ same as am OpenSearch Suggestions Response.
 
 =head1 METHODS
 
-=head2 new ( [ $query [, $labels, $descriptions, $urls ] )
+=head2 new ( [ $query [, $labels, $descriptions, $uris ] )
 
 Creates a new L<SeeAlso::Response> object (this is the same as an
 OpenSearch Suggestions Response object). The optional parameters
 are passed to the set method, so this is equivalent:
 
-  $r = SeeAlso::Response->new($query, $labels, $descriptions, $urls);
-  $r = SeeAlso::Response->new->set($query, $labels, $descriptions, $urls);
+  $r = SeeAlso::Response->new($query, $labels, $descriptions, $uris);
+  $r = SeeAlso::Response->new->set($query, $labels, $descriptions, $uris);
 
 To create a SeeAlso::Response from JSON use the fromJSON method.
 
@@ -49,7 +49,7 @@ sub new {
     my $self = bless {
         'labels' => [],
         'descriptions' => [],
-        'urls' => []
+        'uris' => []
     }, $class;
 
     $self->set( @_ );
@@ -57,7 +57,7 @@ sub new {
     return $self;
 }
 
-=head2 set ( [ $query [, $labels, $descriptions, $urls ] )
+=head2 set ( [ $query [, $labels, $descriptions, $uris ] )
 
 Set the query parameter or the full content of this response. If the
 query parameter is an instance of L<SeeAlso::Identifier>, the return
@@ -67,7 +67,7 @@ parameters do not fit to a SeeAlso response.
 =cut
 
 sub set {
-    my ($self, $query, $labels, $descriptions, $urls) = @_;
+    my ($self, $query, $labels, $descriptions, $uris) = @_;
 
     $self->query( $query );
 
@@ -75,17 +75,17 @@ sub set {
         croak ("four parameters expected in SeeAlso::Response->new")
             unless ref($labels) eq "ARRAY"
                 and defined $descriptions and ref($descriptions) eq "ARRAY"
-                and defined $urls and ref($urls) eq "ARRAY";
+                and defined $uris and ref($uris) eq "ARRAY";
         my $l = @{$labels};
         croak ("length of arguments to SeeAlso::Response->new differ")
-            unless @{$descriptions} == $l and @{$urls} == $l;
+            unless @{$descriptions} == $l and @{$uris} == $l;
 
         $self->{labels} = [];
         $self->{descriptions} = [];
-        $self->{urls} = [];
+        $self->{uris} = [];
 
         for (my $i=0; $i < @{$labels}; $i++) {
-            $self->add($$labels[$i], $$descriptions[$i], $$urls[$i]);
+            $self->add($$labels[$i], $$descriptions[$i], $$uris[$i]);
         }
     }
 
@@ -133,7 +133,7 @@ sub add {
 
     push @{ $self->{labels} }, $label;
     push @{ $self->{descriptions} }, $description;
-    push @{ $self->{urls} }, $uri;
+    push @{ $self->{uris} }, $uri;
 
     return $self;
 }
@@ -151,10 +151,10 @@ sub size {
 
 =head2 get ( $index )
 
-Get a specific triple of label, description, and url
+Get a specific triple of label, description, and uri
 (starting with index 0):
 
-  ($label, $description, $url) = $response->get( $index )
+  ($label, $description, $uri) = $response->get( $index )
 
 =cut
 
@@ -162,11 +162,11 @@ sub get {
     my ($self, $index) = @_;
     return unless defined $index and $index >= 0 and $index < $self->size();
 
-    my $label =  $self->{labels}->[$index];
+    my $label =       $self->{labels}->[$index];
     my $description = $self->{descriptions}->[$index];
-    my $url =         $self->{urls}->[$index];
+    my $uri =         $self->{uris}->[$index];
 
-    return ($label, $description, $url);
+    return ($label, $description, $uri);
 }
 
 =head2 query ( [ $identifier ] )
@@ -195,6 +195,39 @@ Alias for the query method.
 
 *identifier = *query;
 
+=head2 labels
+
+Return an array of all labels in this response.
+
+=cut
+
+sub labels {
+    my $self = shift;
+    return @{ $self->{labels} };
+}
+
+=head2 descriptions
+
+Return an array of all descriptions in this response.
+
+=cut
+
+sub descriptions {
+    my $self = shift;
+    return ( @{ $self->{descriptions} } );
+}
+
+=head2 descriptions
+
+Return an array of all descriptions in this response.
+
+=cut
+
+sub uris {
+    my $self = shift;
+    return @{ $self->{uris} };
+}
+
 =head2 toJSON ( [ $callback [, $json ] ] )
 
 Return the response in JSON format and a non-mandatory callback wrapped
@@ -214,7 +247,7 @@ sub toJSON {
         $self->{query}->as_string,
         $self->{labels},
         $self->{descriptions},
-        $self->{urls}
+        $self->{uris}
     ];
 
     return _JSON( $response, $callback, $json );

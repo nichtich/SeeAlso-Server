@@ -132,7 +132,7 @@ sub query {
         if ( UNIVERSAL::isa( $self->{cache}, 'Cache' ) ) {
             $self->{cache}->freeze( $key, $response );
         } else {
-            $self->{cache}->store( $response );
+            $self->{cache}->update( $response );
         }
     }
 

@@ -38,6 +38,8 @@ t/source.t
 t/dbi.t
 t/critique.t
 t/cache.t
+t/isbn-dump.csv
+t/isbn-dump.ini
 
 client/showservice.xsl
 client/seealso.js 
