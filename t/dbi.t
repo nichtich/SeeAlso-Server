@@ -59,7 +59,7 @@ is_deeply( $s2->query('foo'), $r, 'SeeAlso::DBI as cache' );
 ### import
 # t/isbn.csv
 $source->clear;
-$source->bulk_import( file => 't/isbn.csv', uri => 'http://de.wikipedia.org/wiki/#2' );
+$source->bulk_import( file => 't/isbn-dump.csv', uri => 'http://de.wikipedia.org/wiki/#2' );
 
 # SeeAlso::Identifier::ISBN->new(...)->hash
 
