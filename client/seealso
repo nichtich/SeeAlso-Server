@@ -18,6 +18,7 @@ use JSON::XS;
 
 my ($verbose, $quiet, $debug, $help, $man, $pretty);
 my ($csv, $json, $n3, $rdfjson, $listformats);
+# my ($inifile);
 
 GetOptions(
     "quiet" => \$quiet,
@@ -30,6 +31,7 @@ GetOptions(
     "n3" => \$n3,
     "rdfjson" => \$rdfjson,
     "csv" => \$csv,
+ #   "ini" => \$inifile,
     "formats" => \$listformats,
 ) or pod2usage(2);
 pod2usage(1) if $help;
