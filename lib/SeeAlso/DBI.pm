@@ -15,6 +15,7 @@ use Config::IniFiles;
 use Carp qw(croak);
 
 use base qw( SeeAlso::Source );
+use SeeAlso::Source qw(expand_from_config);
 our $VERSION = '0.47';
 
 =head1 SYNOPSIS
@@ -30,15 +31,15 @@ our $VERSION = '0.47';
 
 A C<SeeAlso::DBI> object manages a store of L<SeeAlso::Response>
 objects that are stored in a database. By default that database
-must contain a table named C<seealso> with rows named C<hash>, 
+must contain a table named C<seealso> with rows named C<key>, 
 C<label>, C<database>, and C<uri>. A query for identifier C<$id>
 of type L<SeeAlso::Identifier> will result in an SQL query such as
 
-  SELECT label, description, uri FROM seealso WHERE hash=?
+  SELECT label, description, uri FROM seealso WHERE key=?
 
-With the hashed identifier (C<$id<gt>hash>) used as query parameter.
+With the hashed identifier (C<$id<gt>hash>) used as key parameter.
 By default a database table accessed with this class stores the four
-values hash, label, description, and uri in each row - but you can also
+values key, label, description, and uri in each row - but you can also
 use other schemas.
 
 =head1 METHODS
@@ -74,11 +75,6 @@ values with real values):
 The following parameters are recognized:
 
 =over
-
-=item config
-
-Configuration file (as filename, GLOB, GLOB reference, IO::File, scalar reference)
-or reference to a hash with parameters that will override the other parameters.
 
 =item dbh
 
@@ -126,26 +122,41 @@ SQL statement to clear the database table.
 
 Newly create the SQL table with the create statement.
 
+=item label
+
+Do not store the label in the database but use this value instead.
+
+=item description
+
+Do not store the description in the database but use this value instead.
+
+=item uri
+
+Do not store the uri in the database but use this value instead.
+
+=item key
+
+One of 'hash' (default), 'value', 'canonical' or a code that the identifier
+is passed to before beeing used as key. Only useful when used together with
+parameter C<idtype>.
+
+=item idtype
+
+Subclass of L<SeeAlso::Identifier> to be use when creating an identifier.
+
+=item config
+
+Configuration file (as filename, GLOB, GLOB reference, IO::File, scalar reference)
+or reference to a hash with parameters that will be added to the other parameters.
+Existing parameters are not overridden.
+
 =back
 
 =cut
 
 sub new {
     my ($class, %attr) = @_;
-
-    if ( $attr{config} ) {
-        my $cfg = $attr{config};
-        if ( ref($cfg) eq 'HASH' ) {
-            foreach my $hash ( keys %{ $cfg } ) {
-                $attr{$hash} = $cfg->{$hash};
-            }
-        } else {
-            my $ini = Config::IniFiles->new( -file => $attr{config} );
-            foreach my $hash ( $ini->Parameters('DBI') ) {
-                $attr{$hash} = $ini->val('DBI',$hash);
-            }
-        }
-    }
+    expand_from_config( \%attr, 'DBI' );
 
     if ( $attr{dbi} ) {
         $attr{dbi} = 'dbi:' . $attr{dbi} unless $attr{dbi} =~ /^dbi:/i; 
@@ -154,7 +165,7 @@ sub new {
         $attr{dbh} = DBI->connect( $attr{dbi}, $attr{user}, $attr{password} );
     }
 
-    croak('Parameter dbh required') 
+    croak('Parameter dbh or dbi required') 
         unless UNIVERSAL::isa( $attr{dbh}, 'DBI::db' );
     croak('Parameter dbh_ro must be a DBI object') 
         if defined $attr{dbh_ro} and not UNIVERSAL::isa( $attr{dbh_ro}, 'DBI::db' );
@@ -164,28 +175,57 @@ sub new {
     $self->{dbh} = $attr{dbh};
     $self->{dbh_ro} = $attr{dbh_ro};
     $self->{table} = defined $attr{table} ? $attr{table} : 'seealso';
+    $self->{key} = $attr{key} || 'hash';
+
+    $self->{idtype} = $attr{idtype} || 'SeeAlso::Identifier';
+    eval "require " . $self->{idtype};
+    croak $@ if $@;
+    croak($self->{idtype} . ' is not a SeeAlso::Identifier')
+        unless UNIVERSAL::isa( $self->{idtype}, 'SeeAlso::Identifier' );
 
     # build SQL strings
     my $table   = $self->{dbh}->quote_identifier( $self->{table} );
-    my $hash    = $self->{dbh}->quote_identifier('hash');
+    my $key    = $self->{dbh}->quote_identifier('key');
     my $label   = $self->{dbh}->quote_identifier('label');
     my $descr   = $self->{dbh}->quote_identifier('description');
     my $uri     = $self->{dbh}->quote_identifier('uri');
     my $db_name = $self->{dbh}->get_info( $GetInfoType{SQL_DBMS_NAME} );
-    my $values = "$label, $descr, $uri";
+
+    my @values_st;
+    my @create_st = ("$key VARCHAR(255)");
+
+    if (defined $attr{label}) {
+        $self->{label} = $attr{label};
+    } else {
+        push @values_st, $label;
+        push @create_st, "$label TEXT"
+    }
+    if (defined $attr{description}) {
+        $self->{descr} = $attr{description};
+    } else {
+        push @values_st, $descr;
+        push @create_st, "$descr TEXT",
+    }
+    if (defined $attr{uri}) {
+        $self->{uri} = $attr{uri};
+    } else {
+        push @values_st, $uri;
+        push @create_st, "$uri TEXT",
+    }
+
+    my $values = join(", ", @values_st);
 
     my %sql = (
-        'select' => "SELECT $values FROM $table WHERE $hash=?",
-        insert   => "INSERT INTO $table ($hash,$values) VALUES (?,?,?,?)",
-        # update  => "UPDATE $table SET $value = ? WHERE $hash=?",
-        'delete' => "DELETE FROM $table WHERE $hash = ?",
-        clear    => "DELETE FROM $table",
-        # get_keys => "SELECT DISTINCT $hash FROM $table",
-        create => "CREATE TABLE IF NOT EXISTS $table ("
-            . " $hash VARCHAR(255), $label TEXT, $descr TEXT, $uri TEXT"
-            . ")", 
+        'select' => "SELECT $values FROM $table WHERE $key=?",
+        'insert'   => "INSERT INTO $table ($key,$values) VALUES (?," . join(",", map {'?'} @values_st) . ")",
+        # update  => "UPDATE $table SET $value = ? WHERE $key=?",
+        'delete' => "DELETE FROM $table WHERE $key = ?",
+        'clear'    => "DELETE FROM $table",
+        # get_keys => "SELECT DISTINCT $key FROM $table",
+        'create' => "CREATE TABLE IF NOT EXISTS $table (" . join(", ", @create_st) . ")", 
         # TODO: create index:     
         #  $dbh->do( 'CREATE INDEX '.$table.'_isbn_idx ON '.$table.' (isbn)' );
+        'drop' => "DROP TABLE $table"
     );
 
     foreach my $c ( qw(select insert delete clear create) ) {
@@ -197,32 +237,60 @@ sub new {
     return $self;
 }
 
-=head2 query ( $identifier )
+=head2 query_callback ( $identifier )
 
-Fetch from DB, uses the hash value!
+Fetch from DB, uses the key value ($identifier->hash by default).
 
 =cut
 
 sub query_callback {
     my ($self, $identifier) = @_;
 
-    my $hash = $identifier->hash;
+    my $key = $self->key($identifier);
 
     my $dbh = $self->{dbh_ro} ? $self->{dbh_ro} : $self->{dbh};
     my $sth = $dbh->prepare_cached( $self->{'select'} )
         or croak $dbh->errstr;
-    $sth->execute($hash) or croak $sth->errstr;
+    $sth->execute($key) or croak $sth->errstr;
     my $result = $sth->fetchall_arrayref;
 
     my $response = SeeAlso::Response->new( $identifier );
 
     foreach my $row ( @{$result} ) {
-        $response->add( @{$row} );
+        my ($label, $description, $uri) = $self->enriched_row( $key, @{$row} );
+        $response->add( $label, $description, $uri );
     }
 
     return $response;
 }
 
+=head2 key ( $identifier )
+
+Get a key value for a given L<SeeAlso::Identifier>.
+
+=cut
+
+sub key {
+    my ($self, $identifier) = @_;
+
+    if ( not UNIVERSAL::isa( $identifier, $self->{idtype} ) ) {
+        my $class = $self->{idtype};
+        $identifier = eval "new $class(\$identifier)"; # TODO: what if this fails?
+    }
+
+    if ($self->{key} eq 'hash') {
+        return $identifier->hash;
+    } elsif ($self->{key} eq 'value') {
+        return $identifier->value;
+    } elsif ($self->{key} eq 'canonical') {
+        return $identifier->canonical;
+    } elsif (ref($self->{key}) eq 'CODE') {
+        my $code = $self->{key};
+        return $code( $identifier );
+    }
+
+    return $identifier->hash;
+}
 
 =head2 create
 
@@ -238,13 +306,25 @@ sub create {
 
 =head2 clear
 
-Delete all content in the database.
+Delete all content in the database. Be sure not to call this by accident!
 
 =cut
 
 sub clear {
     my ($self) = @_;
     $self->{dbh}->do( $self->{'clear'} ) or croak $self->{dbh}->errstr;
+    return;
+}
+
+=head2 drop
+
+Delete the whole database table. Be sure not to call this by accident!
+
+=cut
+
+sub drop {
+    my ($self) = @_;
+    $self->{dbh}->do( $self->{'drop'} ) or croak $self->{dbh}->errstr;
     return;
 }
 
@@ -256,7 +336,7 @@ Removes all rows associated with a given identifier.
 
 sub delete {
     my ($self, $identifier) = @_;
-    $self->{dbh}->do( $self->{'delete'}, undef, $identifier->hash ) 
+    $self->{dbh}->do( $self->{'delete'}, undef, $self->key($identifier) ) 
         or croak $self->{dbh}->errstr;
 }
 
@@ -289,12 +369,17 @@ sub insert {
 
     return 0 unless $response->size;
 
-    my $hash = $response->identifier->hash;
+    # type hash/canonical/value
+    my $key = $self->key( $response->identifier );
     my @rows;
 
     for(my $i=0; $i<$response->size; $i++) {
         my ($label, $description, $uri) = $response->get($i);
-        push @rows, [$hash, $label, $description, $uri];
+        my @insert = ($key);
+        push @insert, $label       unless defined $self->{label};
+        push @insert, $description unless defined $self->{descr};
+        push @insert, $uri         unless defined $self->{uri};
+        push @rows, \@insert;
     }
 
     return $self->bulk_insert( sub { shift @rows } );
@@ -304,7 +389,7 @@ sub insert {
 
 Add a set of quadrupels to the database. The subroutine $fetch_quadruple_sub
 is called unless without any parameters, until it returns a false value. It
-is expected to return a reference to an array with four values (hash, label,
+is expected to return a reference to an array with four values (key, label,
 description, uri) which will be added to the database. Returns the number
 of affected rows or -1 if the database driver cannot determine this number.
 
@@ -322,7 +407,38 @@ sub bulk_insert {
     return $tuples;
 }
 
+=head2 enriched_row
+
+=cut
+# ($key,$label,$description,$uri,@row) => ($label,$description,$uri)
+sub enriched_row {
+    my ($self, @row) = @_;
+
+    my @row2 = @row;
+    my $key = shift @row2;
+    my $label       = defined $self->{label} ? $self->{label} : shift @row2;
+    my $description = defined $self->{descr} ? $self->{descr} : shift @row2;
+    my $uri         = defined $self->{uri}   ? $self->{uri}   : shift @row2;
+    # code references not supported yet!
+
+    no warnings;
+    if ( defined $self->{label} ) {
+        $label       =~ s/#([0-9])/${row[$1-1]}/g;
+    }
+    if ( defined $self->{descr} ) {
+        $description =~ s/#([0-9])/${row[$1-1]}/g;
+    }
+    if ( defined $self->{uri} ) {
+        $uri         =~ s/#([0-9])/${row[$1-1]}/g;
+    }
+
+    return ( $label, $description, $uri );
+}
+
+
 =head2 bulk_import ( [ file => $file ... ] )
+
+TODO: remove enrichment!
 
 =cut
 
@@ -332,8 +448,8 @@ sub bulk_import {
     croak 'No file specified' unless defined $file;
 
     my $label       = defined $param{label} ? $param{label} : '#2';
-    my $description = defined $param{description} ? $param{description} : '#3';
-    my $uri         = defined $param{uri} ? $param{uri} : '#4';
+    my $description = defined $param{descr} ? $param{descr} : '#3';
+    my $uri         = defined $param{uri}   ? $param{uri} : '#4';
 
     open FILE, $file or croak "Failed to open file $file";
     binmode FILE, ":utf8";

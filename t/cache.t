@@ -38,5 +38,4 @@ sub test_cache {
     is( $source->query('0'), '["0",["2"],[""],[""]]', 'cache (4)' );
     $cache->clear;
     is( $source->query('0'), '["0",["3"],[""],[""]]', 'cache (5)' );
-
 }

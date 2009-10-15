@@ -140,3 +140,8 @@ like( $errors[0], qr/^Illegal division by zero/, "error handler");
 $s = SeeAlso::Server->new();
 $http = $s->query( \&UCnormalizedID, "abc", "seealso" );
 like( $http, qr/\["ABC",\[\],\[\],\[\]\]/, "code as source" );
+
+# use another identifier type
+$s = SeeAlso::Server->new( idtype => 'SeeAlso::Identifier::ISBN' );
+$r = $s->query( sub { return SeeAlso::Response->new( $_[0] ); }, '978-0-596-52724-2', 'seealso' );
+like( $r, qr/urn:isbn:9780596527242/, "idtype" );

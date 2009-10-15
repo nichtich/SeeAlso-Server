@@ -1,6 +1,7 @@
 Features, that are planned to be implemented before 1.0 release include:
 
 == Next ==
+- Server-parameter: factory (to create id) and idtype (to create id)
 - rewrite/fix DBI and include tests
 -- read configuration from file (constructor)
 -- bulk_insert etc.
@@ -20,6 +21,7 @@ Features, that are planned to be implemented before 1.0 release include:
     returns description() as response or list of members
 - Finish SeeAlso::Client (including tests and examples, OSDD...)
 -- Parse OSDD for SeeAlso::Client
+- check whether insert statement in DBI failed
 - Add showservices.xsl (multiple) in addition to showservice.xsl (for collections)
 - fix: --(Thomas Berger):
 

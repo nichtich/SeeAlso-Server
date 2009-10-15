@@ -15,7 +15,7 @@ use CGI qw(-oldstyle_urls);
 
 use SeeAlso::Identifier;
 use SeeAlso::Response;
-use SeeAlso::Source;
+use SeeAlso::Source qw(expand_from_config);
 
 our $VERSION = '0.58';
 
@@ -111,6 +111,16 @@ You can use this parameter to provide more formats then 'seealso' and
 'opensearchdescription' via unAPI. By setting a name to false, it will
 not be shown - this way you can disable support of opensearchdescription.
 
+=item idtype
+
+Subclass of L<SeeAlso::Identifier> to be use when creating an identifier.
+
+=item config
+
+Configuration file (as filename, GLOB, GLOB reference, IO::File, scalar reference)
+or reference to a hash with parameters that will be added to the other parameters.
+Existing parameters are not overridden.
+
 =back
 
 =cut
@@ -124,6 +134,8 @@ sub new {
     croak('Parameter cgi must be a CGI object!')
         if defined $cgi and not UNIVERSAL::isa($cgi, 'CGI');
 
+    expand_from_config( \%params, 'Server' );
+
     my $self = bless {
         cgi => $cgi || new CGI,
         logger => $logger,
@@ -132,7 +144,13 @@ sub new {
         debug => $params{debug} || 0,
         formats => { 'seealso' => { type => 'text/javascript' } },
         errors => [],
+        idtype => $params{idtype} || 'SeeAlso::Identifier',
     }, $class;
+
+    eval "require " . $self->{idtype};
+    croak $@ if $@;
+    croak($self->{idtype} . ' is not a SeeAlso::Identifier')
+        unless UNIVERSAL::isa( $self->{idtype}, 'SeeAlso::Identifier' );
 
     $self->setExpires($params{expires}) if $params{expires};
 
@@ -236,8 +254,11 @@ sub query {
     } elsif (not defined $identifier) {
         $identifier = $cgi->param('id');
     }
-    $identifier = new SeeAlso::Identifier( $identifier )
-        unless UNIVERSAL::isa( $identifier, 'SeeAlso::Identifier' );
+
+    if ( not UNIVERSAL::isa( $identifier, 'SeeAlso::Identifier' ) ) {
+        my $class = $self->{idtype};
+        $identifier = eval "new $class(\$identifier)"; # TODO: what if this fails?
+    }
 
     $format = $cgi->param('format') unless defined $format;
     $format = "" unless defined $format;

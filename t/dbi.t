@@ -11,7 +11,11 @@ use Data::Dumper;
 use File::Temp qw(tempfile);
 use DBI;
 
-my $source;
+my @res = (
+    SeeAlso::Response->new("x",["a"],["b"],["x:c"]),
+    SeeAlso::Response->new("1",["l1"],["hello"],["uri:1"]),
+);
+my ($source,$r);
 my (undef,$file) = tempfile;
 
 my $dbh = eval { DBI->connect("dbi:SQLite:dbname=$file","",""); };
@@ -26,11 +30,8 @@ if ( $dbh ) {
 $source = SeeAlso::DBI->new( dbh => $dbh, build => 1 );
 isa_ok( $source, 'SeeAlso::DBI' );
 
-my $r = SeeAlso::Response->new("x",["a"],["b"],["x:c"]);
-#print Dumper($r) , "$source\n";
-
+$r = $res[0];
 $source->insert($r);
-
 my $r2 = $source->query("x");
 is_deeply( $r2, $r , 'insert and query' );
 
@@ -53,8 +54,12 @@ my $s1 = SeeAlso::Source->new(
     cache => $s2
 );
 
+$r = $s2->query('foo');
+ok( ! $r->size, 'empty response' );
 $r = $s1->query('foo');
-is_deeply( $s2->query('foo'), $r, 'SeeAlso::DBI as cache' );
+ok( $r->size, 'not empty response' );
+is_deeply( $s2->query('foo'), $r, 'result stored back in the cache' );
+
 
 ### import
 # t/isbn.csv
@@ -67,4 +72,16 @@ $r = $source->query( '377760736' );
 is_deeply( [ sort $r->labels ], ["Actinium","Aluminium","Antimon","Argon","Arsen","Astat"], "bulk_import" );
 
 
+
+#### omit some of label/description/uri
+
+$source = SeeAlso::DBI->new( dbh => $dbh, table => 'foo', description => "hello", build => 1 );
+
+$r = $res[1];
+$source->insert( $r );
+$r2 = $source->query( '1' );
+#print Dumper($r2) . "\n";
+is_deeply( $r2, $r, "omitted description" );
+
+# TODO: test 'key' parameter
 

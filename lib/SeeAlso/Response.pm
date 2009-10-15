@@ -94,7 +94,7 @@ sub set {
 
 =head2 add ( $label [, $description [, $uri ] ] )
 
-Add an item to the result set. All parameters must be strings.
+Add an item to the result set. All parameters are stringified.
 The URI is only partly checked for well-formedness, so it is 
 recommended to use a specific URI class like C<URI> and pass 
 a normalized version of the URI:
@@ -112,21 +112,12 @@ Returns the SeeAlso::Response object so you can chain method calls.
 sub add {
     my ($self, $label, $description, $uri) = @_;
 
-    if (defined $label) {
-        croak("response label must be a string") if ref($label);
-    } else {
-        $label = "";
-    }
-    if (defined $description) {
-        croak("response description must be a string") if ref($description);
-    } else {
-        $description = "";
-    }
-    if ( defined $uri && $uri ne "" ) {
-        croak("irregular response URI") 
-            unless $uri =~ /^[a-z][a-z0-9.+\-]*:/i;
-    } else {
-        $uri = "";
+    $label = defined $label ? "$label" : "";
+    $description = defined $description ? "$description" : "";
+    $uri = defined $uri ? "$uri" : "";
+    if ( $uri ne "" ) {
+      croak("irregular response URI") 
+          unless $uri =~ /^[a-z][a-z0-9.+\-]*:/i;
     }
 
     return $self unless $label ne "" or $description ne "" or $uri ne "";

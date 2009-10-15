@@ -4,7 +4,9 @@ use strict;
 use Carp qw(croak);
 use SeeAlso::Response;
 
-our $VERSION = '0.562';
+our $VERSION = '0.57';
+use base 'Exporter';
+our @EXPORT_OK = qw(expand_from_config);
 
 =head1 NAME
 
@@ -25,7 +27,10 @@ SeeAlso::Source - Provides OpenSearch Suggestions reponses
 Create a new source. If the first parameter is a code reference or another
 L<SeeAlso::Source> parameter, it is used as C<callback> parameter. If the
 first or second parameter is a L<Cache> object, it is used as C<cache>
-parameter. Other parameters are passed to the C<description> method.
+parameter. With C<config> you can specify a configuration file (as filename,
+GLOB, GLOB reference, IO::File, or scalar reference) or a reference to a hash
+with parameters that will be added. Remaining parameters are passed to the
+C<description> method.
 
 =cut
 
@@ -38,6 +43,8 @@ sub new {
     $cache = shift if UNIVERSAL::isa($_[0], 'Cache');
 
     my (%params) = @_;
+    expand_from_config( \%params, 'Source' );
+
     my $self = bless { }, $class;
 
     $callback = $params{callback} unless defined $callback;
@@ -76,9 +83,9 @@ sub callback {
 
 =head2 cache ( [ $cache | undef ] )
 
-Get or set a cache for this source. The parameter must be a L<Cache> object
-or undef - the latter disables caching and is the default. Returns the cache 
-object or undef.
+Get or set a cache for this source. The parameter must be a L<Cache> object,
+a L<SeeAlso::Source> object or undef. Undef disables caching and is the 
+default. Returns the cache object or undef.
 
 =cut
 
@@ -246,6 +253,32 @@ sub about {
     $url = "" unless defined $url;
 
     return ($name, $description, $url); 
+}
+
+=head1 INTERNAL FUNCTIONS
+
+=head2 expand_from_config ( $hashref, $section )
+
+Expand a hash with config parameters from another hash or from
+an INI-File.
+
+=cut
+
+sub expand_from_config {
+    my ($config, $section) = @_;
+    return unless defined $config->{config};
+
+    my $cfg = $config->{config};
+    if ( ref($cfg) ne 'HASH' ) {
+        my $ini = Config::IniFiles->new( -file => $config->{config}, -allowcontinue => 1 );
+        $cfg = { };
+        foreach my $hash ( $ini->Parameters($section) ) {
+            $cfg->{$hash} = $ini->val($section,$hash);
+        }
+    }
+    foreach my $hash ( keys %{ $cfg } ) {
+        $config->{$hash} = $cfg->{$hash} unless defined $config->{$hash};
+    }
 }
 
 1;
