@@ -39,13 +39,32 @@ my $src2 = SeeAlso::Source->new( $source );
 is_deeply( $src2->query("x"), $r, 'wrapped source' );
 
 #### Read from config file
-my $cfg = <<CFG;
-[DBI]
-dbi=SQLite:dbname=$file
-CFG
-$source = SeeAlso::DBI->new( config => \$cfg );
-is_deeply( $source->query("x"), $r, 'from config file' );
+eval "require Config::IniFiles";
+if (! $@ ) {
+    my ($fh, $filename) = tempfile( SUFFIX => ".ini" );
+    print $fh "[DBI]\ndbi=SQLite:dbname=$file\n";
+    close $fh;
+    $source = SeeAlso::DBI->new( config => $filename );
+    is_deeply( $source->query("x"), $r, 'from config file (INI)' );
+}
 
+eval "require YAML::Any";
+if (! $@ ) {
+    my ($fh, $filename) = tempfile( SUFFIX => ".yml" );
+    print $fh "DBI:\n  dbi: SQLite:dbname=$file\n";
+    close $fh;
+    $source = SeeAlso::DBI->new( config => $filename );
+    is_deeply( $source->query("x"), $r, 'from config file (YAML)' );
+}
+
+eval "require JSON";
+if (! $@ ) {
+    my ($fh, $filename) = tempfile( SUFFIX => ".json" );
+    print $fh '{ "DBI" : { "dbi" : "SQLite:dbname=' . $file . '"}}';
+    close $fh;
+    $source = SeeAlso::DBI->new( config => $filename );
+    is_deeply( $source->query("x"), $r, 'from config file (JSON)' );
+}
 
 #### SeeAlso::DBI as cache
 my $s2 = SeeAlso::DBI->new( dbh => $dbh );

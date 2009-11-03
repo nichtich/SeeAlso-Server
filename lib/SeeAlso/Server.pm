@@ -117,9 +117,10 @@ Subclass of L<SeeAlso::Identifier> to be use when creating an identifier.
 
 =item config
 
-Configuration file (as filename, GLOB, GLOB reference, IO::File, scalar reference)
-or reference to a hash with parameters that will be added to the other parameters.
-Existing parameters are not overridden.
+Configuration settings as hash reference or as configuration file that will
+be read into a hash reference. Afterwarrds the The C<Server> section of the
+configuration is added to the other parameters (existing parameters are not 
+overridden).
 
 =back
 
@@ -240,6 +241,8 @@ sub query {
     my ($self, $source, $identifier, $format, $callback) = @_;
     my $cgi = $self->{cgi};
     my $http = "";
+
+   
 
     if (ref($source) eq "CODE") {
         $source = new SeeAlso::Source( $source );

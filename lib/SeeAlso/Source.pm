@@ -27,10 +27,26 @@ SeeAlso::Source - Provides OpenSearch Suggestions reponses
 Create a new source. If the first parameter is a code reference or another
 L<SeeAlso::Source> parameter, it is used as C<callback> parameter. If the
 first or second parameter is a L<Cache> object, it is used as C<cache>
-parameter. With C<config> you can specify a configuration file (as filename,
-GLOB, GLOB reference, IO::File, or scalar reference) or a reference to a hash
-with parameters that will be added. Remaining parameters are passed to the
-C<description> method.
+parameter.
+
+=over 4
+
+=item cache
+
+L<Cache> or L<SeeAlso::DBI> object to be used as cache.
+
+=item config
+
+Configuration settings as hash reference or as configuration file that will
+be read into a hash reference. Afterwarrds the The C<Source> section of the
+configuration is added to the other parameters (existing parameters are not 
+overridden).
+
+=item other parameters
+
+Are passed to the description method.
+
+=back
 
 =cut
 
@@ -257,10 +273,26 @@ sub about {
 
 =head1 INTERNAL FUNCTIONS
 
+=head2 load_config ( $filename )
+
+Load a configuration file (relaxed JSON format) and return a hash reference.
+On error the hash reference is empty.
+
+=cut
+
+sub load_config {
+    my $file = shift;
+    open CONF, $file;
+    my $config = eval { JSON->new->relaxed->utf8->decode(join('',<CONF>)); };
+    close CONF;
+    return $config || { };
+}
+
 =head2 expand_from_config ( $hashref, $section )
 
-Expand a hash with config parameters from another hash or from
-an INI-File.
+Expand a hash with config parameters from another hash or from a configuration
+file. This function can read INI files (if L<Config::IniFiles> is installed),
+YAML files (if L<YAML::Any> is installed), and JSON files.
 
 =cut
 
@@ -269,13 +301,38 @@ sub expand_from_config {
     return unless defined $config->{config};
 
     my $cfg = $config->{config};
-    if ( ref($cfg) ne 'HASH' ) {
-        my $ini = Config::IniFiles->new( -file => $config->{config}, -allowcontinue => 1 );
+    if ( ref($cfg) eq 'HASH' ) {
+        $cfg = $cfg->{$section};
+    } else {
         $cfg = { };
-        foreach my $hash ( $ini->Parameters($section) ) {
-            $cfg->{$hash} = $ini->val($section,$hash);
+        my $file = $config->{config};
+        if ( $file =~ /\.ini$/ ) {
+            eval {
+                require Config::IniFiles;
+                my $ini = Config::IniFiles->new( -file => $config->{config}, -allowcontinue => 1 );
+                foreach my $hash ( $ini->Parameters($section) ) {
+                    $cfg->{$hash} = $ini->val($section,$hash);
+                }
+            };
+        } elsif ( $file =~ /\.y[a]?ml$/ ) {
+            eval {
+                require YAML::Any;
+                my $config = YAML::Any::LoadFile( $file );
+                $cfg = $config->{$section};
+            };
+        } elsif ( $file =~ /\.json$/ ) {
+            eval {
+                open CONF, $file;
+                my $config = JSON->new->relaxed->utf8->decode(join('',<CONF>));
+                close CONF;
+                $cfg = $config->{$section};
+            };
+        } else {
+            croak "Unknown configuration file type $file";
         }
+        croak "Failed to read configuration file $file: $@" if $@;
     }
+    return unless ref($cfg) eq 'HASH';
     foreach my $hash ( keys %{ $cfg } ) {
         $config->{$hash} = $cfg->{$hash} unless defined $config->{$hash};
     }

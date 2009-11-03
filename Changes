@@ -2,6 +2,7 @@
                  - some refactoring and cleanup (rewrote DBI support)
                  - added idtype parameter to autoload identifiers
                  - added isbn10/isbn13 methods
+                 - Introduced YAML configuration files
 0.57  2009-08-06 - rewrote SeeAlso::Identifier
                  - added SeeAlso::Identifier::Factory
                  - rewrote SeeAlso::Identifier::ISBN

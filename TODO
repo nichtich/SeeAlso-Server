@@ -3,7 +3,6 @@ Features, that are planned to be implemented before 1.0 release include:
 == Next ==
 - Server-parameter: factory (to create id) and idtype (to create id)
 - rewrite/fix DBI and include tests
--- read configuration from file (constructor)
 -- bulk_insert etc.
 -- seeealso-dbi: insert, delete, create, update etc.
 - rewrite Identifier::GND
@@ -22,6 +21,8 @@ Features, that are planned to be implemented before 1.0 release include:
 - Finish SeeAlso::Client (including tests and examples, OSDD...)
 -- Parse OSDD for SeeAlso::Client
 - check whether insert statement in DBI failed
+- add caching of config files in expand_from_config
+- DBI does not load Description settings?
 - Add showservices.xsl (multiple) in addition to showservice.xsl (for collections)
 - fix: --(Thomas Berger):
 
@@ -31,12 +32,10 @@ Es muesste sich reparieren lassen als
 
 callback={seealso:callback?}
 
-
 == Tests ==
 - Add more Unicode tests from toJSON and fromJSON!
 - Test servers with SeeAlso::Client
 - (See L<TAP::Harness> and L<Test::Harness>)
-- Add test of SeeAlso::Source::DBI with SQLite
 - Add a management class for multiple services
 -- SeeAlso::Collection
 

@@ -11,12 +11,11 @@ SeeAlso::DBI - Store L<SeeAlso::Response> objects in database.
 
 use DBI;
 use DBI::Const::GetInfoType;
-use Config::IniFiles;
 use Carp qw(croak);
 
 use base qw( SeeAlso::Source );
 use SeeAlso::Source qw(expand_from_config);
-our $VERSION = '0.47';
+our $VERSION = '0.48';
 
 =head1 SYNOPSIS
 
@@ -49,7 +48,7 @@ use other schemas.
 Create a new database store. You must specify either a database handle in 
 form or a L<DBI> object with parameter C<dbh> parameter, or a C<dbi>
 parameter that is passed to C<DBI-E<gt>connect>, or a C<config> parameter
-to read setting from the C<[DBI]> section of a configuration file.
+to read setting from the C<DBI> section of a configuration hash reference.
 
   my $dbh = DBI->new( "dbi:mysql:database=$d;host=$host", $user, $password );
   my $db = SeeAlso::DBI->new( dbh => $dbh );
@@ -59,18 +58,20 @@ to read setting from the C<[DBI]> section of a configuration file.
       user => $user, passwort => $password
   );
 
-  my $db = SeeAlso::DBI->new( config => "dbiconnect.ini" );
+  use YAML::Any qw(LoadFile);
+  my $config = LoadFile("dbiconnect.yml");
+  my $db = SeeAlso::DBI->new( config => $config );
+  my $db = SeeAlso::DBI->new( $%{$config->{DBI}} ); # same
 
-The configuration file must be an INI file that contains a section named
-C<[DBI]>. All values specified in this section are added to the constructor's
-parameter list. Alternatively you directly can pass hash reference instead
-of a file name. A configuration file could look like this (replace uppercase 
-values with real values):
+The configuration hash can be stored in a configuration file (INI, YAML, etc.)
+and must contains a section named C<DBI>. All values specified in this section
+are added to the constructor's parameter list. A configuration file could look 
+like this (replace uppercase values with real values):
 
-  [DBI]
-  dbi = mysql:database=DBNAME;host=HOST
-  user = USER
-  password = PWD
+  DBI:
+    dbi : mysql:database=DBNAME;host=HOST
+    user : USER
+    password : PWD
 
 The following parameters are recognized:
 
@@ -146,9 +147,10 @@ Subclass of L<SeeAlso::Identifier> to be use when creating an identifier.
 
 =item config
 
-Configuration file (as filename, GLOB, GLOB reference, IO::File, scalar reference)
-or reference to a hash with parameters that will be added to the other parameters.
-Existing parameters are not overridden.
+Configuration settings as hash reference or as configuration file that will
+be read into a hash reference. Afterwarrds the The C<DBI> section of the
+configuration is added to the other parameters (existing parameters are not 
+overridden).
 
 =back
 
@@ -171,6 +173,8 @@ sub new {
         if defined $attr{dbh_ro} and not UNIVERSAL::isa( $attr{dbh_ro}, 'DBI::db' );
 
     my $self = bless { }, $class;
+
+    $self->description( %attr ) if %attr;
 
     $self->{dbh} = $attr{dbh};
     $self->{dbh_ro} = $attr{dbh_ro};
