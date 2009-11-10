@@ -17,7 +17,7 @@ Features, that are planned to be implemented before 1.0 release include:
 - Add multiple example parameters (see pnd2gso)
 - Print errors to error logfile in SeeAlso::Server
 - add and describe minimal server example (examples/server.pl)
-- add Wikipedia2ISBN example (!)
+- add Wikipedia2ISBN example
 - add SeeAlso::Collection (also as SeeAlso::Source)
     returns description() as response or list of members
 - Finish SeeAlso::Client (including tests and examples, OSDD...)
