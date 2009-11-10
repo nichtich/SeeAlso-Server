@@ -6,6 +6,7 @@ use Test::More qw(no_plan);
 
 use SeeAlso::Server;
 use SeeAlso::Response;
+use Data::Dumper;
 use CGI;
 
 sub UCnormalizedID { my $id = shift; return SeeAlso::Response->new( uc($id->normalized()) ); }

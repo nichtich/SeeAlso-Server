@@ -3,7 +3,7 @@
 use strict;
 
 use Test::More qw(no_plan);
-use SeeAlso::Source;
+use SeeAlso::Source qw(serve);
 use SeeAlso::Identifier;
 
 use Data::Dumper;
@@ -72,3 +72,19 @@ is( $source->description("LongName"), "Test source", "LongName");
 my $descr = $source->description();
 is( $descr->{ShortName}, "Test", "ShortName (2)");
 is( $descr->{LongName}, "Test source", "LongName (2)");
+
+__END__
+
+# serve
+use CGI qw(param);
+param('id','xxx');
+param('format','seealso');
+
+# TODO: caputure STDOUT and exit
+serve( $q );
+$source = SeeAlso::Source->new( $q );
+my $http = $source->serve;
+is_like( $http, qr/^Status.*\["xxx.*/ );
+#print $http;
+print "---\n";
+

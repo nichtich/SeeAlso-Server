@@ -1,4 +1,5 @@
 0.58  2009-08-.. - Added support of Caching
+                 - added 'serve' method
                  - some refactoring and cleanup (rewrote DBI support)
                  - added idtype parameter to autoload identifiers
                  - added isbn10/isbn13 methods

@@ -11,8 +11,9 @@ SeeAlso::Logger - log requests to a SeeAlso Simple service
 
 use Carp qw(croak);
 use POSIX qw(strftime);
+use CGI;
 
-our $VERSION = "0.45";
+our $VERSION = "0.46";
 
 =head1 DESCRIPTION
 
@@ -204,7 +205,7 @@ sub log {
     # my $user_agent = $cgi->user_agent();
     $service ||= "";
 
-    my $id = $cgi->param('id') || '';
+    my $id = (defined $cgi ? $cgi->param('id') : CGI::param('id')) || '';
 
     my $valid = $response->query() eq "" ? '0' : '1';
     my $size = $response->size();

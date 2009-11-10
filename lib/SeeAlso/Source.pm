@@ -3,10 +3,11 @@ package SeeAlso::Source;
 use strict;
 use Carp qw(croak);
 use SeeAlso::Response;
+use SeeAlso::Server;
 
-our $VERSION = '0.57';
+our $VERSION = '0.58';
 use base 'Exporter';
-our @EXPORT_OK = qw(expand_from_config);
+our @EXPORT_OK = qw(expand_from_config serve);
 
 =head1 NAME
 
@@ -57,6 +58,7 @@ sub new {
     $callback = shift
         if ref($_[0]) eq 'CODE' or UNIVERSAL::isa($_[0],'SeeAlso::Source');
     $cache = shift if UNIVERSAL::isa($_[0], 'Cache');
+    shift if not defined $_[0];
 
     my (%params) = @_;
     expand_from_config( \%params, 'Source' );
@@ -225,13 +227,13 @@ sub description {
     if (scalar @_ > 1) {
         my %param = @_;
         foreach my $key (keys %param) {
-            my $value = $param{$key};
+            my $value = defined $param{$key} ? $param{$key} : '';
             if ($key =~ /^Examples?$/) {
                 $value = [ $value ] unless ref($value) eq "ARRAY";
                 # TODO: check examples (must be an array of a hash)
                 $key = "Examples";
             } else {
-                $value =~ s/\s+/ /g; # to string
+                $value =~ s/\s+/ /g;  # to string
             }
             if ($self->{description}) {
                 $self->{description}{$key} = $value;
@@ -269,6 +271,30 @@ sub about {
     $url = "" unless defined $url;
 
     return ($name, $description, $url); 
+}
+
+=head2 serve ( [ $query | $source ] [ $config ] )
+
+Serve a SeeAlso request via L<SeeAlso::Server>C<::query> and exit.
+This method can also be exported and used as function.
+
+=cut
+
+sub serve {
+    my ($source, $query, $config);
+    if ( UNIVERSAL::isa( $_[0], 'SeeAlso::Source' ) ) {
+        ($source, $config) = @_;
+    } else {
+        $query = shift if ref($_[0]) eq 'CODE';
+        $config = shift;
+        $source = SeeAlso::Source->new( $query, config => $config ); 
+    }
+
+    my $server = SeeAlso::Server->new( config => $config );
+
+    binmode \*STDOUT, "utf8";
+    print $server->query( $source );
+    exit;
 }
 
 =head1 INTERNAL FUNCTIONS

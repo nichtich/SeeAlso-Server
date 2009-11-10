@@ -15,7 +15,10 @@ use CGI qw(-oldstyle_urls);
 
 use SeeAlso::Identifier;
 use SeeAlso::Response;
-use SeeAlso::Source qw(expand_from_config);
+use SeeAlso::Source;
+
+use base 'Exporter';
+our @EXPORT_OK = qw(xmlencode);
 
 our $VERSION = '0.58';
 
@@ -68,7 +71,7 @@ parameters:
 
 =item cgi
 
-a L<CGI> object. If not specified, a new L<CGI> object is created.
+a L<CGI> object. If not specified, a new L<CGI> object is created on query.
 
 =item expires
 
@@ -107,9 +110,14 @@ An additional hash of formats (experimental). The structure is:
      filter => \&code,     # or
   }
 
+or for known formats
+
+  name => 1
+
 You can use this parameter to provide more formats then 'seealso' and
 'opensearchdescription' via unAPI. By setting a name to false, it will
 not be shown - this way you can disable support of opensearchdescription.
+Known formats are C<seealso>, C<n3>, C<rdfjson>, C<csv>, and C<redirect>.
 
 =item idtype
 
@@ -129,23 +137,23 @@ overridden).
 sub new {
     my ($class, %params) = @_;
 
-    my $cgi = $params{cgi};
     my $logger = $params{logger};
 
+    my $cgi = $params{cgi};
     croak('Parameter cgi must be a CGI object!')
         if defined $cgi and not UNIVERSAL::isa($cgi, 'CGI');
 
-    expand_from_config( \%params, 'Server' );
+    SeeAlso::Source::expand_from_config( \%params, 'Server' );
 
     my $self = bless {
-        cgi => $cgi || new CGI,
+        cgi => ($cgi || undef),
         logger => $logger,
-        xslt => $params{xslt} || undef,
-        clientbase => $params{clientbase} || undef,
-        debug => $params{debug} || 0,
+        xslt => ($params{xslt} || undef),
+        clientbase => ($params{clientbase} || undef),
+        debug => ($params{debug} || 0),
         formats => { 'seealso' => { type => 'text/javascript' } },
         errors => [],
-        idtype => $params{idtype} || 'SeeAlso::Identifier',
+        idtype => ($params{idtype} || 'SeeAlso::Identifier'),
     }, $class;
 
     eval "require " . $self->{idtype};
@@ -160,6 +168,7 @@ sub new {
         foreach my $name (keys %formats) {
             next if $name eq 'seealso' or $name eq 'debug';
             my $format = $formats{$name};
+            my $value = $formats{$name};
             if (not $format) {
                 $self->{formats}{$name} = 0;
             } elsif (ref($format) eq 'HASH') {
@@ -194,6 +203,12 @@ sub new {
                     $self->{formats}{'csv'} = {
                         type => "text/csv",
                         filter => sub { return $_[0]->toCSV; },
+                    };
+                } elsif ($name eq 'redirect') {
+                    $self->{formats}{'redirect'} = {
+                        type => "text/html",
+                        raw => 1, # includes HTTP headers
+                        filter => sub { return $_[0]->toRedirect($value); },
                     };
                 }
                 # TODO: ttl : (text/turtle)
@@ -239,10 +254,7 @@ errors method. The error list is cleaned before each call of query.
 
 sub query {
     my ($self, $source, $identifier, $format, $callback) = @_;
-    my $cgi = $self->{cgi};
     my $http = "";
-
-   
 
     if (ref($source) eq "CODE") {
         $source = new SeeAlso::Source( $source );
@@ -251,11 +263,11 @@ sub query {
         unless defined $source and UNIVERSAL::isa($source, 'SeeAlso::Source');
 
     if ( ref($identifier) eq 'CODE' ) {
-        $identifier = &$identifier( $cgi->param('id') );
+        $identifier = &$identifier( $self->param('id') );
     } elsif (UNIVERSAL::isa( $identifier,'SeeAlso::Identifier::Factory' )) {
-        $identifier = $identifier->create( $cgi->param('id') );
+        $identifier = $identifier->create( $self->param('id') );
     } elsif (not defined $identifier) {
-        $identifier = $cgi->param('id');
+        $identifier = $self->param('id');
     }
 
     if ( not UNIVERSAL::isa( $identifier, 'SeeAlso::Identifier' ) ) {
@@ -263,9 +275,9 @@ sub query {
         $identifier = eval "new $class(\$identifier)"; # TODO: what if this fails?
     }
 
-    $format = $cgi->param('format') unless defined $format;
+    $format = $self->param('format') unless defined $format;
     $format = "" unless defined $format;
-    $callback = $cgi->param('callback') unless defined $callback;
+    $callback = $self->param('callback') unless defined $callback;
     $callback = "" unless defined $callback;
 
     # If everything is ok up to here, we should definitely return some valid stuff
@@ -275,7 +287,7 @@ sub query {
     if ($format eq 'opensearchdescription') {
         $http = $self->openSearchDescription( $source );
         if ($http) {
-            $http = $cgi->header( -status => 200, -type => 'application/opensearchdescription+xml; charset: utf-8' ) . $http;
+            $http = CGI::header( -status => 200, -type => 'application/opensearchdescription+xml; charset: utf-8' ) . $http;
             return $http;
         }
     }
@@ -320,7 +332,7 @@ sub query {
     if ( $self->{logger} ) {
         my $service = $source->description( "ShortName" );
         eval {
-            $self->{logger}->log( $cgi, $response, $service )
+            $self->{logger}->log( $self->{cgi}, $response, $service )
             || $self->errors("Logging failed");
         };
         $self->errors( $@ ) if $@;
@@ -329,10 +341,10 @@ sub query {
     if ( $format eq "seealso" ) {
         my %headers =  (-status => $status, -type => 'text/javascript; charset: utf-8');
         $headers{"-expires"} = $self->{expires} if ($self->{expires});
-        $http .= $cgi->header( %headers );
+        $http .= CGI::header( %headers );
         $http .= $response->toJSON($callback);
     } elsif ( $format eq "debug") {
-        $http .= $cgi->header( -status => $status, -type => 'text/javascript; charset: utf-8' );
+        $http .= CGI::header( -status => $status, -type => 'text/javascript; charset: utf-8' );
         $http .= "/*\n";
 
         use Class::ISA;
@@ -354,19 +366,39 @@ sub query {
         # TODO: put 'seealso' as format method in the array
         my $f = $self->{formats}{$format};
         if ($f) {
-            my $type = $f->{type} . "; charset: utf-8";
-            my $header = $cgi->header( -status => $status, -type => $type );
             if ($f->{filter}) {
                 $http = $f->{filter}($response); # TODO: what if this fails?!
             } else {
                 $http = $f->{method}($identifier); # TODO: what if this fails?!
             }
-            $http = $header . $http; # TODO: omit headers if already in HTTP
+            if (!$f->{raw}) { # TODO: Autodetect headers if already in HTTP
+                my $type = $f->{type} . "; charset: utf-8";
+                my $header = CGI::header( -status => $status, -type => $type );
+                $http = $header . $http; 
+            }
         } else { # unknown format or not defined format
             $http = $self->listFormats($response);
         }
     }
     return $http;
+}
+
+=head2 param ( $name )
+
+Return the value of a CGI parameter.
+
+=cut
+
+sub param {
+    my ($self, $name) = @_;
+    if ( defined $self->{cgi} ) { 
+      1;
+      return $self->{cgi}->param($name); 
+    }
+
+    return defined $self->{cgi} ? $self->{cgi}->param($name) : CGI::param($name);
+
+    return CGI::param($name);
 }
 
 =head2 logger ( [ $logger ] )
@@ -423,7 +455,7 @@ sub listFormats {
         $status = $response->size ? 300 : 404;
     }
 
-    my $headers = $self->{cgi}->header( -status => $status, -type => 'application/xml; charset: utf-8' );
+    my $headers = CGI::header( -status => $status, -type => 'application/xml; charset: utf-8' );
     $headers .= '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
 
     if ($self->{xslt}) {
@@ -556,15 +588,18 @@ sub baseURL {
     my $self = shift;
     my $cgi = $self->{cgi};
 
+    my $url = (defined $cgi ? $cgi->url : CGI::url());
+
     # remove id, format, and callback parameter
-    my $q = "&" . $cgi->query_string();
+    my $q = "&" . (defined $cgi ? $cgi->query_string() : CGI::query_string());
     $q =~ s/&(id|format|callback)=[^&]*//g;
     $q =~ s/^&//;
-    return $cgi->url . "?$q" if $q;
-    return $cgi->url;
+
+    $url .= "?$q" if $q;
+    return $url;
 }
 
-=head1 ADDITIONAL FUNCTIONS
+=head1 FUNCTIONS
 
 =head2 xmlencode ( $string )
 

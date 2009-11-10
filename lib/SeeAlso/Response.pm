@@ -420,6 +420,28 @@ sub toN3 {
     }
 }
 
+=head2 toRedirect ( [ $default ] )
+
+Return a HTTP 302 redirect to the first repsonse's link or a default location.
+
+=cut
+
+sub toRedirect {
+    my ($self, $default) = @_;
+    my ($a,$b,$url) = $self->get(0);
+    $url = $default unless $url;
+    return unless $url;
+
+    return <<HTTP;
+Status: 302 Found
+Location: $url
+URI: <$url>
+Content-type: text/html
+
+<html><head><meta http-equiv='refresh' content='0; URL=$url'></head></html>
+HTTP
+}
+
 =head1 INTERNAL FUNCTIONS
 
 =cut
