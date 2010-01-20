@@ -19,7 +19,7 @@ use SeeAlso::Identifier;
 use SeeAlso::Response;
 
 use base qw( SeeAlso::Source );
-our $VERSION = "0.22";
+our $VERSION = "0.24";
 our @EXPORT = qw( seealso_request );
 
 =head1 DESCRIPTION
@@ -197,7 +197,7 @@ This method is exportet by default.
 
 sub seealso_request {
     my ($baseurl, $identifier) = @_;
-    my $response = eval { SeeAlso::Client($baseurl)->query($identifier); };
+    my $response = eval { SeeAlso::Client->new($baseurl)->query($identifier); };
     return $response;
 }
 
