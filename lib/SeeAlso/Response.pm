@@ -15,7 +15,7 @@ use Text::CSV;
 use SeeAlso::Identifier;
 use Carp;
 
-our $VERSION = '0.59';
+our $VERSION = '0.60';
 
 use overload ( 
     '""'   => sub { $_[0]->as_string },
@@ -24,8 +24,10 @@ use overload (
 
 =head1 DESCRIPTION
 
-This class models a SeeAlso Simple Response which is practically the
-same as am OpenSearch Suggestions Response.
+This class models a SeeAlso Simple Response, which is practically the
+same as am OpenSearch Suggestions Response. It consists of a query
+term, and a list of responses, which each have a label, a description,
+and an URI.
 
 =head1 METHODS
 
@@ -298,10 +300,54 @@ sub toCSV {
     for(my $i=0; $i<$self->size(); $i++) {
         my $status = $csv->combine ( $self->get($i) ); # TODO: handle error status
         push @lines, $csv->string();
-    }    
+    }
     return join ("\n", @lines);
 }
 
+=head2 toBEACON ( [ $beacon ] )
+
+Returns the response in BEACON format. The response is analyzed to get the most
+compact form. You should add L<SeeAlso::Beacon> object that stores meta information 
+about a Beacon for further abbreviations. 
+
+Vertical bars in any of the responses values are silently removed.
+
+=cut
+
+sub toBEACON {
+    my ($self, $beacon) = @_;
+    my @lines;
+    my $query = $self->query;
+    $query =~ s/[|\n]//g;
+
+    #$this->meta('TARGET')
+
+    for(my $i=0; $i<$self->size(); $i++) {
+        my ($label, $description, $url) = map { s/[|\n]//g; $_; } $self->get($i);
+        my @line = ($query);
+
+        # TODO: remove url, if #TARGET is given
+
+        if ( is_uri( $url ) ) { # may skip label/description
+            push @line, $label unless $label eq "" and $description eq "";
+            push @line, $description unless $description eq "";
+            push @line, $url;
+        } else { # no uri
+        #if ($url eq "") {
+            # TODO: add only if no empty
+            push @line, $label;
+        #} else {
+           # TODO
+          # push @line, $label, $description, $url;
+            push @line, $description unless $description eq "" and $url eq "";
+            push @line, $url unless $url eq "";
+        }
+        #if ($label != "")
+        push @lines, join('|',@line);
+    }
+    return join ("\n", @lines);
+}
+ 
 =head2 toRDF
 
 Returns the response as RDF triples in JSON/RDF structure.

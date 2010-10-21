@@ -26,6 +26,7 @@ Features, that are planned to be implemented before 1.0 release include:
 - add caching of config files in expand_from_config
 - DBI does not load Description settings?
 - Add showservices.xsl (multiple) in addition to showservice.xsl (for collections)
+- remove Logger
 - fix: --(Thomas Berger):
 
 openSearchDescription darf nicht callback={callback} enthalten,
