@@ -23,7 +23,7 @@ use ExtUtils::MakeMaker;
         'Text::CSV' => '0',
         'Cache' => '2.04',
         'Test::Exception' => '0.27',
-		'LWP::Simple'	=> '0',
+	'LWP::Simple'	=> '0',
     },
     dist            => {
         COMPRESS => 'gzip -9f',
@@ -32,6 +32,6 @@ use ExtUtils::MakeMaker;
     depend          => {
         Makefile => '$(VERSION_FROM)'
     },
-    EXE_FILES       => [ 'client/seealso' ],
+    EXE_FILES       => [ 'client/seealso', 'client/beacon' ],
 #    clean           => { FILES => 'xyz-*' },
 );

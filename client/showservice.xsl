@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
   SeeAlso service display and test page.
-  Version 0.8.9
+  Version 0.9.01
 
   Usage: Put this file (showservice.xsl) in a directory together with 
   seealso.js, xmlverbatim.xsl and favicon.ico (optional)
   and let your SeeAlso service point to it in the unAPI format list file.
 
-  Copyright (C) 2007-2009 by Verbundzentrale Goettingen (VZG) and Jakob Voss
+  Copyright (C) 2007-2010 by Verbundzentrale Goettingen (VZG) and Jakob Voss
 
   Licensed under the Apache License, Version 2.0 (the "License"); 
   you may not use this file except in compliance with the License.
@@ -44,13 +44,25 @@
     <xsl:text>format=opensearchdescription</xsl:text>
   </xsl:param>
 
+  <xsl:param name="beaconurl">
+    <xsl:if test="/formats/format[@name='beacon']">
+      <xsl:value-of select="$seealso-query-base"/>
+      <xsl:choose>
+        <xsl:when test="not($seealso-query-base)">?</xsl:when>
+        <xsl:when test="contains($seealso-query-base,'?')">&amp;</xsl:when>
+        <xsl:otherwise>?</xsl:otherwise>
+      </xsl:choose>
+      <xsl:text>format=beacon</xsl:text>
+    </xsl:if>
+  </xsl:param>
+
   <!-- global variables -->
   <xsl:variable name="osd" select="document($osdurl)"/>
   <xsl:variable name="fullservice" select="namespace-uri($osd/*[1]) = 'http://a9.com/-/spec/opensearch/1.1/'"/>
   <xsl:variable name="name">
     <xsl:apply-templates select="$osd/osd:OpenSearchDescription" mode="name"/>
   </xsl:variable>
-  <xsl:variable name="formats" select="/formats/format[not(@name='opensearchdescription')]"/>
+  <xsl:variable name="formats" select="/formats/format[not(@name='opensearchdescription' or @name='beacon')]"/>
   <xsl:variable name="moreformats" select="$formats[not(@name='seealso')]"/>
 
   <!-- locate the other files -->
@@ -203,7 +215,6 @@ pre, .code {
           }
           function init() {
               displayElement = document.getElementById('display');
-              selectFormat("seealso");
               var displaystyles = document.getElementById('display-styles');
               for(var viewName in collection.views) {
                   var option = document.createElement("option");
@@ -213,7 +224,8 @@ pre, .code {
                   }
                   displaystyles.appendChild(option);
               }
-              displaystyles.style.display = "block";
+              displaystyles.parentNode.style.display = "block";
+              selectFormat("seealso"); // TODO: this could fail
           }
           function selectFormat(format) {
               if (format=="seealso") {
@@ -367,6 +379,12 @@ pre, .code {
         </td>
       </tr>
     </xsl:if>
+    <xsl:if test="$beaconurl">
+      <tr>
+        <th>Download</th>
+        <td>You can also <a href="{$beaconurl}">download a full dump</a> in BEACON format.</td>
+      </tr>
+    </xsl:if>
     <!-- TODO: add information about additional fields (if any) -->
   </table>
 </xsl:template>
@@ -414,15 +432,15 @@ pre, .code {
         </p>
       </xsl:if>
     <h2>Response</h2>
-
       <p>
           <span id="seealso-response">
             <small style="float:right;">[<span onclick="toggleFullResponse(this);">+</span>]</small>
             <pre id='response'></pre>
-            <iframe id="response-debug-iframe" width="90%" name="response-debug-iframe" src="" scrolling="auto" style="display:none;" class="code" />
+            <!-- IE does not like empty tag iframe! -->
+            <iframe id="response-debug-iframe" width="90%" name="response-debug-iframe" src="" scrolling="auto" style="display:none;" class="code"></iframe>
           </span>
           <span id="other-response" style="display:none">
-            <iframe id="response-other-iframe" width="90%" name="response-other-iframe" src="" scrolling="auto" class="code" />
+            <iframe id="response-other-iframe" width="90%" name="response-other-iframe" src="" scrolling="auto" class="code"></iframe>
           </span>
       </p>
     <table id='demo'>
@@ -431,18 +449,19 @@ pre, .code {
           <span id="seealso-response">
             <small style="float:right;">[<span onclick="toggleFullResponse(this);">+</span>]</small>
             <pre id='response'></pre>
-            <iframe id="response-debug-iframe" width="90%" name="response-debug-iframe" src="" scrolling="auto" style="display:none;" class="code" />
+            <iframe id="response-debug-iframe" width="90%" name="response-debug-iframe" src="" scrolling="auto" style="display:none;" class="code" ></iframe>
           </span>
           <span id="other-response" style="display:none">
-            <iframe id="response-other-iframe" width="90%" name="response-other-iframe" src="" scrolling="auto" class="code" />
+            <iframe id="response-other-iframe" width="90%" name="response-other-iframe" src="" scrolling="auto" class="code"></iframe>
           </span>
         </td>
       </tr-->
       <tr id="displayrow">
         <th>
-          display as
-          <select id='display-styles' style="display:none;" onchange="changeView(this);">
-          </select>
+          <div style="display:none;">display as
+            <select id='display-styles' onchange="changeView(this);">
+            </select>
+          </div>
         </th>
         <td>
           <div id='display'></div>
