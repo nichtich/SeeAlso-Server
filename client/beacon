@@ -12,6 +12,7 @@ our $VERSION = '0.1';
 
 use Getopt::Long;
 use Pod::Usage;
+use SeeAlso::Beacon;
 
 my ($help, $man, $configfile, $file, $name, $testmode);
 
@@ -26,7 +27,8 @@ GetOptions(
 pod2usage(1) if $help;
 pod2usage(-verbose => 2) if $man;
 
-my $store; # TODO: parse configfile and initialize BeaconStore, if required
+my $beaconstore; # TODO: parse configfile and initialize BeaconStore, if required
+my $beaconfile;
 
 # additional sophisticated command line parsing follows
 
@@ -59,6 +61,7 @@ unless ($cmd) {
 sub requirefile {
     $file = shift @ARGV unless defined $file;
     failed("Please specifiy a file to parse") unless defined $file;
+    $beaconfile = new SeeAlso::Beacon( $file );
 }
 
 sub requirename {
@@ -70,7 +73,7 @@ sub requirename {
 
 sub requirestore {
     failed("Command $cmd requires a beacon store. Please provide a config file")
-        unless $store;
+        unless $beaconstore;
 }
 
 if ($cmd eq 'list' or $cmd eq 'init') {
@@ -79,7 +82,7 @@ if ($cmd eq 'list' or $cmd eq 'init') {
     requirefile();
 } else {
     if ($cmd =~ /^(dump|about|query)$/) {
-        $store ? requirename() : requirefile();
+        $beaconstore ? requirename() : requirefile();
     } else { # delete|insert|update : require $store and $name
         requirestore();
         requirename();
@@ -99,7 +102,10 @@ if ($testmode) {
 
 
 # TODO: finally, perform some action
-
+if ($cmd eq 'parse') {
+    my %meta = $beaconfile->meta();
+    print $beaconfile->metastring(); 
+}
 
 sub failed { # error handler
     my $msg = shift;

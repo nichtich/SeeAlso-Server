@@ -41,6 +41,7 @@ t/cache.t
 t/isbn-dump.csv
 t/isbn-dump.ini
 t/beacon.t
+t/beacon1.txt
 
 client/showservice.xsl
 client/seealso.js 
