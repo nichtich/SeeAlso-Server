@@ -24,11 +24,12 @@ GetOptions(
     "name:s" => \$name,
     "test" => \$testmode,
 ) or pod2usage(2);
-pod2usage(1) if $help;
+pod2usage(1) if $help or (@ARGV and $ARGV[0] eq 'help');
 pod2usage(-verbose => 2) if $man;
 
 my $beaconstore; # TODO: parse configfile and initialize BeaconStore, if required
 my $beaconfile;
+my %handlers;
 
 # additional sophisticated command line parsing follows
 
@@ -61,7 +62,7 @@ unless ($cmd) {
 sub requirefile {
     $file = shift @ARGV unless defined $file;
     failed("Please specifiy a file to parse") unless defined $file;
-    $beaconfile = new SeeAlso::Beacon( $file );
+    $beaconfile = new SeeAlso::Beacon( $file, %handlers );
 }
 
 sub requirename {
@@ -75,6 +76,12 @@ sub requirestore {
     failed("Command $cmd requires a beacon store. Please provide a config file")
         unless $beaconstore;
 }
+
+# TODO: change handlers depending on command line arguments
+%handlers = ( error => sub {
+    my ($msg, $lineno, $line) = @_;
+    print STDERR "$msg at line $lineno\n";
+});
 
 if ($cmd eq 'list' or $cmd eq 'init') {
     requirestore();
@@ -102,8 +109,12 @@ if ($testmode) {
 
 
 # TODO: finally, perform some action
-if ($cmd eq 'parse') {
-    my %meta = $beaconfile->meta();
+if ($cmd eq 'parse') { # parse a file
+    #my %meta = $beaconfile->meta();
+    $beaconfile->parse();
+    print $beaconfile->metastring();
+    # TODO: show number of warnings, if any
+} elsif($cmd eq 'about') {
     print $beaconfile->metastring(); 
 }
 

@@ -37,16 +37,20 @@ our $VERSION = '0.10';
 
 =head1 METHODS
 
-=head2 new ( [ $file ] )
+=head2 new ( [ $from ] { parameter => value } )
 
-Create a new Beacon object, optionally from a given file.
+Create a new Beacon object, optionally from a given file. If you specify a 
+source via C<$from> argument or as parameter C<from =E<gt> $from>, it will
+be opened for parsing and all meta fields will immediately be read from it.
+Otherwise you get an empty, but initialized Beacon object.
 
 =cut
 
 sub new {
     my $class = shift;
     my $self = bless { }, $class;
-    $self->_startparsing( @_ );
+    $self->_initparams( @_ );
+    $self->_startparsing;
     return $self;
 }
 
@@ -86,11 +90,12 @@ sub meta {
         } else { # check format of known meta fields
             if ($key eq 'TARGET') {
 
-                # TODO
+                # TODO...{ID} $PND etc.
 
             } elsif ($key eq 'FEED') {
                 croak 'FEED meta value must be a HTTP/HTTPS URL' 
-                    unless is_url($value);
+                    unless $value =~ 
+/^http(s)?:\/\/[a-z0-9-]+(.[a-z0-9-]+)*(:[0-9]+)?(\/[^#|]*)?(\?[^#|]*)?$/i;
             } elsif ($key eq 'PREFIX') {
                 croak 'PREFIX meta value must be a URI' 
                     unless is_uri($value);
@@ -121,6 +126,28 @@ sub meta {
     }
 }
 
+=head2 count
+
+Returns the number of links, successfully read so far, or zero. 
+In contrast to C<meta('count')>, this method always returns a number.
+
+=cut
+
+sub count {
+    my $count = $_[0]->meta('COUNT');
+    return defined $count ? $count : 0;
+}
+
+=head2 line
+
+Returns the current line number.
+
+=cut
+
+sub line {
+    return $_[0]->{line};
+}
+
 =head2 metastring 
 
 Return all meta fields, serialized and sorted as string.
@@ -132,28 +159,20 @@ sub metastring {
     my %meta = $self->meta();
     my @lines = '#FORMAT: ' . $meta{'FORMAT'};
     delete $meta{'FORMAT'};
+    my $count = $meta{'COUNT'};
+    delete $meta{'COUNT'};
     foreach my $key (keys %meta) {
         push @lines, "#$key: " . $meta{$key}; 
     }
+    push (@lines, "#COUNT: " . $count) if defined $count;
 
     return @lines ? join ("\n", @lines) . "\n" : "";
 }
 
-=head2 warning( $string )
+=head2 parse ( [ $from ] { parameter => value } )
 
-Adds a warning.
-
-=cut
-
-sub warning {
-    my ($self, $warning) = @_;
-    push @{$self->{warnings}}, $warning; # TODO: check this
-}
-
-=head2 parse ( [ $filename ] )
-
-Parse all remaining links. If provided a file name, this starts a new Beacon.
-That means the following is equivalent:
+Parse all remaining links. If provided a C<$from> parameter, this starts 
+a new Beacon. That means the following is equivalent:
 
   $b = new SeeAlso::Beacon( $filename );
 
@@ -164,9 +183,41 @@ That means the following is equivalent:
 
 sub parse {
     my $self = shift;
-    $self->_startparsing( @_ );
-    
-    # TODO: parse all lines (IDs) via parselink
+
+    $self->_initparams( @_ );
+    $self->_startparsing if defined $self->{from}; # start from new source
+
+    return unless $self->{fh}; # TODO: error
+
+    $self->{meta}->{COUNT} = 0;
+    my $line = $self->{lookaheadline};
+    goto(OH_MY_GOD_THE_EVIL_GOTO_WE_WILL_ALL_DIE) if defined $line;
+
+    while ($line = readline $self->{fh}) {
+        OH_MY_GOD_THE_EVIL_GOTO_WE_WILL_ALL_DIE:
+
+        $self->{line}++;
+
+        my $link = $self->parselink( $line );
+
+        if (!ref($link)) { # error
+            $self->{errorcount}++;
+            my $handler = $self->{error_handler};
+            if ($handler) {
+                &$handler( $link, $self->{line}, $line );
+            } else {
+                # TODO: add default error handler
+            }
+        } elsif (@$link) { # no empty line or comment
+
+            # TODO: check whether id together with prefix is an URI
+            # TODO: handle link
+
+            $self->{meta}->{COUNT}++; # TODO: only if not error
+        }
+    } 
+
+    # TODO: call end handler
 }
 
 =head2 parselink ( $line )
@@ -200,10 +251,40 @@ sub parselink {
 
 =head1 INTERNAL METHODS
 
-=head2 _startparsing ( [ $filename ] )
+If you directly call any of this methods, puppies will die.
 
-Open a BEACON file and start parsing by parsing all meta fields,
-and possibly the first link.
+=head2 _initparams ( [ $from ] { parameter => value } )
+
+Initialize parameters as passed to C<new> or C<parse>.
+
+=cut
+
+sub _initparams {
+    my $self = shift;
+
+    $self->{from} = (@_ % 2) ? shift(@_) : undef;
+
+    my %param = @_;
+    $self->{from} = $param{from}
+        if defined $param{from};
+
+    if (defined $param{error}) { # TODO: do we want to unset an error handler?
+        croak 'Error handler must be code'
+            unless ref($param{error}) and ref($param{error}) eq 'CODE';
+        $self->{error_handler} = $param{error};
+    }
+
+    # TODO: enable more handlers
+}
+
+=head2 _startparsing
+
+Open a BEACON file and parse all meta fields. Calling this method will reset
+the whole object but not the parameters as set with C<_initparams>. If no
+source had been specified (with parameter C<from>), this is all the method 
+does. If a source is given, it is opened and parsed. Parsing stops when the
+first non-empty and non-meta field line is encountered. This line is internally
+stored as lookahead.
 
 =cut
 
@@ -211,41 +292,32 @@ sub _startparsing {
     my $self = shift;
 
     $self->{meta} = { 'FORMAT' => 'BEACON' };
-    $self->{lineno} = 0;
+    $self->{line} = 0;
+    $self->{errorcount} = 0;
+    $self->{lookaheadline} = undef;
+
     $self->{examples} = [];
-    $self->{warnings} = [];
 
-    return unless @_;
+    return unless defined $self->{from};
 
-    # TODO: open file and parse all meta fields
-    my $filename = shift @_;
-
-    open $self->{fh}, $filename;
+    open $self->{fh}, $self->{from};
     # TODO: check error on opening stream
 
     # TODO: remove BOM (allowed in UTF-8)
     # /^\xEF\xBB\xBF/
     while (my $line = readline $self->{fh}) {
         $line =~ s/^\s+|\s*\n?$//g;
-        next if $line eq '';
-        if ($line =~ /^#([^:=\s]+)(\s*[:=]?\s*|\s+)(.*)$/) {
+        if ($line eq '') {
+            $self->{line}++;
+            next;
+        } elsif ($line =~ /^#([^:=\s]+)(\s*[:=]?\s*|\s+)(.*)$/) {
+            $self->{line}++;
             $self->meta($1,$3);
         } else {
-            my $link = $self->parselink( $line );
-            # TODO: handle $link
+            $self->{lookaheadline} = $line;
             last;
         }
     }
-}
-
-=head2 is_url ( $string )
-
-Check whether a given String looks like a HTTP/HTTPS URL.
-
-=cut
-
-sub is_url {
-    return $_[0] =~ /^http(s)?:\/\/[a-z0-9-]+(.[a-z0-9-]+)*(:[0-9]+)?(\/[^#|]*)?(\?[^#|]*)?$/i;
 }
 
 1;

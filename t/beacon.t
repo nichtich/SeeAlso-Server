@@ -84,6 +84,12 @@ eval { $b->meta( 'format' => 'foo' ); }; ok( $@, 'detect invalid FORMAT' );
 $b->meta( 'format' => 'FOO-BEACON' );
 is( $b->meta('format'), 'FOO-BEACON' );
 
+is( $b->meta('COUNT'), undef, 'meta("COUNT")' );
+is( $b->count, 0, 'count()' );
+$b->meta('count' => 7);
+is( $b->count, 7, 'count()' );
+is( $b->line, 0, 'line()' );
+
 # line parsing
 my %t = (
   "qid" => ["qid","","",""],
@@ -114,4 +120,12 @@ is_deeply( { $b->meta() }, {
   'TARGET' => 'http://example.com/{ID}',
   'FOO' => 'bar',
   'PREFIX' => 'x:'
-}, "parsing meta fields" );    
+}, "parsing meta fields" );
+
+is( $b->line, 6, 'line()' );
+$b->parse();
+
+eval { $b = new SeeAlso::Beacon( error => 'xxx' ); }; ok( $@, 'error handler' );
+
+# TODO: test handlers (which should not be reset by parse unless wanted)
+
