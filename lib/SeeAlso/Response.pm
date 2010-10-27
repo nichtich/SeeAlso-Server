@@ -15,7 +15,7 @@ use Text::CSV;
 use SeeAlso::Identifier;
 use Carp;
 
-our $VERSION = '0.60';
+our $VERSION = '0.59';
 
 use overload ( 
     '""'   => sub { $_[0]->as_string },

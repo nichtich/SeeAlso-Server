@@ -20,7 +20,7 @@ use SeeAlso::Source;
 use base 'Exporter';
 our @EXPORT_OK = qw(xmlencode);
 
-our $VERSION = '0.58';
+our $VERSION = '0.59';
 
 =head1 DESCRIPTION
 

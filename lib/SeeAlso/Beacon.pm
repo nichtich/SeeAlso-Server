@@ -42,7 +42,8 @@ our $VERSION = '0.10';
 Create a new Beacon object, optionally from a given file. If you specify a 
 source via C<$from> argument or as parameter C<from =E<gt> $from>, it will
 be opened for parsing and all meta fields will immediately be read from it.
-Otherwise you get an empty, but initialized Beacon object.
+Otherwise you get an empty, but initialized Beacon object. See the C<parse>
+methods for more details.
 
 =cut
 
@@ -161,6 +162,7 @@ sub metastring {
     delete $meta{'FORMAT'};
     my $count = $meta{'COUNT'};
     delete $meta{'COUNT'};
+    # TODO: specific default order of fields
     foreach my $key (keys %meta) {
         push @lines, "#$key: " . $meta{$key}; 
     }
@@ -179,6 +181,9 @@ a new Beacon. That means the following is equivalent:
   $b = new SeeAlso::Beacon;
   $b->parse( $filename );
 
+By default, errors are silently ignored, unless you specifiy an error 
+handler.
+
 =cut
 
 sub parse {
@@ -187,7 +192,7 @@ sub parse {
     $self->_initparams( @_ );
     $self->_startparsing if defined $self->{from}; # start from new source
 
-    return unless $self->{fh}; # TODO: error
+    return unless $self->{fh};
 
     $self->{meta}->{COUNT} = 0;
     my $line = $self->{lookaheadline};
@@ -201,10 +206,9 @@ sub parse {
         my $link = $self->parselink( $line );
 
         if (!ref($link)) { # error
-            $self->{errorcount}++;
-            my $handler = $self->{error_handler};
-            if ($handler) {
-                &$handler( $link, $self->{line}, $line );
+            #$self->{errorcount}++;
+            if ($self->{error_handler}) {
+                $self->{error_handler}->( $link, $self->{line}, $line );
             } else {
                 # TODO: add default error handler
             }
@@ -293,7 +297,7 @@ sub _startparsing {
 
     $self->{meta} = { 'FORMAT' => 'BEACON' };
     $self->{line} = 0;
-    $self->{errorcount} = 0;
+    #$self->{errorcount} = 0;
     $self->{lookaheadline} = undef;
 
     $self->{examples} = [];
@@ -312,7 +316,7 @@ sub _startparsing {
             next;
         } elsif ($line =~ /^#([^:=\s]+)(\s*[:=]?\s*|\s+)(.*)$/) {
             $self->{line}++;
-            $self->meta($1,$3);
+            $self->meta($1,$3); # TODO: check for errors and handle them?
         } else {
             $self->{lookaheadline} = $line;
             last;

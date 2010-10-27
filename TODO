@@ -35,6 +35,9 @@ Es muesste sich reparieren lassen als
 
 callback={seealso:callback?}
 
+Implement a simple RDF2SeeAlso Wrapper, e.g.
+http://cal.aksw.org/year/Y2010
+
 == Tests ==
 - Add more Unicode tests from toJSON and fromJSON!
 - Test servers with SeeAlso::Client
