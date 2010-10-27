@@ -32,6 +32,6 @@ use ExtUtils::MakeMaker;
     depend          => {
         Makefile => '$(VERSION_FROM)'
     },
-    EXE_FILES       => [ 'client/seealso', 'client/beacon' ],
+    EXE_FILES       => [ 'client/seealso' ],
 #    clean           => { FILES => 'xyz-*' },
 );
