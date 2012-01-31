@@ -71,14 +71,18 @@ sub value {
 
 =head2 valid ( )
 
-Test whether the GND consists of 8 digits plus the right check digit. Because
-there are two methods for check digit computation, not all errors can be detected.
+Test whether the GND consists of either 8 digits plus the right check digit or
+just a sequence of more then 9 digits. Because there are two methods for check
+digit computation, not all errors can be detected.
 
 =cut
 
 sub valid {
     my $self = shift;
     my $value = $self->{value};
+
+    return if $value !~ /^[0-9]*[0-9X]$/;
+    return 1 if length($value) > 9; # new long GND
 
     # TODO: fix bad syntax
     if ($value) { # not on empty value
