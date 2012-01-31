@@ -1,16 +1,13 @@
-package SeeAlso::Source::ThingISBN;
-
 use strict;
+use warnings;
+package SeeAlso::Source::ThingISBN;
+#ABSTRACT: thingISBN stored in a SQL database
+
 use utf8;
 use Carp qw(croak);
 use DBI;
 
 use base qw( SeeAlso::Source::DBI );
-our $VERSION = "0.3";
-
-=head1 NAME
-
-SeeAlso::Source::ThingISBN - thingISBN stored in a SQL database
 
 =head1 DESCRIPTION
 

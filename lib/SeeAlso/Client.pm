@@ -1,25 +1,18 @@
-package SeeAlso::Client;
-
 use strict;
 use warnings;
-
-=head1 NAME
-
-SeeAlso::Client - SeeAlso Linkserver Protocol Client
-
-=cut
+package SeeAlso::Client;
+#ABSTRACT: SeeAlso Linkserver Protocol Client
 
 use Carp qw(croak);
-use JSON::XS;
+use JSON::XS '2.0' ;
 use LWP::Simple qw(get);
-use URI;
+use URI '1.35';
 use Data::Validate::URI qw(is_web_uri);
 
 use SeeAlso::Identifier;
 use SeeAlso::Response;
 
 use base qw( SeeAlso::Source );
-our $VERSION = "0.24";
 our @EXPORT = qw( seealso_request );
 
 =head1 DESCRIPTION

@@ -1,17 +1,12 @@
-package SeeAlso::Server;
-
 use strict;
 use warnings;
+package SeeAlso::Server;
+#ABSTRACT: SeeAlso Linkserver Protocol Server
+
 use utf8;
 
-=head1 NAME
-
-SeeAlso::Server - SeeAlso Linkserver Protocol Server
-
-=cut
-
 use Carp qw(croak);
-use CGI qw(-oldstyle_urls);
+use CGI qw(-oldstyle_urls 3.0);
 
 use SeeAlso::Identifier;
 use SeeAlso::Response;
@@ -19,8 +14,6 @@ use SeeAlso::Source;
 
 use base 'Exporter';
 our @EXPORT_OK = qw(xmlencode);
-
-our $VERSION = '0.59';
 
 =head1 DESCRIPTION
 
@@ -156,10 +149,12 @@ sub new {
         idtype => ($params{idtype} || 'SeeAlso::Identifier'),
     }, $class;
 
+## no critic
     eval "require " . $self->{idtype};
     croak $@ if $@;
     croak($self->{idtype} . ' is not a SeeAlso::Identifier')
         unless UNIVERSAL::isa( $self->{idtype}, 'SeeAlso::Identifier' );
+## use critic
 
     $self->setExpires($params{expires}) if $params{expires};
 
@@ -270,10 +265,12 @@ sub query {
         $identifier = $self->param('id');
     }
 
+## no critic
     if ( not UNIVERSAL::isa( $identifier, 'SeeAlso::Identifier' ) ) {
         my $class = $self->{idtype};
         $identifier = eval "new $class(\$identifier)"; # TODO: what if this fails?
     }
+## use critic
 
     $format = $self->param('format') unless defined $format;
     $format = "" unless defined $format;
@@ -346,15 +343,16 @@ sub query {
     } elsif ( $format eq "debug") {
         $http .= CGI::header( -status => $status, -type => 'text/javascript; charset: utf-8' );
         $http .= "/*\n";
-
-        use Class::ISA;
-        my %vars = ( Server => $self, Source => $source, Identifier => $identifier, Response => $response );
-        foreach my $var (keys %vars) {
-            $http .= "$var is a " .
-                join(", ", map { $_ . " " . $_->VERSION; }
-                Class::ISA::self_and_super_path(ref($vars{$var})))
-            . "\n"
-        }
+        
+        # TODO
+        # use Class::ISA; # deprecated
+        # my %vars = ( Server => $self, Source => $source, Identifier => $identifier, Response => $response );
+        # foreach my $var (keys %vars) {
+        #     $http .= "$var is a " .
+        #         join(", ", map { $_ . " " . $_->VERSION; }
+        #         Class::ISA::self_and_super_path(ref($vars{$var})))
+        #     . "\n"
+        # }
         $http .= "\n";
         $http .= "HTTP response status code is $status\n";
         $http .= "\nInternally the following errors occured:\n- "
@@ -619,15 +617,3 @@ sub xmlencode {
 }
 
 1;
-
-=head1 AUTHOR
-
-Jakob Voss C<< <jakob.voss@gbv.de> >>
-
-=head1 LICENSE
-
-Copyright (C) 2007-2010 by Verbundzentrale Goettingen (VZG) and Jakob Voss
-
-This library is free software; you can redistribute it and/or modify it
-under the same terms as Perl itself, either Perl version 5.8.8 or, at
-your option, any later version of Perl 5 you may have available.

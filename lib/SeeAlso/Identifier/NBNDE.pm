@@ -1,17 +1,13 @@
-package SeeAlso::Identifier::NBNDE;
-
 use strict;
 use warnings;
-
-=head1 NAME
-
-SeeAlso::Identifier::NBNDE - German National Library URN
+package SeeAlso::Identifier::NBNDE;
+#ABSTRACT: German National Library URN
 
 =head1 DESCRIPTION
 
-TODO!
+This is experimental.
 
-See http://www.persistent-identifier.de/ and RFC 3188.
+See L<http://www.persistent-identifier.de/> and RFC 3188 for details.
 
 =cut
 
@@ -20,7 +16,6 @@ use Carp;
 use Exporter;
 
 use base qw( SeeAlso::Identifier Exporter );
-our $VERSION = "0.10";
 our @EXPORT_OK = qw( calc_check_digit );
 
 =head1 METHODS
@@ -136,17 +131,3 @@ sub calc_check_digit {
 }
 
 1;
-
-__END__
-
-=head1 AUTHOR
-
-Jakob Voss C<< <jakob.voss@gbv.de> >>
-
-=head1 LICENSE
-
-Copyright (C) 2007-2009 by Verbundzentrale Goettingen (VZG) and Jakob Voss
-
-This library is free software; you can redistribute it and/or modify it
-under the same terms as Perl itself, either Perl version 5.8.8 or, at
-your option, any later version of Perl 5 you may have available.

@@ -1,17 +1,10 @@
-package SeeAlso::Identifier::Factory;
-
 use strict;
 use warnings;
-
-=head1 NAME
-
-SeeAlso::Identifier::Factory - Identify and create identifiers
-
-=cut
+package SeeAlso::Identifier::Factory;
+#ABSTRACT: Identify and create identifiers
 
 use SeeAlso::Identifier;
 use Carp;
-our $VERSION = '0.20';
 
 =head1 DESCRIPTION
 
@@ -73,6 +66,7 @@ sub new {
         # TODO: also support hash reference
     }
 
+    ## no critic
     foreach my $type (@{$self->{type}}) {
         if ( not eval 'require ' . $type ) {
             if ( @{$self->{type}} == 1 ) {
@@ -83,6 +77,7 @@ sub new {
         UNIVERSAL::isa( $type, 'SeeAlso::Identifier' )
             or croak("$type must be a (subclass of) SeeAlso::Identifier");
     }
+    ## use critic
 
     return $self;
 }
@@ -147,24 +142,13 @@ sub makeclass {
     push @out, '1; };';
     my $out = join("\n",@out);
 
+    ## no critic
     # print $out;# if $print;
     { no warnings; eval $out; }
     carp $@ if $@;
+    ## use critic
 
     return $type;
 }
 
 1;
-
-=head1 AUTHOR
-
-Jakob Voss C<< <jakob.voss@gbv.de> >>
-
-=head1 LICENSE
-
-Copyright (C) 2009 by Verbundzentrale Goettingen (VZG) and Jakob Voss
-
-This library is free software; you can redistribute it and/or modify it
-under the same terms as Perl itself, either Perl version 5.8.8 or, at
-your option, any later version of Perl 5 you may have available.
-

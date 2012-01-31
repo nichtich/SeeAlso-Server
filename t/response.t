@@ -25,7 +25,7 @@ my $csv = '"foo","urn:baz","uri:bar"';
 is( $r->toJSON, $json, 'simple response (JSON)');
 is( $r->toCSV, $csv, 'simple response (CSV)');
 is( $r->as_string, $json, 'simple response (as_string)');
-is( $r, $json, 'simple response ("")');
+is( "$r", $json, 'simple response ("")');
 
 my $list = [ $r->get(0) ];
 is_deeply( $list, ["foo","urn:baz","uri:bar"], 'get method' );

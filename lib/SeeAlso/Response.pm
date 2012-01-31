@@ -1,21 +1,13 @@
-package SeeAlso::Response;
-
 use strict;
 use warnings;
-
-=head1 NAME
-
-SeeAlso::Response - SeeAlso Simple Response
-
-=cut
+package SeeAlso::Response;
+#ABSTRACT: SeeAlso Simple Response
 
 use JSON::XS qw(encode_json);
 use Data::Validate::URI qw(is_uri);
 use Text::CSV;
 use SeeAlso::Identifier;
 use Carp;
-
-our $VERSION = '0.59';
 
 use overload ( 
     '""'   => sub { $_[0]->as_string },
@@ -323,7 +315,9 @@ sub toBEACON {
     #$this->meta('TARGET')
 
     for(my $i=0; $i<$self->size(); $i++) {
+        ## no critic
         my ($label, $description, $url) = map { s/[|\n]//g; $_; } $self->get($i);
+        ## use critic
         my @line = ($query);
 
         # TODO: remove url, if #TARGET is given
@@ -532,17 +526,4 @@ sub _JSON {
     return $callback ? "$callback($jsonstring);" : $jsonstring;
 }
 
-
 1;
-
-=head1 AUTHOR
-
-Jakob Voss C<< <jakob.voss@gbv.de> >>
-
-=head1 LICENSE
-
-Copyright (C) 2007-2009 by Verbundzentrale Goettingen (VZG) and Jakob Voss
-
-This library is free software; you can redistribute it and/or modify it
-under the same terms as Perl itself, either Perl version 5.8.8 or, at
-your option, any later version of Perl 5 you may have available.

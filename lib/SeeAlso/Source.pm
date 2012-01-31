@@ -1,17 +1,14 @@
-package SeeAlso::Source;
-
 use strict;
+use warnings;
+package SeeAlso::Source;
+#ABSTRACT: Provides OpenSearch Suggestions reponses
+
 use Carp qw(croak);
 use SeeAlso::Response;
 use SeeAlso::Server;
 
-our $VERSION = '0.58';
 use base 'Exporter';
 our @EXPORT_OK = qw(expand_from_config serve);
-
-=head1 NAME
-
-SeeAlso::Source - Provides OpenSearch Suggestions reponses
 
 =head1 SYNOPSIS
 
@@ -94,7 +91,7 @@ sub callback {
         $self->{callback} = $callback;
     }
 
-    return undef unless defined $self->{callback};
+    return unless defined $self->{callback};
     return $self->{callback} if ref($self->{callback}) eq 'CODE';
     return sub { $self->{callback}->query( $_[0] ) };
 }
@@ -292,7 +289,7 @@ sub serve {
 
     my $server = SeeAlso::Server->new( config => $config );
 
-    binmode \*STDOUT, "utf8";
+    binmode \*STDOUT, ":encoding(UTF-8)";
     print $server->query( $source );
     exit;
 }
@@ -308,9 +305,9 @@ On error the hash reference is empty.
 
 sub load_config {
     my $file = shift;
-    open CONF, $file;
-    my $config = eval { JSON->new->relaxed->utf8->decode(join('',<CONF>)); };
-    close CONF;
+    open(my $fh, "<", $file);
+    my $config = eval { JSON->new->relaxed->utf8->decode(join('',<$fh>)); };
+    close $fh;
     return $config || { };
 }
 
@@ -348,9 +345,9 @@ sub expand_from_config {
             };
         } elsif ( $file =~ /\.json$/ ) {
             eval {
-                open CONF, $file;
-                my $config = JSON->new->relaxed->utf8->decode(join('',<CONF>));
-                close CONF;
+                open(my $fh, "<", $file);
+                my $config = JSON->new->relaxed->utf8->decode(join('',<$fh>));
+                close $fh;
                 $cfg = $config->{$section};
             };
         } else {
@@ -365,15 +362,3 @@ sub expand_from_config {
 }
 
 1;
-
-=head1 AUTHOR
-
-Jakob Voss C<< <jakob.voss@gbv.de> >>
-
-=head1 LICENSE
-
-Copyright (C) 2007-2009 by Verbundzentrale Goettingen (VZG) and Jakob Voss
-
-This library is free software; you can redistribute it and/or modify it
-under the same terms as Perl itself, either Perl version 5.8.8 or, at
-your option, any later version of Perl 5 you may have available.

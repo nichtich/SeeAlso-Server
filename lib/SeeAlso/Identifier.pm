@@ -1,15 +1,7 @@
-package SeeAlso::Identifier;
-
 use strict;
 use warnings;
-
-=head1 NAME
-
-SeeAlso::Identifier - Controlled identifier that can be normalized and hashed
-
-=cut
-
-our $VERSION = '0.49';
+package SeeAlso::Identifier;
+#ABSTRACT: Controlled identifier that can be normalized and hashed
 
 =head1 DESCRIPTION
 
@@ -203,7 +195,9 @@ in subclasses of SeeAlso::Identifier but the C<parse> function instead.
 sub value {
     my $self = shift;
     if ( scalar @_ ) {
+        ## no critic
         my $value = eval ref($self).'::parse($_[0])';
+        ## use critic
         $$self = defined $value ? "$value" : "";
     }
     return $$self;
@@ -331,14 +325,4 @@ sub set {
 See L<URI> for an implementation of Uniform Resource Identifiers
 which is more specific than SeeAlso::Identifier.
 
-=head1 AUTHOR
-
-Jakob Voss C<< <jakob.voss@gbv.de> >>
-
-=head1 LICENSE
-
-Copyright (C) 2009 by Jakob Voss
-
-This library is free software; you can redistribute it and/or modify it
-under the same terms as Perl itself, either Perl version 5.8.8 or, at
-your option, any later version of Perl 5 you may have available.
+=cut

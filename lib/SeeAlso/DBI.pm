@@ -1,13 +1,7 @@
-package SeeAlso::DBI;
-
 use strict;
 use warnings;
-
-=head1 NAME
-
-SeeAlso::DBI - Store L<SeeAlso::Response> objects in database.
-
-=cut
+package SeeAlso::DBI;
+#ABSTRACT: Store L<SeeAlso::Response> objects in database.
 
 use DBI;
 use DBI::Const::GetInfoType;
@@ -15,7 +9,8 @@ use Carp qw(croak);
 
 use base qw( SeeAlso::Source );
 use SeeAlso::Source qw(expand_from_config);
-our $VERSION = '0.48';
+
+## no critic
 
 =head1 SYNOPSIS
 
@@ -483,14 +478,4 @@ sub bulk_import {
 This package was partly inspired by on L<CHI::Driver::DBI> by Justin DeVuyst
 and Perrin Harkins.
 
-=head1 AUTHOR
-
-Jakob Voss C<< <jakob.voss@gbv.de> >>
-
-=head1 LICENSE
-
-Copyright (C) 2009 by Jakob Voss
-
-This library is free software; you can redistribute it and/or modify it
-under the same terms as Perl itself, either Perl version 5.8.8 or, at
-your option, any later version of Perl 5 you may have available.
+=cut

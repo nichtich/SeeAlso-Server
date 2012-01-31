@@ -1,19 +1,12 @@
-package SeeAlso::Identifier::ISBN;
-
 use strict;
 use warnings;
-
-=head1 NAME
-
-SeeAlso::Identifier::ISBN - International Standard Book Number as Identifier
-
-=cut
+package SeeAlso::Identifier::ISBN;
+#ABSTRACT: International Standard Book Number as Identifier
 
 use Business::ISBN;
 use Carp;
 
 use base qw( SeeAlso::Identifier );
-our $VERSION = "0.70";
 
 =head1 SYNOPSIS
 
@@ -154,14 +147,4 @@ In theory zero ('0') is a valid ISBN value representing ISBN-10 0-00-000000-0
 
 For canonical form instead of RFC 3187 you could also use "http://purl.org/isbn/".
 
-=head1 AUTHOR
-
-Jakob Voss C<< <jakob.voss@gbv.de> >>
-
-=head1 LICENSE
-
-Copyright (C) 2007-2009 by Verbundzentrale Goettingen (VZG) and Jakob Voss
-
-This library is free software; you can redistribute it and/or modify it
-under the same terms as Perl itself, either Perl version 5.8.8 or, at
-your option, any later version of Perl 5 you may have available.
+=cut

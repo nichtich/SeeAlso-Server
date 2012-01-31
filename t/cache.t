@@ -32,10 +32,10 @@ sub test_cache {
         return $r;
     };
     my $source = new SeeAlso::Source( $query_method, cache => $cache );
-    is( $source->query('0'), '["0",["1"],[""],[""]]', 'cache (1)' );
-    is( $source->query('0'), '["0",["1"],[""],[""]]', 'cache (2)' );
-    is( $source->query('0', force => 1 ), '["0",["2"],[""],[""]]', 'cache (3)' );
-    is( $source->query('0'), '["0",["2"],[""],[""]]', 'cache (4)' );
+    is( $source->query('0')->as_string, '["0",["1"],[""],[""]]', 'cache (1)' );
+    is( $source->query('0')->as_string, '["0",["1"],[""],[""]]', 'cache (2)' );
+    is( $source->query('0', force => 1 )->as_string, '["0",["2"],[""],[""]]', 'cache (3)' );
+    is( $source->query('0')->as_string, '["0",["2"],[""],[""]]', 'cache (4)' );
     $cache->clear;
-    is( $source->query('0'), '["0",["3"],[""],[""]]', 'cache (5)' );
+    is( $source->query('0')->as_string, '["0",["3"],[""],[""]]', 'cache (5)' );
 }

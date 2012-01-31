@@ -1,13 +1,9 @@
-package SeeAlso::Identifier::ISIL;
-
 use strict;
 use warnings;
+package SeeAlso::Identifier::ISIL;
+#ABSTRACT: International Standard Identifier for Libraries and Related Organisations
+
 use utf8;
-
-=head1 NAME
-
-SeeAlso::Identifier::ISIL - International Standard Identifier for Libraries
-and Related Organisations
 
 =head1 DESCRIPTION
 
@@ -44,7 +40,6 @@ Registration Authority.
 use Carp;
 
 use base qw( SeeAlso::Identifier Exporter );
-our $VERSION = "0.22";
 our @EXPORT_OK = qw( sigel2isil );
 
 =head1 METHODS
@@ -177,18 +172,6 @@ ISO 15511:2003. Moreover some country subdivision have changed since
 1998 and National ISIL Agencies may have other reasons not to use the
 same codes as provided by L<Locale::SubCountry>. You can find a list
 of prefixes in the source code of this package.
-
-=head1 AUTHOR
-
-Jakob Voss C<< <jakob.voss@gbv.de> >>
-
-=head1 LICENSE
-
-Copyright (C) 2007-2009 by Verbundzentrale Goettingen (VZG) and Jakob Voss
-
-This library is free software; you can redistribute it and/or modify it
-under the same terms as Perl itself, either Perl version 5.8.8 or, at
-your option, any later version of Perl 5 you may have available.
 
 =cut
 

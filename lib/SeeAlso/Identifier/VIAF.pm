@@ -1,15 +1,9 @@
-package SeeAlso::Identifier::ISBN;
-
-=head1 NAME
-
-SeeAlso::Identifier::VIAF - Identifier of VIAF or other authority file record
-
-=cut
-
-# TODO: rewrite and use a Factory instead!
-
 use strict;
 use warnings;
+package SeeAlso::Identifier::VIAF;
+#ABSTRACT: Identifier of VIAF or other authority file record
+
+# TODO: rewrite and use a Factory instead!
 
 use Exporter;
 our base 'SeeAlso::Identifier';
